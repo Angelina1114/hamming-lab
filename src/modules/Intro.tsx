@@ -20,8 +20,7 @@ const PARTS = [
   { to: 'l2-1', tag: '第二課', title: '編碼與解碼演算法', desc: 'LFSR、長除法、Syndrome、Chien Search、誤更正、SECDED 實作', filter: (m: ModuleMeta) => m.lesson === 2 },
 ];
 
-const VA: Bit[] = [1, 0, 1, 1];
-const VB: Bit[] = [0, 1, 1, 0];
+const SENT: Bit[] = [1, 0, 1, 1];
 
 const SCHEMES = [
   { name: '不編碼 Uncoded', n: 4, k: 4, detect: 0, correct: 0, note: '任何錯誤都變成另一個「合法」訊息' },
@@ -39,6 +38,7 @@ export default function Intro() {
   const parityRecv = parityWord.map((b, i) => (b ^ parityErr[i]) as Bit);
   const parityCheck = sum(parityRecv);
   const nErr = parityErr.filter(Boolean).length;
+  const errVec: Bit[] = SENT.map((_, i) => (rawFlips.includes(i) ? 1 : 0));
 
   return (
     <div>
@@ -92,7 +92,7 @@ export default function Intro() {
           </Callout>
         </Stage>
 
-        <Stage kind="definition" moduleId={ID} title="Code、Codeword 與 GF(2)">
+        <Stage kind="definition" moduleId={ID} title="Code、Codeword 與「翻轉」的算術">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <Card title="基本名詞">
               <dl className="space-y-2 text-sm">
@@ -114,22 +114,56 @@ export default function Intro() {
                 </div>
               </dl>
             </Card>
-            <Card title="二元體 GF(2) (Binary field)">
-              <p className="text-sm text-slate-600">所有運算都只在 <M>{'\\{0,1\\}'}</M> 中進行：</p>
-              <Tex block>{'0+0=0,\\quad 0+1=1,\\quad 1+1=0 \\qquad (\\text{XOR})'}</Tex>
-              <Tex block>{'a\\cdot b = a \\wedge b \\qquad (\\text{AND})'}</Tex>
-              <p className="text-sm text-slate-600">因為 <M>1+1=0</M>，每個元素都是自己的負元：在 GF(2) 中<strong>減法就是加法</strong>。</p>
+            <Card title="翻轉一個位元 = 加上 1">
+              <p className="text-sm text-slate-600">
+                回到上面的實驗：雜訊能做的事只有一種——把某個位元<strong>翻轉</strong>（0 變 1、1 變 0）。如果把「翻轉」寫成「加 1」、「不動」寫成「加 0」，這套加法必須滿足：
+              </p>
+              <div className="my-3 flex flex-wrap items-center gap-4">
+                <table className="font-mono text-sm">
+                  <tbody>
+                    <tr>
+                      <th className="border-b border-r border-slate-300 px-3 py-1">+</th>
+                      <th className="border-b border-slate-300 px-3 py-1">0</th>
+                      <th className="border-b border-slate-300 px-3 py-1">1</th>
+                    </tr>
+                    {[0, 1].map((a) => (
+                      <tr key={a}>
+                        <th className="border-r border-slate-300 px-3 py-1">{a}</th>
+                        <td className="px-3 py-1 text-center">{a}</td>
+                        <td className="bg-rose-50 px-3 py-1 text-center font-bold text-rose-600">{1 - a}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <div className="text-xs text-slate-500">
+                  <div>加 0 那一欄：不動</div>
+                  <div className="text-rose-600">加 1 那一欄：翻轉</div>
+                </div>
+              </div>
+              <p className="text-sm text-slate-600">
+                也就是 XOR：翻兩次等於沒翻。乘法照常（<M>{'a \\cdot b = a \\wedge b'}</M>，AND）。只有 <M>{'\\{0,1\\}'}</M> 兩個元素、用這套加法與乘法的系統，稱為<strong>二元體 GF(2)</strong>（Binary field）。之後所有的同位檢查與矩陣乘法都在 GF(2) 裡計算。
+              </p>
+              <p className="mt-2 rounded-lg bg-amber-50 p-2 text-sm text-slate-700">
+                <strong>注意：這不是二進位數字的加法。</strong>把 1011 當成數字 11 時，<M>{'1+1 = 10_2'}</M> 會進位到左邊。但在這裡每個位元是一個獨立的位置，雜訊翻轉第 2 位不會影響第 1 位，所以<strong>不進位</strong>：<M>{'1+1=0'}</M>，各位置分開算。
+              </p>
+              <p className="mt-2 text-sm text-slate-600">
+                因為 <M>1+1=0</M>，<strong>減法就是加法</strong>：把同一個錯誤再加一次，就能把它抵銷。
+              </p>
             </Card>
           </div>
         </Stage>
 
-        <Stage kind="calculation" moduleId={ID} title="把 GF(2) 用在整串位元上">
+        <Stage kind="calculation" moduleId={ID} title="錯誤也是一個向量：r = c + e">
           <LabGrid
             main={
-              <Card title="向量加法：逐位 XOR">
-                <Tex block>{`${VA.join('')} + ${VB.join('')} = ${VA.map((b, i) => b ^ VB[i]).join('')}`}</Tex>
+              <Card title="把「哪些位元被翻轉」記成錯誤向量 e">
                 <p className="text-sm text-slate-600">
-                  每一位各自做 GF(2) 加法。一個之後會一直用到的結論：<M>{'x + y'}</M> 中的 1，恰好是 <M>x</M>、<M>y</M> <strong>不同</strong>的位置；所以 <M>{'x + y = 0 \\iff x = y'}</M>。
+                  錯誤向量 <M>e</M> 在被翻轉的位置是 1、其他位置是 0。每一位各自做 GF(2) 加法，就得到接收字。下面的值跟著最上面的實驗即時變化：
+                </p>
+                <Tex block>{`\\underbrace{${SENT.join('')}}_{c\\ \\text{(送出)}} + \\underbrace{${errVec.join('')}}_{e\\ \\text{(錯誤)}} = \\underbrace{${raw.join('')}}_{r\\ \\text{(收到)}}`}</Tex>
+                <p className="text-sm text-slate-600">
+                  一個之後會一直用到的結論：<M>{'x + y'}</M> 中的 1，恰好是 <M>x</M>、<M>y</M> <strong>不同</strong>的位置；所以 <M>{'x + y = 0 \\iff x = y'}</M>，而且 <M>{'e = r + c'}</M>。
+                  接收端不知道 <M>c</M>，所以無法直接算出 <M>e</M>——Hamming Code 的任務就是在只看到 <M>r</M> 的情況下推出 <M>e</M>。
                 </p>
               </Card>
             }
