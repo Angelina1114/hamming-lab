@@ -26,7 +26,7 @@ export default function L2Lfsr() {
       id={ID}
       lead={
         <p>
-          LFSR（Linear Feedback Shift Register，線性回授移位暫存器）是編碼器的硬體心臟：三個 1-bit 暫存器、兩個 XOR 閘，每個時脈吃進一個 bit，最後留在暫存器裡的就是檢查碼。
+          LFSR（Linear Feedback Shift Register，線性回授移位暫存器）是編碼器的硬體心臟：三個 1-bit 暫存器、兩個 XOR 閘，每個時脈吃進一個 bit，最後留在暫存器裡的就是同位位元。
         </p>
       }
       goals={[
@@ -99,7 +99,7 @@ export default function L2Lfsr() {
               </Expandable>
               <Expandable title="為什麼最後的暫存器就是 Parity？">
                 <p>
-                  每一步都維持 <M>{'R_k(x) = x^3\\,(u_1 \\dots u_k)(x) \\bmod g(x)'}</M>。4 個訊息位元讀完時，<M>{'R_4(x) = x^3u(x) \\bmod g(x)'}</M>，正是系統式編碼需要的檢查碼 p。（系統式與 <M>{'m(x)g(x)'}</M> 兩種編碼的差別見 A5。）
+                  每一步都維持 <M>{'R^{(k)}(x) = x^3\\,(u_1 \\dots u_k)(x) \\bmod g(x)'}</M>（上標 (k) 表示讀入 k 個 bit 後的整體狀態，和暫存器 R₂、R₁、R₀ 的下標無關）。4 個訊息位元讀完時，<M>{'R^{(4)}(x) = x^3u(x) \\bmod g(x)'}</M>，正是系統式編碼需要的同位位元 p。（系統式與 <M>{'m(x)g(x)'}</M> 兩種編碼的差別見 A5。）
                 </p>
               </Expandable>
             </div>
@@ -120,7 +120,7 @@ export default function L2Lfsr() {
                   左移：<M>{"R_2 \\leftarrow R_1,\\ R_1 \\leftarrow R_0,\\ R_0 \\leftarrow 0"}</M>（乘以 x）。
                 </>,
                 <>
-                  依 g(x) 回授：<M>{"R_1 \\mathrel{\\oplus}= \\text{fb},\\ R_0 \\mathrel{\\oplus}= \\text{fb}"}</M>。全部輸入完後，暫存器 = 檢查碼 p。
+                  依 g(x) 回授：<M>{"R_1 \\mathrel{\\oplus}= \\text{fb},\\ R_0 \\mathrel{\\oplus}= \\text{fb}"}</M>。全部輸入完後，暫存器 = 同位位元 p。
                 </>,
               ]}
             />
@@ -129,7 +129,7 @@ export default function L2Lfsr() {
                 上面的規則（input 在 <M>{'R_2'}</M> 端與 feedback 相加）是<strong>預乘式</strong>：每個輸入 bit 已經被放到 <M>{'x^3'}</M> 的位置，相當於自動乘上 <M>{'x^3'}</M>。所以只要輸入 4 個訊息位元 <span className="mono">{u.join('')}</span>，暫存器就停在 <M>{'x^3u(x) \\bmod g(x)'}</M>。
               </p>
               <p>
-                若把補零後的 7 個 bit <span className="mono">{[...u, 0, 0, 0].join('')}</span> 全送進這個電路，會多乘一次 <M>{'x^3'}</M>，得到 <span className="mono">{wrongRun.final.join('')}</span>（不是檢查碼）。要輸入補零後的 7 bit，必須改用「除法器」接法：輸入從 <M>{'R_0'}</M> 端進入，feedback 只取 <M>{'R_2'}</M>。下方實驗可以切換兩種接法比較。
+                若把補零後的 7 個 bit <span className="mono">{[...u, 0, 0, 0].join('')}</span> 全送進這個電路，會多乘一次 <M>{'x^3'}</M>，得到 <span className="mono">{wrongRun.final.join('')}</span>（不是同位位元）。要輸入補零後的 7 bit，必須改用「除法器」接法：輸入從 <M>{'R_0'}</M> 端進入，feedback 只取 <M>{'R_2'}</M>。下方實驗可以切換兩種接法比較。
               </p>
             </Callout>
           </>
@@ -200,9 +200,9 @@ export default function L2Lfsr() {
             <LfsrSim key={`${resetKey}-${kind}-${detailed}`} kind={kind} input={input} detailed={detailed} extraTail={input.length > 4 ? 3 : 0} />
             {kind === 'encoder' && feedZeros && (
               <div className="mt-3">
-                <Callout kind="misconception" title="結果不是檢查碼">
+                <Callout kind="misconception" title="結果不是同位位元">
                   <p>
-                    送完 7 個 bit 後暫存器是 <span className="mono">{wrongRun.final.join('')}</span>，等於 <M>{'x^3 \\cdot x^3u(x) \\bmod g(x)'}</M>；正確的檢查碼 <span className="mono">{enc.parity.join('')}</span> 早在第 4 個 bit 時就出現了。
+                    送完 7 個 bit 後暫存器是 <span className="mono">{wrongRun.final.join('')}</span>，等於 <M>{'x^3 \\cdot x^3u(x) \\bmod g(x)'}</M>；正確的同位位元 <span className="mono">{enc.parity.join('')}</span> 早在第 4 個 bit 時就出現了。
                   </p>
                 </Callout>
               </div>

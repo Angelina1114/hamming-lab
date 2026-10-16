@@ -97,17 +97,17 @@ export default function M3Syndrome() {
           <div className="prose-lab max-w-3xl">
             <p>
               傳送端送出合法 codeword <M>c</M>，通道加上錯誤 <M>e</M>，接收端得到 <M>{'r = c + e'}</M>。接收端手上只有 <M>r</M>。
-              如果能從 <M>r</M> 算出某個「只與 <M>e</M> 有關」的量，就可以推測錯誤在哪裡——這個量就是 <strong>Syndrome（症狀）</strong>。
+              如果能從 <M>r</M> 算出某個「只與 <M>e</M> 有關」的量，就可以推測錯誤在哪裡——這個量就是 <strong>症狀值（Syndrome）</strong>。
             </p>
           </div>
         </Stage>
 
         <Stage kind="definition" moduleId={ID} title="錯誤向量與 Syndrome">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <Card title="錯誤向量 Error vector">
+            <Card title="錯誤向量（Error vector）">
               <Tex block>{'r = c + e'}</Tex>
               <p className="text-sm text-slate-600">
-                <M>{'e_i = 1'}</M> 表示第 <M>i</M> 個位元被翻轉。錯誤個數 = <M>{'\\mathrm{wt}(e)'}</M>。
+                <M>e</M> 的第 <M>i</M> 位是 1，表示第 <M>i</M> 個位元被翻轉。錯誤個數 = <M>{'\\mathrm{wt}(e)'}</M>。
               </p>
             </Card>
             <Card title="Syndrome">
@@ -133,7 +133,7 @@ export default function M3Syndrome() {
         <Stage kind="visualization" moduleId={ID} title="找出與 Syndrome 相同的那一欄">
           <LabGrid
             main={
-              <Card title="H 的欄掃描 Column matching" icon={<Search className="h-4 w-4 text-fuchsia-600" />}>
+              <Card title="H 的欄掃描（Column matching）" icon={<Search className="h-4 w-4 text-fuchsia-600" />}>
                 <div className="flex flex-wrap items-center gap-5">
                   <ColumnVector bits={s} label="s =" cellClass={match >= 0 ? 'bg-fuchsia-100 text-fuchsia-800' : 'bg-emerald-50 text-emerald-700'} />
                   <ArrowRight className="h-5 w-5 text-slate-300" />
@@ -174,7 +174,7 @@ export default function M3Syndrome() {
           <LabGrid
             main={
               <Card
-                title="點擊「接收 codeword」的任意位元製造傳輸錯誤（0–7 個）"
+                title="點擊「接收字」的任意位元製造傳輸錯誤（0–7 個）"
                 actions={
                   <ResetButton
                     onClick={() => {
@@ -201,7 +201,7 @@ export default function M3Syndrome() {
                   <Row label={<>錯誤向量 e <span className="text-slate-400">wt = {weight(e)}</span></>}>
                     <BitRow bits={e} plain size="sm" states={e.map((b) => (b ? 'error' : 'muted'))} onToggle={(i) => setE((x) => flipBit(x, i))} showPositions={false} />
                   </Row>
-                  <Row label="接收 codeword r = c + e（可點擊）">
+                  <Row label="接收字 r = c + e（可點擊）">
                     <BitRow bits={out.received} layout={LAYOUT_74} states={receivedStates} onToggle={(i) => setE((x) => flipBit(x, i))} />
                   </Row>
                   <Row label="解碼器輸出（修正後）">
@@ -215,7 +215,7 @@ export default function M3Syndrome() {
             }
             aside={
               <>
-                <Card title="解碼器的判斷 Decoder decision">
+                <Card title="解碼器的判斷（Decoder decision）">
                   <div className="space-y-2 text-sm">
                     <div>
                       Syndrome <M>{`s = Hr^T = (${s.join(',')})^T`}</M>
@@ -233,7 +233,12 @@ export default function M3Syndrome() {
                       解出資料 <span className="mono font-semibold">{out.decoded.message.join('')}</span>，原始資料 <span className="mono font-semibold">{message.join('')}</span>
                     </div>
                     <div className="pt-1">
-                      <StatusBadge status={status} large zh={status === 'wrong' ? (out.undetected ? '錯誤未被偵測' : '錯誤修正 Miscorrection') : undefined} />
+                      <StatusBadge
+                        status={status}
+                        large
+                        zh={status === 'wrong' ? (out.undetected ? '未偵測錯誤' : '誤更正') : undefined}
+                        en={status === 'wrong' ? (out.undetected ? 'Undetected error' : 'Miscorrection') : undefined}
+                      />
                     </div>
                   </div>
                   {out.errorWeight >= 2 && (
@@ -243,7 +248,9 @@ export default function M3Syndrome() {
                           <p>錯誤向量 e 本身是一個合法 codeword，所以 <M>{'He^T = 0'}</M>：r 仍然是合法 codeword，解碼器完全沒有察覺。</p>
                         ) : out.miscorrection ? (
                           <p>
-                            Syndrome 剛好等於 H 的第 {out.decoded.position} 欄（= 錯誤位置所對應欄的和），解碼器以為只有一個錯誤，<strong>翻轉了原本正確的位元</strong>，結果錯誤變成 {weight(out.decoded.corrected.map((b, i) => (b ^ c[i]) as Bit))} 個。
+                            Syndrome 剛好等於 H 的第 {out.decoded.position} 欄（= 錯誤位置所對應欄的和），解碼器以為只有一個錯誤，
+                            {e[decoderIdx] ? <>翻轉了位置 {out.decoded.position}（這一位確實是錯的，但其餘錯誤仍在）</> : <strong>翻轉了原本正確的位元</strong>}
+                            ，結果錯誤變成 {weight(out.decoded.corrected.map((b, i) => (b ^ c[i]) as Bit))} 個。
                           </p>
                         ) : (
                           <p>這次恰好解回正確 codeword，但這是巧合，不是保證。</p>
@@ -287,7 +294,7 @@ export default function M3Syndrome() {
             </p>
             <div className="mt-3">
               <RelatedLinks
-                title="兩個以上的錯誤，詳細分析在第二課"
+                title="兩個以上的錯誤：詳細分析在第二課，補救方法在第 7 章"
                 links={[
                   { to: 'l2-9', text: '兩個錯誤：為什麼一定誤更正（含 21 種情況的窮舉表）' },
                   { to: 'l2-10', text: '三個錯誤：為什麼有些錯誤完全看不見' },

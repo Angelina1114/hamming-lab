@@ -71,8 +71,7 @@ export default function A4Primitive() {
                 { zh: '本原元素', en: 'Primitive Element', def: <>乘法階 = 非零元素個數（GF(8) 中是 7）的元素。它的次方會走遍所有非零元素。</> },
                 { zh: '本原多項式', en: 'Primitive Polynomial', def: <>一個不可約多項式，而且它的根 α 是本原元素。<M>{'x^3 + x + 1'}</M> 就是本原多項式。</> },
                 {
-                  zh: '為什麼 α⁷ = 1？',
-                  en: 'Lagrange',
+                  zh: 'Lagrange 定理：為什麼 α⁷ = 1？',
                   def: (
                     <>
                       7 個非零元素在乘法下構成一個群。元素的階一定整除群的大小 7。7 是質數，所以除了 1 以外每個元素的階都是 7——包括 α。因此 <M>{'\\alpha^7 = 1'}</M>，而且 <M>{'\\alpha^1, \\dots, \\alpha^6 \\ne 1'}</M>。
@@ -218,7 +217,7 @@ export default function A4Primitive() {
             <div className="flex flex-wrap gap-1.5">
               {F16.exp.map((v, i) => (
                 <span key={i} className="rounded-lg border border-slate-200 px-2 py-1 font-mono text-xs">
-                  α{i === 0 ? '⁰' : i}: {intToBits(v, 4).join('')}
+                  α{String(i).split('').map((d) => '⁰¹²³⁴⁵⁶⁷⁸⁹'[Number(d)]).join('')}: {intToBits(v, 4).join('')}
                 </span>
               ))}
             </div>

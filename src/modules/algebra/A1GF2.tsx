@@ -55,7 +55,7 @@ export default function A1GF2() {
               ]}
             />
             <Card title="GF(2) 真的是一個體嗎？（程式逐條窮舉檢查）">
-              <Checks title="體的公理 Field axioms" items={axioms.map((x) => ({ label: x.zh, pass: x.holds, detail: x.counterexample }))} />
+              <Checks title="體的公理（Field Axioms）" items={axioms.map((x) => ({ label: x.zh, pass: x.holds, detail: x.counterexample }))} />
               <p className="mt-2 text-sm text-slate-600">
                 特徵（由程式計算）：<strong>{characteristic(GF2)}</strong>。下一個單元會看到 <M>{'\\mathbb{Z}/8\\mathbb{Z}'}</M> 在同樣的檢查中失敗。
               </p>
@@ -178,7 +178,7 @@ export default function A1GF2() {
                   <BitRow bits={r} layout={LAYOUT_74} size="sm" states={r.map((_, i) => (i === flip ? 'error' : 'normal'))} onToggle={(i) => setFlip(flip === i ? null : i)} />
                 </div>
                 <div className="mt-4">
-                  <MatrixView matrix={H74} name="H" colLabels={r.map((x) => `c=${x}`)} highlightCols={r.flatMap((x, j) => (x ? [j] : []))} />
+                  <MatrixView matrix={H74} name="H" colLabels={r.map((x) => `r=${x}`)} highlightCols={r.flatMap((x, j) => (x ? [j] : []))} />
                 </div>
                 <div className="mt-3 space-y-1 text-sm">
                   {H74.map((row, i) => {
@@ -186,7 +186,7 @@ export default function A1GF2() {
                     const total = used.length;
                     return (
                       <div key={i}>
-                        <Tex>{`\\text{第 ${i + 1} 列：}\\ ${row.map((h, j) => (h ? `c_{${j + 1}}` : null)).filter(Boolean).join(' + ')} = ${row.flatMap((h, j) => (h ? [r[j]] : [])).join(' + ')} = ${total} \\equiv ${total % 2} \\pmod 2`}</Tex>
+                        <Tex>{`\\text{第 ${i + 1} 列：}\\ ${row.map((h, j) => (h ? `r_{${j + 1}}` : null)).filter(Boolean).join(' + ')} = ${row.flatMap((h, j) => (h ? [r[j]] : [])).join(' + ')} = ${total} \\equiv ${total % 2} \\pmod 2`}</Tex>
                       </div>
                     );
                   })}
@@ -199,7 +199,7 @@ export default function A1GF2() {
                   <div className="text-lg">
                     <M>{`Hr^T = (${s.join(', ')})^T`}</M>
                   </div>
-                  <p className={`mt-1 text-sm ${s.some(Boolean) ? 'text-rose-700' : 'text-emerald-700'}`}>{s.some(Boolean) ? '不是 0：有一個同位檢查失敗（第一課第 3 章的 Syndrome）' : '全部是 0：合法 codeword'}</p>
+                  <p className={`mt-1 text-sm ${s.some(Boolean) ? 'text-rose-700' : 'text-emerald-700'}`}>{s.some(Boolean) ? '不是 0：至少有一個同位檢查失敗（第一課第 3 章的 Syndrome）' : '全部是 0：合法 codeword'}</p>
                   <p className="mt-2 text-sm text-slate-600">如果把「mod 2」拿掉，整數結果會出現 2、4 這種數字，「= 0」就不再代表「同位檢查通過」。</p>
                 </Card>
                 <Derivation

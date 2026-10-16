@@ -94,7 +94,7 @@ export function CodewordGraph({ sent, received, decoded, large = false }: Props)
           <li>● 藍框「c 送出」、紅框「r 收到」、橘框「ĉ 解碼」。</li>
           <li>● 灰線連接距離剛好 3 的 codeword；沒有任何兩個 codeword 距離 1 或 2。</li>
           <li>● 節點排成圓形只是為了好看，圖上的長短沒有意義——只有「相距幾個 bit」有意義。</li>
-          {!recIsCodeword && <li>● 紅色虛線：r 到最近 codeword（與 c）的漢明距離。</li>}
+          {!recIsCodeword && <li>● 紅色虛線：r 到最近 codeword（與 c）的 Hamming 距離。</li>}
         </ul>
       </div>
     </div>

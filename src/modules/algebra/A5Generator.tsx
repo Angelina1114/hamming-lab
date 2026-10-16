@@ -59,16 +59,16 @@ export default function A5Generator() {
           <>
             <Terms
               items={[
-                { zh: '生成矩陣', en: 'Generator Matrix G', def: <>k×n 矩陣，codeword = 訊息列向量 × G。列空間就是 code。</> },
-                { zh: '生成多項式', en: 'Generator Polynomial g(x)', def: <>次數 n − k 的多項式，codeword = 訊息多項式 × g(x)。這裡 <M>{'g(x) = x^3 + x + 1'}</M>，n − k = 3。</> },
-                { zh: '位元 ↔ 多項式', en: 'Bit–polynomial correspondence', def: <>7 位元字串對應次數 ≤ 6 的多項式，<strong>最左邊是 x⁶ 的係數</strong>。例：<span className="mono">0001011</span> ↔ <M>{'x^3+x+1'}</M>。</> },
-                { zh: '多項式乘法', en: 'Polynomial multiplication over GF(2)', def: <>分配律展開 → 同次項合併 → 係數 mod 2。和 A3 的 GF(8) 乘法不同：這裡<strong>不</strong>除以任何多項式。</> },
+                { zh: '生成矩陣 G', en: 'Generator Matrix', def: <>k×n 矩陣，codeword = 訊息列向量 × G。列空間就是 code。</> },
+                { zh: '生成多項式 g(x)', en: 'Generator Polynomial', def: <>次數 n − k 的多項式，codeword = 訊息多項式 × g(x)。這裡 <M>{'g(x) = x^3 + x + 1'}</M>，n − k = 3。</> },
+                { zh: '位元 ↔ 多項式', en: 'Bit–Polynomial Correspondence', def: <>7 位元字串對應次數 ≤ 6 的多項式，<strong>最左邊是 x⁶ 的係數</strong>。例：<span className="mono">0001011</span> ↔ <M>{'x^3+x+1'}</M>。</> },
+                { zh: '多項式乘法', en: 'Polynomial Multiplication over GF(2)', def: <>分配律展開 → 同次項合併 → 係數 mod 2。和 A3 的 GF(8) 乘法不同：這裡<strong>不</strong>除以任何多項式。</> },
               ]}
             />
             <Card title="Bit ↔ Polynomial Converter（點擊位元）" actions={<ResetButton onClick={() => setWord([0, 0, 0, 1, 0, 1, 1])} />}>
               <BitPolyEditor bits={word} onToggle={(i) => setWord(flipBit(word, i) as Bit[])} />
               <p className={`mt-2 text-sm ${inCyclicCode(word) ? 'text-emerald-700' : 'text-slate-500'}`}>
-                {inCyclicCode(word) ? '✓ 這是 g(x) 的倍數（循環 Hamming Code的 codeword）' : '不是 g(x) 的倍數'}
+                {inCyclicCode(word) ? '✓ 這是 g(x) 的倍數（循環 Hamming Code 的 codeword）' : '不是 g(x) 的倍數'}
               </p>
             </Card>
           </>
@@ -116,7 +116,7 @@ export default function A5Generator() {
         ),
       }}
       example={{
-        title: '從 g(x) 建立 G_cyclic：四列 = x³g, x²g, xg, g',
+        title: '從 g(x) 建立 G_cyc：四列 = x³g, x²g, xg, g',
         body: (
           <>
             <LabGrid
@@ -217,7 +217,7 @@ export default function A5Generator() {
         misconceptions: [
           { wrong: 'Generator Polynomial 就是 Generator Matrix 的第一列。', right: 'g(x) 對應 G_cyc 的最後一列；其他列是它的左移。而且這只對 G_cyc 成立，不是第一課的 G。' },
           { wrong: 'm(x)g(x) 要除以 x³+x+1 取餘數。', right: '編碼時不取餘數：(x³+x+1)(x³+x+1) = x⁶+x²+1 是完整的乘積，次數 ≤ 6 剛好 7 位元。取餘數是 GF(8) 運算或 Syndrome 的事。' },
-          { wrong: '1011 編碼後一定是 1011xxx。', right: '非系統式編碼 m(x)g(x) 不保留訊息在前 4 位（1011 → 1000101）。系統式編碼才會（見本頁下方：1001 → 1001110）。' },
+          { wrong: '1011 編碼後一定是 1011xxx。', right: '非系統式編碼 m(x)g(x) 不保留訊息在前 4 位（1011 → 1000101）。系統式編碼才會（見本頁上方「系統式編碼」卡片：1001 → 1001110）。' },
           { wrong: '系統式 codeword 和 m(x)g(x) 是同一個字，只是寫法不同。', right: '1001 → 系統式 1001110，非系統式 1010011。兩者都是合法 codeword，但不同；只有 codeword 的「集合」相同。' },
         ],
       }}

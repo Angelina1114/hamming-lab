@@ -170,7 +170,7 @@ export function ModuleHeader({ moduleId, children }: { moduleId: string; childre
   return (
     <header className="mb-4">
       <div className="mb-1 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
-        {m.lesson === 2 ? `第二課 Lesson 2 · ${m.num}` : m.group === 'algebra' ? `代數基礎與循環碼 Algebra · ${m.num}` : m.advanced ? '進階數學 Advanced' : `模組 ${m.num} Module ${m.num}`}
+        {m.lesson === 2 ? `第二課 Lesson 2 · ${m.num}` : m.group === 'algebra' ? `代數基礎與循環碼 Algebra · ${m.num}` : m.advanced ? '進階數學 Advanced' : `第一課 Lesson 1 · ${m.num === '0' ? '導論' : `第 ${m.num} 章`}`}
         <span className="h-px flex-1 bg-slate-200" />
       </div>
       <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">{m.title}</h1>
@@ -190,7 +190,7 @@ export function PrevNext({ moduleId }: { moduleId: string }) {
         <a href={`#/${prev.id}`} className="card group flex items-center gap-3 p-4 hover:border-slate-400">
           <ChevronLeft className="h-5 w-5 text-slate-400 group-hover:-translate-x-0.5" />
           <div>
-            <div className="text-xs text-slate-400">上一章 Previous</div>
+            <div className="text-xs text-slate-400">上一頁 Previous</div>
             <div className="font-semibold text-slate-800">{prev.title}</div>
           </div>
         </a>
@@ -200,7 +200,7 @@ export function PrevNext({ moduleId }: { moduleId: string }) {
       {next && (
         <a href={`#/${next.id}`} className="card group flex items-center justify-end gap-3 p-4 text-right hover:border-slate-400">
           <div>
-            <div className="text-xs text-slate-400">下一章 Next</div>
+            <div className="text-xs text-slate-400">下一頁 Next</div>
             <div className="font-semibold text-slate-800">{next.title}</div>
           </div>
           <ChevronRight className="h-5 w-5 text-slate-400 group-hover:translate-x-0.5" />
@@ -385,14 +385,15 @@ const STATUS: Record<DecodeStatus, { cls: string; icon: typeof CheckCircle2; zh:
   wrong: { cls: 'bg-rose-600 text-white', icon: XCircle, zh: '解碼錯誤', en: 'Decoding failure' },
 };
 
-export function StatusBadge({ status, large = false, zh }: { status: DecodeStatus; large?: boolean; zh?: string }) {
+export function StatusBadge({ status, large = false, zh, en }: { status: DecodeStatus; large?: boolean; zh?: string; en?: string }) {
   const s = STATUS[status];
   const Icon = s.icon;
+  const enLabel = en ?? s.en;
   return (
     <span className={`inline-flex items-center gap-1.5 rounded-lg font-semibold shadow-sm ${s.cls} ${large ? 'px-3 py-1.5 text-sm' : 'px-2 py-0.5 text-xs'}`}>
       <Icon className={large ? 'h-4 w-4' : 'h-3.5 w-3.5'} />
       {zh ?? s.zh}
-      <span className="font-normal opacity-80">{s.en}</span>
+      {enLabel && <span className="font-normal opacity-80">{enLabel}</span>}
     </span>
   );
 }
@@ -414,9 +415,9 @@ export function Stat({ label, value, sub, tone = 'slate' }: { label: ReactNode; 
   );
 }
 
-export function Segmented<T extends string>({ value, options, onChange }: { value: T; options: { value: T; label: ReactNode }[]; onChange: (v: T) => void }) {
+export function Segmented<T extends string>({ value, options, onChange, ariaLabel }: { value: T; options: { value: T; label: ReactNode }[]; onChange: (v: T) => void; ariaLabel?: string }) {
   return (
-    <div className="inline-flex rounded-lg border border-slate-200 bg-slate-100 p-0.5" role="tablist">
+    <div className="inline-flex rounded-lg border border-slate-200 bg-slate-100 p-0.5" role="tablist" aria-label={ariaLabel}>
       {options.map((o) => (
         <button
           key={o.value}

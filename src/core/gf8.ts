@@ -1,5 +1,5 @@
 /**
- * GF(8) = GF(2)[x] / (p(x)),  p(x) = x³ + x + 1, and the cyclic Hamming code it defines.
+ * GF(8) = GF(2)[x] / (p(x)),  p(x) = x³ + x + 1, and the cyclic Hamming Code it defines.
  *
  * COORDINATE CONVENTION (cyclic code):
  *   A 7-bit word is the coefficient vector (c0, c1, …, c6) of c(x) = c0 + c1 x + … + c6 x⁶,
@@ -146,7 +146,7 @@ export function polyToTex(p: Poly, v = 'x'): string {
 }
 
 /* ------------------------------------------------------------------ */
-/* Cyclic Hamming code of length 7 with generator g(x) = x³ + x + 1     */
+/* Cyclic Hamming Code of length 7 with generator g(x) = x³ + x + 1     */
 /* ------------------------------------------------------------------ */
 
 export const CYCLIC_N = 7;

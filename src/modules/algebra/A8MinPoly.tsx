@@ -35,7 +35,7 @@ export default function A8MinPoly() {
   return (
     <AlgebraUnit
       id={ID}
-      lead={<p>A7 告訴我們：α、α²、α⁴ 必須一起當根。把這三個因式乘起來，GF(8) 的係數會神奇地全部化簡成 0 或 1——得到一個 GF(2) 多項式。它就是 α 的最小多項式，也就是 Hamming Code的生成多項式。</p>}
+      lead={<p>A7 告訴我們：α、α²、α⁴ 必須一起當根。把這三個因式乘起來，GF(8) 的係數會神奇地全部化簡成 0 或 1——得到一個 GF(2) 多項式。它就是 α 的最小多項式，也就是 Hamming Code 的生成多項式。</p>}
       why={{
         title: '我們要找「以 α 為根的 GF(2) 多項式」',
         body: (
@@ -47,14 +47,14 @@ export default function A8MinPoly() {
         ),
       }}
       what={{
-        title: '最小多項式 Minimal Polynomial',
+        title: '最小多項式（Minimal Polynomial）',
         body: (
           <Terms
             items={[
-              { zh: '最小多項式', en: 'Minimal Polynomial m_β(x)', def: <>以 β 為根、係數在 GF(2)、首項係數為 1、次數最小的多項式。</> },
-              { zh: '計算公式', en: 'Product over conjugates', def: <><M>{'m_\\beta(x) = \\prod_{\\gamma \\in \\{\\beta, \\beta^2, \\beta^4, \\dots\\}} (x + \\gamma)'}</M>：把 β 的所有共軛元素當根乘起來。</> },
-              { zh: '為什麼係數會是 0/1？', en: 'Frobenius-invariant', def: <>對 <M>{'m_\\beta'}</M> 做 Frobenius 只會把共軛元素互相交換，所以多項式不變；每個係數 <M>a</M> 都滿足 <M>{'a^2 = a'}</M>，只能是 0 或 1。</> },
-              { zh: '重要性質', en: 'Divisibility', def: <>任何以 β 為根的 GF(2) 多項式都被 <M>{'m_\\beta(x)'}</M> 整除，而且 <M>{'m_\\beta'}</M> 不可約。</> },
+              { zh: '最小多項式 m_β(x)', en: 'Minimal Polynomial', def: <>以 β 為根、係數在 GF(2)、首項係數為 1、次數最小的多項式。</> },
+              { zh: '共軛元素連乘', en: 'Product over Conjugates', def: <><M>{'m_\\beta(x) = \\prod_{\\gamma \\in \\{\\beta, \\beta^2, \\beta^4, \\dots\\}} (x + \\gamma)'}</M>：把 β 的所有共軛元素當根乘起來。</> },
+              { zh: 'Frobenius 不變性：係數只能是 0/1', en: 'Frobenius Invariance', def: <>對 <M>{'m_\\beta'}</M> 做 Frobenius 只會把共軛元素互相交換，所以多項式不變；每個係數 <M>a</M> 都滿足 <M>{'a^2 = a'}</M>，只能是 0 或 1。</> },
+              { zh: '整除性', en: 'Divisibility', def: <>任何以 β 為根的 GF(2) 多項式都被 <M>{'m_\\beta(x)'}</M> 整除，而且 <M>{'m_\\beta'}</M> 不可約。</> },
             ]}
           />
         ),
@@ -190,7 +190,7 @@ export default function A8MinPoly() {
                       <M>{'g'}</M> 必須整除 <M>{'x^7 - 1'}</M>（A6）——它確實是因式之一。
                     </li>
                     <li>
-                      若改用 <M>{'m_{\\alpha^3} = x^3+x^2+1'}</M>，得到另一個等價的 Hamming Code；若用 <M>{'(x+1)m_\\alpha'}</M>，得到 [7,3,4] 的偶重量子碼。BCH Code就是「多選幾個陪集」。
+                      若改用 <M>{'m_{\\alpha^3} = x^3+x^2+1'}</M>，得到另一個等價的 Hamming Code；若用 <M>{'(x+1)m_\\alpha'}</M>，得到 [7,3,4] 的偶重量子碼。BCH Code 就是「多選幾個陪集」。
                     </li>
                   </ul>
                 </Card>
@@ -210,7 +210,7 @@ export default function A8MinPoly() {
         misconceptions: [
           { wrong: 'α 的最小多項式是 x − α。', right: 'x − α 的係數不在 GF(2)。在 GF(2) 中，α 的最小多項式必須同時包含 α² 與 α⁴，是三次的 x³+x+1。' },
           { wrong: '每個元素的最小多項式都不同。', right: '共軛元素共用同一個最小多項式：α、α²、α⁴ 都是 x³+x+1 的根。' },
-          { wrong: '1 的最小多項式是 1。', right: 'm₁(x) = x + 1（以 1 為根），對應陪集 C₀ = {0}。' },
+          { wrong: '1 的最小多項式是 1。', right: '元素 1 = α⁰ 的最小多項式是 x + 1（以 1 為根），對應陪集 C₀ = {0}。' },
         ],
       }}
     />

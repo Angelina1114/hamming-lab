@@ -9,7 +9,7 @@ import { Venn } from '../components/Venn';
 import { Callout, Card, Derivation, Expandable, FlowBar, LabGrid, Misconceptions, ModuleHeader, PrevNext, ResetButton, Stage, StatusBadge } from '../components/Lesson';
 
 const ID = 'encode';
-const BUILD_STEPS = ['放入資料位元', '計算 P1', '計算 P2', '計算 P4', '完成 codeword'];
+const BUILD_STEPS = ['放入資訊位元', '計算 P1', '計算 P2', '計算 P4', '完成 codeword'];
 
 export default function M1Encoding() {
   const { message, toggleBit, resetMessage } = useMessage();
@@ -41,7 +41,7 @@ export default function M1Encoding() {
   return (
     <div>
       <ModuleHeader moduleId={ID}>
-        <p>把 4 個資料位元 <M>{'d_1d_2d_3d_4'}</M> 變成 7 個位元的 codeword。關鍵是：3 個同位位元各自檢查一組<strong>互相重疊</strong>的位置。</p>
+        <p>把 4 個資訊位元 <M>{'D_1D_2D_3D_4'}</M> 變成 7 個位元的 codeword。關鍵是：3 個同位位元各自檢查一組<strong>互相重疊</strong>的位置。</p>
       </ModuleHeader>
       <FlowBar moduleId={ID} />
 
@@ -53,25 +53,25 @@ export default function M1Encoding() {
               錯誤發生時，「哪些檢查失敗」就像一串二進位數字，直接寫出錯誤的位置。
             </p>
             <p>
-              要讓這件事成立，最自然的安排是：把位置編號 1 到 7 寫成二進位，第 <M>b</M> 個檢查負責「二進位表示中含有 <M>b</M>」的所有位置（<M>{'b = 1, 2, 4'}</M>）。
+              要讓這件事成立，最自然的安排是：把位置編號 1 到 7 寫成二進位，檢查 <M>{'P_b'}</M> 負責「二進位表示中含有 <M>b</M>」的所有位置（<M>{'b = 1, 2, 4'}</M>）。
             </p>
           </div>
         </Stage>
 
         <Stage kind="definition" moduleId={ID} title="標準位置排列與偶同位">
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <Card title="位置排列 Positional layout">
+            <Card title="位置排列（Positional layout）">
               <Tex block>{'[\\,P_1,\\ P_2,\\ D_1,\\ P_4,\\ D_2,\\ D_3,\\ D_4\\,]'}</Tex>
               <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-600">
-                <li>位置 1, 2, 4（2 的冪次）放同位位元 Parity bits。</li>
-                <li>位置 3, 5, 6, 7 依序放資料位元 Information bits。</li>
-                <li>偶同位 Even parity：每個檢查涵蓋的位元（含同位位元本身）總和為 0。</li>
+                <li>位置 1, 2, 4（2 的冪次）放同位位元（Parity bits）。</li>
+                <li>位置 3, 5, 6, 7 依序放資訊位元（Information bits）。</li>
+                <li>偶同位（Even parity）：每個檢查涵蓋的位元（含同位位元本身）總和 mod 2 為 0，也就是有偶數個 1。</li>
               </ul>
               <div className="mt-3">
                 <RoleLegend />
               </div>
             </Card>
-            <Card title="覆蓋表 Coverage table（滑過列可高亮）">
+            <Card title="覆蓋表（Coverage table）：滑過列可高亮">
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[340px] text-center text-sm">
                   <thead>
@@ -119,10 +119,10 @@ export default function M1Encoding() {
           </div>
         </Stage>
 
-        <Stage kind="calculation" moduleId={ID} title="在 GF(2) 中計算三個同位位元">
+        <Stage kind="calculation" moduleId={ID} title="用 mod 2 計算三個同位位元">
           <LabGrid
             main={
-              <Card title="點擊 d1–d4 改變原始資料" actions={<ResetButton onClick={resetMessage} />}>
+              <Card title="點擊 D1–D4 改變原始資料" actions={<ResetButton onClick={resetMessage} />}>
                 <div className="flex flex-wrap items-end gap-6">
                   <MessageInput message={message} onToggle={toggleBit} />
                   <div className="text-2xl text-slate-300">→</div>
@@ -152,7 +152,7 @@ export default function M1Encoding() {
                 steps={[
                   { title: '寫下偶同位條件', body: <Tex block>{'c_1 + c_3 + c_5 + c_7 = 0'}</Tex> },
                   { title: '代入位置名稱', body: <Tex block>{'P_1 + D_1 + D_2 + D_4 = 0'}</Tex> },
-                  { title: '移項（GF(2) 中減法 = 加法）', body: <Tex block>{'P_1 = D_1 + D_2 + D_4'}</Tex> },
+                  { title: '移項（mod 2 中減法 = 加法）', body: <Tex block>{'P_1 = D_1 + D_2 + D_4'}</Tex> },
                   { title: '同理得到 P2、P4', body: <Tex block>{'\\begin{aligned}P_2 &= D_1 + D_3 + D_4\\\\ P_4 &= D_2 + D_3 + D_4\\end{aligned}'}</Tex> },
                   {
                     title: `代入目前的資料 ${message.join('')}`,
@@ -208,7 +208,7 @@ export default function M1Encoding() {
                   })}
                 </div>
                 <motion.div key={build} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-3 min-h-[48px] text-sm text-slate-700">
-                  {build === 0 && <p>先把 d1–d4 放進位置 3, 5, 6, 7。同位位元暫時未知（?）。</p>}
+                  {build === 0 && <p>先把 D1–D4 放進位置 3, 5, 6, 7。同位位元暫時未知（?）。</p>}
                   {build >= 1 && build <= 3 && <Tex>{pTex(build - 1)}</Tex>}
                   {build === 4 && (
                     <p>
@@ -258,7 +258,7 @@ export default function M1Encoding() {
                 }
               >
                 <p className="mb-1 text-sm text-slate-600">
-                  資料位元已固定為 <span className="mono font-semibold text-data-600">{challengeMsg.join('')}</span>。只有同位位元可以點擊。
+                  資訊位元已固定為 <span className="mono font-semibold text-data-600">{challengeMsg.join('')}</span>。只有同位位元可以點擊。
                 </p>
                 <Venn
                   word={challengeWord}
@@ -274,7 +274,7 @@ export default function M1Encoding() {
                       <Trophy className="h-4 w-4" /> 正確！這是合法 codeword
                     </span>
                   ) : (
-                    <StatusBadge status="detected" zh="還有圓圈是奇數" />
+                    <StatusBadge status="detected" zh="還有圓圈是奇數" en="Not a codeword yet" />
                   )}
                 </div>
               </Card>
@@ -283,20 +283,20 @@ export default function M1Encoding() {
               <>
                 <Misconceptions
                   items={[
-                    { wrong: '同位位元只檢查資料位元，自己不算在內。', right: '偶同位的條件是「整個圓圈（含同位位元本身）有偶數個 1」，所以 P1 = D1⊕D2⊕D4。' },
-                    { wrong: '⊕ 就是一般加法，1⊕1 = 2。', right: '在 GF(2) 中 1 + 1 = 0。只在乎奇偶性。' },
-                    { wrong: '同位位元一定放在資料後面。', right: '本課程採用「位置 1, 2, 4 放同位位元」的標準排列；其他書可能使用系統形式 [D | P]，兩者是座標排列不同的等價碼。' },
+                    { wrong: '同位位元只檢查資訊位元，自己不算在內。', right: '偶同位的條件是「整個圓圈（含同位位元本身）有偶數個 1」，所以 P1 = D1⊕D2⊕D4。' },
+                    { wrong: '⊕ 就是一般加法，1⊕1 = 2。', right: '這裡的加法是 mod 2：1 + 1 = 2 ≡ 0，不進位，只在乎奇偶。' },
+                    { wrong: '同位位元一定放在資料後面。', right: '第一課採用「位置 1, 2, 4 放同位位元」的標準排列；第二課（以及許多教科書）改用系統形式 [D | P]（c = u‖p），兩者是座標排列不同的等價碼。' },
                   ]}
                 />
                 <Expandable title="為什麼每個位置都被不同的檢查組合覆蓋？">
-                  <p>位置 1–7 的二進位表示 001, 010, …, 111 恰好是所有非零的 3 位元字串，而且兩兩不同。位置 j 被 P_b 覆蓋 ⇔ j 的二進位第 b 位是 1，因此「覆蓋 j 的檢查集合」就是 j 的二進位表示——不同位置自然得到不同的集合。</p>
+                  <p>位置 1–7 的二進位表示 001, 010, …, 111 恰好是所有非零的 3 位元字串，而且兩兩不同。位置 j 被 P_b 覆蓋 ⇔ j 的二進位表示含有 b（b = 1, 2, 4 依序對應最低位、第二位、第三位），因此「覆蓋 j 的檢查集合」就是 j 的二進位表示——不同位置自然得到不同的集合。</p>
                 </Expandable>
               </>
             }
           />
         </Stage>
 
-        <Stage kind="conclusion" moduleId={ID} title="編碼 = 三個 GF(2) 線性方程">
+        <Stage kind="conclusion" moduleId={ID} title="編碼 = 三個 mod 2 線性方程">
           <Callout kind="key" title="結論">
             <p>
               Hamming(7,4) 的編碼只用到 XOR：<M>{'P_1 = D_1\\oplus D_2\\oplus D_4'}</M>、<M>{'P_2 = D_1\\oplus D_3\\oplus D_4'}</M>、<M>{'P_4 = D_2\\oplus D_3\\oplus D_4'}</M>。

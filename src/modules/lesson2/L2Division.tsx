@@ -24,7 +24,7 @@ export default function L2Division() {
   const res = useMemo(() => longDivision(dividend, G_MSB), [dividend]);
   const lfsr = useMemo(() => runLfsr(dividend, 'divider'), [dividend]);
 
-  // q(x)g(x) + r(x) must reproduce the dividend
+  // q(x)g(x) + ρ(x) must reproduce the dividend
   const qg = polyMul(msbToPoly(res.quotient), msbToPoly(G_MSB));
   const recon = vecAdd(polyToMsb(qg, 7), [0, 0, 0, 0, ...res.remainder] as Bit[]);
 
@@ -59,8 +59,8 @@ export default function L2Division() {
         title: '多項式除法定理',
         body: (
           <Card>
-            <p className="text-sm text-slate-700">對任何多項式 <M>{'a(x)'}</M> 與非零的 <M>{'g(x)'}</M>，存在唯一的商 <M>{'q(x)'}</M> 與餘數 <M>{'r(x)'}</M>：</p>
-            <Tex block>{'a(x) = q(x)\\,g(x) + r(x),\\qquad \\deg r(x) < \\deg g(x) = 3'}</Tex>
+            <p className="text-sm text-slate-700">對任何多項式 <M>{'a(x)'}</M> 與非零的 <M>{'g(x)'}</M>，存在唯一的商 <M>{'q(x)'}</M> 與餘數 <M>{'\\rho(x)'}</M>（不寫成 <M>{'r(x)'}</M>，因為從 2-4 起 <M>{'r(x)'}</M> 代表接收字）：</p>
+            <Tex block>{'a(x) = q(x)\\,g(x) + \\rho(x),\\qquad \\deg \\rho(x) < \\deg g(x) = 3'}</Tex>
             <p className="text-sm text-slate-700">位元字串與多項式一一對應（最左邊 = 最高次）：</p>
             <div className="mt-1 space-y-1 text-sm">
               <div>
@@ -85,7 +85,7 @@ export default function L2Division() {
               <>看除數對齊位置下的位元：若是 1，在商寫 1，並把除數與這 4 位做 XOR。</>,
               <>若是 0，在商寫 0，不做 XOR（等於減去 0）。</>,
               <>把除數往右移一格，重複，直到除數的最右邊對齊被除數的最右邊。</>,
-              <>最後 3 位就是餘數；它就是檢查碼 p。</>,
+              <>最後 3 位就是餘數；它就是同位位元 p。</>,
             ]}
           />
         ),
@@ -174,11 +174,11 @@ export default function L2Division() {
         ),
       }}
       verify={{
-        title: '驗算：q(x)g(x) + r(x) = 被除數',
+        title: '驗算：q(x)g(x) + ρ(x) = 被除數',
         body: (
           <>
             <Card>
-              <Tex block>{`q(x)\\,g(x) + r(x) = (${msbToTex(res.quotient)})(x^3+x+1) + (${msbToTex(res.remainder)}) = ${msbToTex(recon)}`}</Tex>
+              <Tex block>{`q(x)\\,g(x) + \\rho(x) = (${msbToTex(res.quotient)})(x^3+x+1) + (${msbToTex(res.remainder)}) = ${msbToTex(recon)}`}</Tex>
             </Card>
             <Checks
               items={[

@@ -123,7 +123,7 @@ export default function L2Xor() {
               </div>
             </div>
             <div className="mt-4 rounded-xl border-2 border-emerald-300 bg-emerald-50 p-3 text-sm">
-              Recovered Message <span className="mono font-bold">{d.message.join('')}</span> {o.success ? '=' : '≠'} Original Message <span className="mono font-bold">{u.join('')}</span> {o.success ? '✓' : '✗'}
+              還原訊息（Recovered Message）û = <span className="mono font-bold">{d.message.join('')}</span> {o.success ? '=' : '≠'} 原始訊息（Original Message）u = <span className="mono font-bold">{u.join('')}</span> {o.success ? '✓' : '✗'}
             </div>
           </Card>
         ),

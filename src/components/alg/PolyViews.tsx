@@ -69,7 +69,7 @@ export function PolyMulTable({ t, revealed = Infinity, aName = 'a(x)', bName = '
         {done && <Row label={<strong className="text-emerald-700">mod 2</strong>} vals={t.result} cls={() => 'rounded bg-emerald-50 text-emerald-800'} />}
       </div>
       <div className="mt-2 text-xs text-slate-500">
-        {bName} 中每一個 1 產生一列「{aName} 乘上那一項」；同一欄的 1 是同類項，個數取 mod 2（橘色 = 2 個以上，會互相抵銷）。
+        {bName} 中每一個 1 產生一列「{aName} 乘上那一項」；同一欄的 1 是同類項，個數取 mod 2（橘色 = 2 個以上：每兩個互相抵銷，個數為奇數時留下 1）。
       </div>
     </div>
   );

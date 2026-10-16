@@ -276,7 +276,7 @@ export function OverflowViz({ large = false }: { large?: boolean }) {
   const caption = [
     <>第一次輸入 1：預乘式電路把它放在 <M>x^3</M> 的位置——但暫存器只有 <M>x^2, x, 1</M> 三格，<M>x^3</M> 「溢出」。</>,
     <>
-      在 GF(2) 中 <M>{'g(x) = x^3 + x + 1 \\equiv 0'}</M>，可以任意加上 <M>g(x)</M>（加法 = 減法）。
+      在 mod <M>{'g(x)'}</M> 的世界裡 <M>{'g(x) = x^3 + x + 1 \\equiv 0'}</M>，所以可以任意加上 <M>g(x)</M>（GF(2) 中加法 = 減法）。
     </>,
     <>
       <M>{'x^3 + (x^3 + x + 1) = x + 1'}</M>：<M>x^3</M> 抵消，回授到 <M>x</M> 與 <M>1</M> 的位置 → 暫存器 <strong className="mono">011</strong>。這就是 <M>{'x^3 \\equiv x + 1 \\pmod{g(x)}'}</M>。

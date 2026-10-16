@@ -8,6 +8,7 @@ import {
   encodeCyclic,
   errorVector,
   evalAtAlphaMsb,
+  expLabel,
   runLfsr,
   simulateL2,
   simulateSecdedL2,
@@ -31,15 +32,15 @@ interface NodeDef {
 export const FLOW_NODES: NodeDef[] = [
   { id: 'u', col: 'enc', zh: '原始資料 u', en: 'Message', desc: '要保護的 4 個資訊位元。視為多項式 u(x)，最左邊是 x³ 的係數。' },
   { id: 'lfsr', col: 'enc', zh: 'LFSR / 多項式除法', en: 'LFSR / Polynomial Division', desc: '計算 x³u(x) mod g(x)。硬體用 3 個暫存器的 LFSR，一個時脈處理一個 bit。' },
-  { id: 'parity', col: 'enc', zh: '檢查位元 p', en: 'Parity Bits', desc: 'LFSR 最後的暫存器內容就是 3 個檢查位元（餘數）。' },
+  { id: 'parity', col: 'enc', zh: '同位位元 p', en: 'Parity Bits', desc: 'LFSR 最後的暫存器內容就是 3 個同位位元（餘數）。' },
   { id: 'codeword', col: 'enc', zh: 'Codeword c', en: 'Codeword', desc: 'c = u ‖ p，即 c(x) = x³u(x) + p(x)，一定被 g(x) 整除。' },
-  { id: 'overall', col: 'enc', zh: '總同位位元', en: 'Overall Parity', secdedOnly: true, desc: 'SECDED 模式：在 7 位元 codeword 後面加 1 位偶同位，使 8 個位元中 1 的個數為偶數。' },
+  { id: 'overall', col: 'enc', zh: '整體同位位元', en: 'Overall Parity', secdedOnly: true, desc: 'SECDED 模式：在 7 位元 codeword 後面加 1 位偶同位，使 8 個位元中 1 的個數為偶數。' },
   { id: 'channel', col: 'ch', zh: '通道', en: 'Channel', desc: '雜訊把某些位元翻轉：r = c ⊕ e。e 中的 1 就是錯誤位置。' },
   { id: 'received', col: 'ch', zh: '接收字 r', en: 'Received Word', desc: '接收端只看得到 r，不知道 c 與 e。' },
   { id: 'buffer', col: 'ch', zh: '緩衝區', en: 'Buffer', desc: '計算 Syndrome 需要讀完全部 n 個位元，所以接收字先存在緩衝區，等定位完成再做更正。' },
-  { id: 'syndrome', col: 'dec', zh: 'Syndrome（症狀值）', en: 'Syndrome', desc: 'S(x) = r(x) mod g(x) = e(x) mod g(x)：只和錯誤有關。' },
+  { id: 'syndrome', col: 'dec', zh: '症狀值 S', en: 'Syndrome', desc: 'S(x) = r(x) mod g(x) = e(x) mod g(x)：只和錯誤有關。' },
   { id: 'secdedchk', col: 'dec', zh: 'SECDED 判斷', en: 'Overall Parity Check', secdedOnly: true, desc: '重新計算 8 個位元的同位 q，與 Syndrome 一起分辨 0、1、2 個錯誤。' },
-  { id: 'locator', col: 'dec', zh: '錯誤定位多項式', en: 'Error Locator', desc: 'S₁ = S(α) ∈ GF(8)，σ(z) = 1 + S₁z。' },
+  { id: 'locator', col: 'dec', zh: '錯誤定位多項式', en: 'Error Locator Polynomial', desc: 'S₁ = S(α) ∈ GF(8)，σ(z) = 1 + S₁z。' },
   { id: 'search', col: 'dec', zh: 'Chien Search / 查表', en: 'Chien Search / Lookup', desc: '找出 σ(z) 的根（或直接查 Syndrome 表），得到錯誤的次方 i。' },
   { id: 'logic', col: 'dec', zh: '更正邏輯', en: 'Correction Logic', desc: '決定要不要更正：S = 0 不動；單一錯誤就產生錯誤向量 ê；SECDED 偵測到雙錯時拒絕更正。' },
   { id: 'xor', col: 'dec', zh: 'XOR 更正', en: 'XOR Correction', desc: 'ĉ = r ⊕ ê：在錯誤位置翻轉一個位元。' },
@@ -125,7 +126,7 @@ export function FlowDiagram({ u, errors, secded, method, stepper, large = false 
     secdedchk: { data: <span className="font-mono text-[13px]">q = {so.result.parity}（{so.result.parity ? '奇' : '偶'}）</span>, op: <>{secdedLabel(so.result.case)}</> },
     locator: { data: <M>{d.field === 0 ? '\\sigma(z)=1' : `\\sigma(z) = 1 + ${aTex(d.field)}z`}</M>, op: <M>{`S_1 = S(\\alpha) = ${aTex(d.field)}`}</M> },
     search: {
-      data: <span className="text-[13px]">{d.field === 0 ? '無根 → 無錯誤' : `位置 ${d.position}（x^${d.exponent}）`}</span>,
+      data: <span className="text-[13px]">{d.field === 0 ? '無根 → 無錯誤' : `位置 ${d.position}（${expLabel(d.exponent)}）`}</span>,
       op: method === 'lookup' ? <>查表 S → 位置</> : <M>{root ? `\\sigma(\\alpha^{${root.j}}) = 0 \\Rightarrow i = ${root.exponent}` : '\\text{no root}'}</M>,
     },
     logic: {
@@ -150,9 +151,9 @@ export function FlowDiagram({ u, errors, secded, method, stepper, large = false 
     },
     flag: {
       data: secded ? (
-        so.result.uncorrectable ? <StatusBadge status="detected" zh="Uncorrectable Error" /> : so.success ? <StatusBadge status={so.errorCount ? 'corrected' : 'ok'} /> : <StatusBadge status="wrong" />
+        so.result.uncorrectable ? <StatusBadge status="detected" zh="偵測到無法更正的錯誤" en="Uncorrectable error" /> : so.success ? <StatusBadge status={so.errorCount ? 'corrected' : 'ok'} /> : <StatusBadge status="wrong" />
       ) : (
-        <StatusBadge status={status.status} zh={status.zh} />
+        <StatusBadge status={status.status} zh={status.zh} en={status.en} />
       ),
       op: <>旗標 = {secded ? (so.result.uncorrectable ? '1（不可更正）' : '0') : o.detected ? '偵測到並嘗試更正' : '未偵測到錯誤'}</>,
     },
@@ -232,5 +233,5 @@ export function FlowDiagram({ u, errors, secded, method, stepper, large = false 
 }
 
 function secdedLabel(c: string) {
-  return c === 'no-error' ? 'S = 0、q 偶 → 無錯誤' : c === 'single' ? 'S ≠ 0、q 奇 → 單一錯誤，更正' : c === 'overall' ? 'S = 0、q 奇 → 總同位位元錯誤' : 'S ≠ 0、q 偶 → 雙重錯誤，不更正';
+  return c === 'no-error' ? 'S = 0、q 偶 → 無錯誤' : c === 'single' ? 'S ≠ 0、q 奇 → 單一錯誤，更正' : c === 'overall' ? 'S = 0、q 奇 → 整體同位位元錯誤' : 'S ≠ 0、q 偶 → 雙重錯誤，不更正';
 }

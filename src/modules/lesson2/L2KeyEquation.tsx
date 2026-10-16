@@ -74,7 +74,7 @@ export default function L2KeyEquation() {
                   body: (
                     <>
                       <Tex block>{'\\sigma(z) = \\prod_{\\ell}(1 + X_\\ell z) = 1 + Xz = 1 + S_1 z'}</Tex>
-                      <p>一般 BCH Code的 Key Equation 是 <M>{'S(z)\\sigma(z) \\equiv \\Omega(z) \\pmod{z^{2t}}'}</M>；當 t = 1 時它化簡為 <M>{'\\sigma_1 = S_1'}</M>。</p>
+                      <p>一般 BCH Code 的 Key Equation 是 <M>{'S(z)\\sigma(z) \\equiv \\Omega(z) \\pmod{z^{2t}}'}</M>；當 t = 1 時它化簡為 <M>{'\\sigma_1 = S_1'}</M>。</p>
                     </>
                   ),
                 },
@@ -120,7 +120,7 @@ export default function L2KeyEquation() {
                 { label: <>元素表：1, α, …, α⁶ = {ALPHA_POW.map((a) => fieldToBits(a).join('')).join(' ')}</>, pass: ALPHA_POW.map((a) => fieldToBits(a).join('')).join(' ') === '001 010 100 011 110 111 101' },
                 { label: <>α⁷ = 1</>, pass: alphaPow(7) === 1 },
                 { label: <>7 個非零元素都是 α 的次方</>, pass: new Set(ALPHA_POW).size === 7 },
-                { label: <>錯誤在 x^{i}：S₁ = α^{i}（目前 S = {S.join('')}）</>, pass: S1 === alphaPow(i) },
+                { label: <>錯誤在 <M>{`x^{${i}}`}</M>：<M>{`S_1 = \\alpha^{${i}}`}</M>（目前 S = {S.join('')}）</>, pass: S1 === alphaPow(i) },
                 { label: <>預設例子 S = 111 = α⁵</>, pass: bitsToField([1, 1, 1] as Bit[]) === alphaPow(5) },
               ]}
             />

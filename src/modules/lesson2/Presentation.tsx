@@ -39,10 +39,10 @@ interface Slide {
 }
 
 const SECDED_ROWS = [
-  ['S = 0', '偶 Even', 'No Error', 'ok'],
-  ['S ≠ 0', '奇 Odd', 'Single Error → Correct', 'corrected'],
-  ['S ≠ 0', '偶 Even', 'Double Error → Do Not Correct', 'detected'],
-  ['S = 0', '奇 Odd', 'Overall Parity Bit Error', 'corrected'],
+  ['S = 0', '偶（Even）', 'No Error', 'ok'],
+  ['S ≠ 0', '奇（Odd）', 'Single Error → Correct', 'corrected'],
+  ['S ≠ 0', '偶（Even）', 'Double Error → Do Not Correct', 'detected'],
+  ['S = 0', '奇（Odd）', 'Overall Parity Bit Error', 'corrected'],
 ] as const;
 
 const SLIDES: Slide[] = [
@@ -179,21 +179,21 @@ const SLIDES: Slide[] = [
   },
   {
     title: '2-9 兩個錯誤：Miscorrection',
-    sub: '修正後合法 ≠ 還原正確',
+    sub: '更正後合法 ≠ 還原正確',
     steps: () => 1,
-    render: () => <FixedScenario initial={[2, 7]} max={2} />,
+    render: (_s, c) => <FixedScenario u={c.u} method={c.method} initial={[2, 7]} max={2} />,
   },
   {
     title: '2-10 三個錯誤：Undetected Error',
     sub: 'e(x) = g(x) ⇒ S = 0',
     steps: () => 1,
-    render: () => <FixedScenario initial={[4, 6, 7]} max={3} />,
+    render: (_s, c) => <FixedScenario u={c.u} method={c.method} initial={[4, 6, 7]} max={3} />,
   },
   {
     title: '2-11 SECDED',
     sub: '只在「至多兩個錯誤」時保證',
     steps: () => 1,
-    render: () => <SecdedSlide />,
+    render: (_s, c) => <SecdedSlide u={c.u} />,
   },
   {
     title: '2-12 小型範例 vs 實際參數',
@@ -202,7 +202,7 @@ const SLIDES: Slide[] = [
       const a = hammingParams(3);
       const b = hammingParams(7);
       const rows: [string, string, string][] = [
-        ['有限體 / p(x)', 'GF(8), x³+x+1', 'GF(128), x⁷+x³+1'],
+        ['有限體 / g(x)', 'GF(8), x³+x+1', 'GF(128), x⁷+x³+1'],
         ['Hamming', `(${a.n},${a.k},3)`, `(${b.n},${b.k},3)`],
         ['Extended', `(${a.nExt},${a.kExt},4)`, `(${b.nExt},${b.kExt},4)`],
         ['Code Rate', `4/7 ≈ ${(a.rate * 100).toFixed(2)}%`, `120/128 = ${(b.rateExt * 100).toFixed(2)}%（Ext.）`],
@@ -264,20 +264,20 @@ function ReceivedRow({ c }: { c: Ctx }) {
   );
 }
 
-function FixedScenario({ initial, max }: { initial: number[]; max: number }) {
+function FixedScenario({ u, method, initial, max }: { u: Bit[]; method: L2Method; initial: number[]; max: number }) {
   const [errors, setErrors] = useState(initial);
-  const o = simulateL2(DEFAULT_U, errors, 'chien');
+  const o = simulateL2(u, errors, method);
   return (
     <div className="space-y-3">
-      <DecodeReport o={o} method="chien" large onToggle={(i) => setErrors(toggleError(errors, i + 1, max))} />
+      <DecodeReport o={o} method={method} large onToggle={(i) => setErrors(toggleError(errors, i + 1, max))} />
       <L2Legend />
     </div>
   );
 }
 
-function SecdedSlide() {
+function SecdedSlide({ u }: { u: Bit[] }) {
   const [errors, setErrors] = useState<number[]>([2, 7]);
-  const so = simulateSecdedL2(DEFAULT_U, errors);
+  const so = simulateSecdedL2(u, errors);
   const r = so.result;
   const idx = ['no-error', 'single', 'double', 'overall'].indexOf(r.case);
   return (

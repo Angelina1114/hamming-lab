@@ -129,11 +129,11 @@ export function XorView({ r, e, stepper, large = false }: { r: Bit[]; e: Bit[]; 
 /* Decode report                                                       */
 /* ------------------------------------------------------------------ */
 
-export function outcomeStatus(o: L2Outcome): { status: DecodeStatus; zh?: string } {
+export function outcomeStatus(o: L2Outcome): { status: DecodeStatus; zh?: string; en?: string } {
   if (o.errorCount === 0 && !o.detected) return { status: 'ok' };
   if (o.success) return { status: 'corrected' };
-  if (o.undetected) return { status: 'wrong', zh: '未偵測錯誤 Undetected' };
-  return { status: 'wrong', zh: '誤更正 Miscorrection' };
+  if (o.undetected) return { status: 'wrong', zh: '未偵測錯誤', en: 'Undetected error' };
+  return { status: 'wrong', zh: '誤更正', en: 'Miscorrection' };
 }
 
 export function receivedStates(e: Bit[]): BitState[] {
@@ -202,7 +202,7 @@ export function DecodeReport({ o, method, large = false, onToggle }: { o: L2Outc
         <span className={`ml-2 font-semibold ${o.success ? 'text-emerald-700' : 'text-rose-700'}`}>{o.success ? '✓ 相同' : '✗ 不同'}</span>
       </Line>
       <div className="flex flex-wrap items-center gap-2 pt-1">
-        <StatusBadge status={st.status} large zh={st.zh} />
+        <StatusBadge status={st.status} large zh={st.zh} en={st.en} />
         <span className="chip border border-slate-200 bg-white text-slate-600">偵測到錯誤：{o.detected ? '是' : '否'}</span>
         <span className="chip border border-slate-200 bg-white text-slate-600">誤更正：{o.miscorrection ? '是' : '否'}</span>
         <span className="chip border border-slate-200 bg-white text-slate-600">錯誤數：{o.errorCount}</span>

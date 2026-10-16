@@ -41,7 +41,7 @@ export default function A0Map() {
         body: (
           <Plain>
             <p>
-              第一課用 GF(2) 上的矩陣 H、G 就完整建構了 Hamming(7,4)。這是對的，而且永遠是對的。這一章要說明的是：GF(8)、生成多項式、循環碼、最小多項式<strong>不是另一個 code</strong>，而是看同一個 code 的另一種方式，它多帶來三件事：
+              第一課用 GF(2) 上的矩陣 H、G 就完整建構了 Hamming(7,4)。這是對的，而且永遠是對的。這一章要說明的是：GF(8)、生成多項式、循環碼、最小多項式<strong>不是另一種 code</strong>，而是看同一個 Hamming Code 的另一種方式（這裡的循環版本和第一課的 code 只差一個座標排列，A9 會證明兩者等價），它多帶來三件事：
             </p>
             <ol className="ml-5 list-decimal space-y-1">
               <li><strong>更省的編碼器</strong>：整個 G 濃縮成一個多項式 g(x)，硬體是三個暫存器的 LFSR（A5，以及第二課 2-2）。</li>
@@ -135,8 +135,8 @@ export default function A0Map() {
           { to: 'l2-1', text: '第二課：完整的編碼／解碼流水線（本章的終點）' },
         ],
         misconceptions: [
-          { wrong: '有了多項式方法，第一課的矩陣方法就過時了。', right: '兩者描述同一個 code（A9 證明）。矩陣適合分析，多項式適合硬體與推廣。' },
-          { wrong: '要先學完抽象代數才能理解 Hamming Code。', right: '第一課完全不需要；本章只介紹「理解循環 Hamming Code所需」的最少抽象代數。' },
+          { wrong: '有了多項式方法，第一課的矩陣方法就過時了。', right: '兩者描述的是等價的 code（只差一個座標排列，A9 證明）。矩陣適合分析，多項式適合硬體與推廣。' },
+          { wrong: '要先學完抽象代數才能理解 Hamming Code。', right: '第一課完全不需要；本章只介紹「理解循環 Hamming Code 所需」的最少抽象代數。' },
         ],
       }}
     />

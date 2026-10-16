@@ -53,9 +53,9 @@ export default function A2WhyGF8() {
             <Terms
               items={[
                 { zh: '擴張體', en: 'Extension Field', def: <>把 GF(2) 擴大成更大的體。GF(8) 的每個元素都寫成 <M>{'a + b\\alpha + c\\alpha^2'}</M>，其中 <M>{'a,b,c \\in \\mathrm{GF}(2)'}</M>。</> },
-                { zh: '元素個數', en: 'Order of the field', def: <>每個係數有 2 種選擇，共 <M>{'2^3 = 8'}</M> 個元素，所以叫 GF(8) 或 <M>{'\\mathrm{GF}(2^3)'}</M>。</> },
+                { zh: '元素個數', en: 'Order of the Field', def: <>每個係數有 2 種選擇，共 <M>{'2^3 = 8'}</M> 個元素，所以叫 GF(8) 或 <M>{'\\mathrm{GF}(2^3)'}</M>。</> },
                 { zh: '加法', en: 'Addition', def: <>係數逐項在 GF(2) 中相加 = 三位元 XOR。</> },
-                { zh: 'α 是什麼？', en: 'α', def: <>暫時把 α 想成一個「新的符號」，滿足某個規則（A3 會揭曉是 <M>{'\\alpha^3 = \\alpha + 1'}</M>），讓乘法結果永遠留在這 8 個元素裡。</> },
+                { zh: 'α 是什麼？', def: <>暫時把 α 想成一個「新的符號」，滿足某個規則（A3 會揭曉是 <M>{'\\alpha^3 = \\alpha + 1'}</M>），讓乘法結果永遠留在這 8 個元素裡。</> },
               ]}
             />
             <Card title="GF(8) 元素表：點擊元素">
@@ -161,7 +161,7 @@ export default function A2WhyGF8() {
                 <p className="mt-3 text-sm text-slate-700">
                   第 {col + 1} 欄（由上而下）是 ({column(H74, col).join(', ')})。把它讀成 <M>{'1, \\alpha, \\alpha^2'}</M> 的係數，就是 GF(8) 元素 <M>{gf8PolyTex(col + 1)}</M>（3 位元寫作 <span className="mono">{gf8Bits(col + 1)}</span>）。
                 </p>
-                <p className="mt-2 text-sm text-slate-600">7 個欄剛好用完 GF(8) 的 7 個非零元素——這不是巧合，Hamming Code的 H 就是「列出所有非零元素」。</p>
+                <p className="mt-2 text-sm text-slate-600">7 個欄剛好用完 GF(8) 的 7 個非零元素——這不是巧合，Hamming Code 的 H 就是「列出所有非零元素」。</p>
               </Card>
             }
             aside={
@@ -195,7 +195,7 @@ export default function A2WhyGF8() {
         ],
         misconceptions: [
           { wrong: 'GF(8) 就是 {0,1,…,7} 做 mod 8 的運算。', right: 'ℤ/8 中 2·4 = 0、2 沒有反元素，不是體。GF(8) 的元素是 α 的多項式，加法是 XOR，乘法另有規則。' },
-          { wrong: '有了 GF(8)，GF(2) 的矩陣方法就錯了。', right: '兩種方法描述同一個 code（A9 會證明）。GF(8) 提供的是更多結構：乘法、根、多項式。' },
+          { wrong: '有了 GF(8)，GF(2) 的矩陣方法就錯了。', right: '兩種方法描述的是等價的 code（只差一個座標排列，A9 會證明）。GF(8) 提供的是更多結構：乘法、根、多項式。' },
           { wrong: '3 位元字串 101 代表數字 5。', right: '在 GF(8) 中 101 代表 α² + 1。把它當成整數 5 去做乘法會得到錯的答案。' },
         ],
       }}

@@ -24,14 +24,14 @@ export default function L2TwoErrors() {
       id={ID}
       lead={
         <p>
-          這一章非常重要：兩個錯誤時，解碼器<strong>不會</strong>失敗得很明顯。它會很有自信地「更正」一個本來正確的位元，交出一個通過驗證、卻是錯的 codeword。這叫做 <strong>Miscorrection（誤更正）</strong>。
+          這一章非常重要：兩個錯誤時，解碼器<strong>不會</strong>失敗得很明顯。它會很有自信地「更正」一個本來正確的位元，交出一個通過驗證、卻是錯的 codeword。這叫做 <strong>誤更正（Miscorrection）</strong>。
         </p>
       }
       goals={[
         '計算兩個錯誤時的 Syndrome：S = αᵃ + αᵇ',
-        '追蹤單錯解碼器如何翻轉第三個 bit',
+        '追蹤單錯解碼器如何再翻轉一個本來正確的 bit（錯誤變成 3 個）',
         <>
-          理解「修正後 <M>{'\\hat c(\\alpha) = 0'}</M>」不代表還原正確
+          理解「更正後 <M>{'\\hat c(\\alpha) = 0'}</M>」不代表還原正確
         </>,
         <>
           由 <M>{'d_{\\min} = 3'}</M> 推出 <M>{'t = 1'}</M>
@@ -57,7 +57,7 @@ export default function L2TwoErrors() {
             <Tex block>{'\\text{預設：}\\ e(x) = x^5 + 1,\\quad S = \\alpha^5 + 1 = 111 \\oplus 001 = 110 = \\alpha^4 \\Rightarrow \\text{翻轉 } x^4\\ (\\text{第 3 個 bit})'}</Tex>
             <Tex block>{`d_{\\min} = ${dmin} \\;\\Rightarrow\\; t = \\left\\lfloor \\tfrac{d_{\\min}-1}{2} \\right\\rfloor = ${correctionCapability(dmin)}`}</Tex>
             <p className="text-sm text-slate-700">
-              兩個錯誤後 <M>{'d(r, c) = 2'}</M>；因為 Hamming Code是完美碼，每個字串都恰好在某個 codeword 的距離 1 以內，所以存在 <M>{"c'"}</M> 使 <M>{"d(r, c') = 1 < 2"}</M>。最近 codeword 解碼必然選錯。
+              兩個錯誤後 <M>{'d_H(r, c) = 2'}</M>；因為 Hamming Code 是完美碼，每個字串都恰好在某個 codeword 的距離 1 以內，所以存在 <M>{"c'"}</M> 使 <M>{"d_H(r, c') = 1 < 2"}</M>。最近 codeword 解碼必然選錯。
             </p>
           </Card>
         ),
@@ -148,7 +148,7 @@ export default function L2TwoErrors() {
                 </table>
               </div>
             </Card>
-            <Callout kind="warning" title="即使修正後 Syndrome = 0，也不代表還原正確">
+            <Callout kind="warning" title="即使更正後 Syndrome = 0，也不代表還原正確">
               <p>每一列的輸出都是合法 codeword（再算一次 Syndrome 會得到 000），但沒有一列還原出原訊息。Hamming(7,4) 只保證 <M>{'t = 1'}</M>。</p>
             </Callout>
           </>

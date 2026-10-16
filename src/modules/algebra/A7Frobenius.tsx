@@ -75,12 +75,12 @@ export default function A7Frobenius() {
               steps={[
                 { title: '照常展開', body: <Tex block>{'(a+b)^2 = a^2 + ab + ba + b^2 = a^2 + 2ab + b^2'}</Tex> },
                 { title: '特徵 2：任何元素加兩次都是 0', body: <Tex block>{'2ab = ab + ab = 0'}</Tex> },
-                { title: '結論（「新生的夢」）', body: <Tex block>{'(a+b)^2 = a^2 + b^2'}</Tex> },
+                { title: '結論：新生的夢（Freshman’s Dream）', body: <Tex block>{'(a+b)^2 = a^2 + b^2'}</Tex> },
               ]}
             />
             <Terms
               items={[
-                { zh: 'Frobenius 映射', en: 'Frobenius map φ(a) = a²', def: <>保持加法 <M>{'\\varphi(a+b) = \\varphi(a)+\\varphi(b)'}</M>、保持乘法 <M>{'\\varphi(ab) = \\varphi(a)\\varphi(b)'}</M>，而且一對一。</> },
+                { zh: 'Frobenius 映射 φ(a) = a²', en: 'Frobenius Map', def: <>保持加法 <M>{'\\varphi(a+b) = \\varphi(a)+\\varphi(b)'}</M>、保持乘法 <M>{'\\varphi(ab) = \\varphi(a)\\varphi(b)'}</M>，而且一對一。</> },
                 { zh: '自同構', en: 'Automorphism', def: <>從一個體到自己、保持加法和乘法的一對一映成。可以想成「重新命名元素但不改變運算結構」。</> },
                 { zh: '共軛元素', en: 'Conjugates', def: <>β, β², β⁴, … 一直平方直到回到 β。它們在 GF(2) 多項式的眼中「無法區分」：是根就一起是根。</> },
                 { zh: '分圓陪集', en: 'Cyclotomic Coset', def: <>只看指數：<M>{'\\alpha^i \\mapsto \\alpha^{2i}'}</M>，指數做 <M>{'i \\to 2i \\bmod 7'}</M>。例如 <M>{'C_1 = \\{1, 2, 4\\}'}</M>。</> },

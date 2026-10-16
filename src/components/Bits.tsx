@@ -112,12 +112,12 @@ export function BitRow({ bits, layout, states, size = 'md', onToggle, showPositi
   );
 }
 
-/** The four data-bit switches d1..d4. */
+/** The four information-bit switches D1..D4 (same names as in the codeword layout). */
 export function MessageInput({ message, onToggle, size = 'lg' }: { message: readonly Bit[]; onToggle: (i: number) => void; size?: keyof typeof SIZE }) {
   return (
     <div className="flex items-end gap-2">
       {message.map((b, i) => (
-        <BitCell key={i} value={b} role="data" label={`d${i + 1}`} size={size} onClick={() => onToggle(i)} />
+        <BitCell key={i} value={b} role="data" label={`D${i + 1}`} size={size} onClick={() => onToggle(i)} />
       ))}
     </div>
   );
@@ -125,13 +125,13 @@ export function MessageInput({ message, onToggle, size = 'lg' }: { message: read
 
 export function RoleLegend({ overall = false, errors = false }: { overall?: boolean; errors?: boolean }) {
   const items: [string, string][] = [
-    ['bg-data-50 border-data-300', '資訊位元 Information bit'],
-    ['bg-parity-50 border-parity-300', '同位位元 Parity bit'],
+    ['bg-data-50 border-data-300', '資訊位元（Information bit）'],
+    ['bg-parity-50 border-parity-300', '同位位元（Parity bit）'],
   ];
-  if (overall) items.push(['bg-overall-50 border-overall-300', '整體同位 Overall parity']);
+  if (overall) items.push(['bg-overall-50 border-overall-300', '整體同位位元（Overall parity）']);
   if (errors) {
-    items.push(['bg-rose-50 border-rose-500', '被翻轉的位元 Flipped']);
-    items.push(['bg-emerald-50 border-emerald-500', '解碼器修正 Corrected']);
+    items.push(['bg-rose-50 border-rose-500', '被翻轉的位元（Flipped）']);
+    items.push(['bg-emerald-50 border-emerald-500', '解碼器修正（Corrected）']);
   }
   return (
     <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-slate-500">

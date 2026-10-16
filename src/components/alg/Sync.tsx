@@ -59,7 +59,7 @@ export function SyncLfsrDivision({ u, large = false }: { u: Bit[]; large?: boole
           </div>
           {cur && (
             <div className={`mt-2 text-slate-700 ${large ? 'text-base' : 'text-sm'}`}>
-              <Tex>{`R_{${cur.k}}(x) = \\big(x\\,R_{${cur.k - 1}}(x) + ${cur.input}\\cdot x^3\\big) \\bmod g(x) = ${msbToTex(cur.next)}`}</Tex>
+              <Tex>{`R^{(${cur.k})}(x) = \\big(x\\,R^{(${cur.k - 1})}(x) + ${cur.input}\\cdot x^3\\big) \\bmod g(x) = ${msbToTex(cur.next)}`}</Tex>
             </div>
           )}
         </div>

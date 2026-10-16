@@ -72,7 +72,7 @@ export default function L2Syndrome() {
                 title: '「mod g(x)」對加法是線性的',
                 body: (
                   <p>
-                    若 <M>{'a = q_1 g + r_1'}</M>、<M>{'b = q_2 g + r_2'}</M>，則 <M>{'a + b = (q_1+q_2)g + (r_1+r_2)'}</M> 且 <M>{'\\deg(r_1+r_2) < 3'}</M>，由餘數唯一性得 <M>{'(a+b) \\bmod g = (a \\bmod g) + (b \\bmod g)'}</M>。
+                    若 <M>{'a = q_1 g + \\rho_1'}</M>、<M>{'b = q_2 g + \\rho_2'}</M>，則 <M>{'a + b = (q_1+q_2)g + (\\rho_1+\\rho_2)'}</M> 且 <M>{'\\deg(\\rho_1+\\rho_2) < 3'}</M>，由餘數唯一性得 <M>{'(a+b) \\bmod g = (a \\bmod g) + (b \\bmod g)'}</M>。
                   </p>
                 ),
               },
@@ -99,7 +99,7 @@ export default function L2Syndrome() {
                     <td className="py-1.5 font-semibold">矩陣（GF(2) 線性代數）</td>
                     <td><M>{'s = Hr^T'}</M></td>
                     <td><M>{'Hc^T = 0 \\Rightarrow s = He^T'}</M></td>
-                    <td><a className="text-indigo-700 underline" href="#/syndrome">第一課 M3</a></td>
+                    <td><a className="text-indigo-700 underline" href="#/syndrome">第一課第 3 章</a></td>
                   </tr>
                   <tr className="border-t border-slate-100 bg-amber-50/60">
                     <td className="py-1.5 font-semibold">多項式（本章）</td>

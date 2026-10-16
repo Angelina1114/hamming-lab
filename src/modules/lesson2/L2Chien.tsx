@@ -54,7 +54,7 @@ export default function L2Chien() {
               σ(z) 的設計是：如果錯誤在 <M>{'x^i'}</M>，那麼 <M>{'z = \\alpha^{-i}'}</M> 會讓 σ 變成 0。所以只要對每個可能的位置「問一次」：σ 在這裡是 0 嗎？答案是「是」的那個位置就是錯誤。
             </p>
             <p>
-              GF(8) 只有 7 個非零元素，所以最多試 7 次。一般的 BCH Code也一樣：n 個位置就試 n 次，而且每次的計算都很規律（乘以固定的 <M>{'\\alpha'}</M>），很適合硬體。
+              GF(8) 只有 7 個非零元素，所以最多試 7 次。一般的 BCH Code 也一樣：n 個位置就試 n 次，而且每次的計算都很規律（乘以固定的 <M>{'\\alpha'}</M>），很適合硬體。
             </p>
           </div>
         ),
@@ -78,7 +78,7 @@ export default function L2Chien() {
             steps={[
               <>輸入 <M>{'\\sigma(z) = 1 + S_1z'}</M>。若 <M>{'S_1 = 0'}</M>，沒有根 → 沒有錯誤。</>,
               <>
-                對 j = 0, 1, …, 6：計算 <M>{'\\sigma(\\alpha^j) = 1 + S_1\\alpha^j = 1 + \\alpha^{s+j}'}</M>（s 是 <M>{'S_1'}</M> 的指數）。
+                對 j = 0, 1, …, 6：計算 <M>{'\\sigma(\\alpha^j) = 1 + S_1\\alpha^j = 1 + \\alpha^{i+j}'}</M>（寫 <M>{'S_1 = \\alpha^i'}</M>，<M>i</M> 就是錯誤次方）。
               </>,
               <>
                 找到 <M>{'\\sigma(\\alpha^j) = 0'}</M> 時，錯誤次方 <M>{'i = (7 - j) \\bmod 7'}</M>，位置 = 7 − i。
@@ -131,11 +131,11 @@ export default function L2Chien() {
             <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className={`rounded-xl border-2 p-3 ${mode === 'lookup' ? 'border-slate-900' : 'border-slate-200'}`}>
                 <div className="text-xs font-semibold text-slate-500">A. Syndrome Lookup</div>
-                <div className="text-lg font-bold">位置 {dl.position}（x^{dl.exponent}）</div>
+                <div className="text-lg font-bold">位置 {dl.position}（<M>{`x^{${dl.exponent}}`}</M>）</div>
               </div>
               <div className={`rounded-xl border-2 p-3 ${mode === 'chien' ? 'border-slate-900' : 'border-slate-200'}`}>
                 <div className="text-xs font-semibold text-slate-500">B. Chien Search</div>
-                <div className="text-lg font-bold">位置 {dc.position}（x^{dc.exponent}）</div>
+                <div className="text-lg font-bold">位置 {dc.position}（<M>{`x^{${dc.exponent}}`}</M>）</div>
               </div>
             </div>
           </Card>

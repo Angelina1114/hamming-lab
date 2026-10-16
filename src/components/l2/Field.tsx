@@ -123,7 +123,7 @@ export function ChienSim({ S1, stepper, large = false }: { S1: GF8; stepper?: St
 
   return (
     <div className="space-y-3">
-      {!stepper && <StepControls s={s} label={frame === 0 ? '準備' : frame <= 7 ? `測試 z = α^${frame - 1}` : '結論'} />}
+      {!stepper && <StepControls s={s} label={frame === 0 ? '準備' : frame <= 7 ? `測試 z = ${frame === 1 ? '1' : frame === 2 ? 'α' : `α${'⁰¹²³⁴⁵⁶'[frame - 1]}`}` : '結論'} />}
       <div className={`rounded-xl bg-slate-50 p-3 ${large ? 'text-lg' : 'text-sm'}`}>
         <M>{sigma.length === 1 ? '\\sigma(z) = 1' : `\\sigma(z) = 1 + ${aTex(S1)}\\,z`}</M>
         <span className="ml-2 text-slate-500">依序代入 GF(8) 的 7 個非零元素，找出 <M>{'\\sigma(z)=0'}</M> 的 z。</span>

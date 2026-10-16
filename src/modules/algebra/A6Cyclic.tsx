@@ -40,7 +40,7 @@ export default function A6Cyclic() {
               左移一格就是把每一項的次方加一：乘以 <M>x</M>。問題是最高次項 <M>{'x^6'}</M> 乘以 <M>x</M> 變成 <M>{'x^7'}</M>，超出 7 個位元。循環位移的做法是把它「繞回」最右邊，也就是讓 <M>{'x^7'}</M> 變成 <M>1</M>。
             </p>
             <p>
-              要讓「<M>{'x^7 = 1'}</M>」合法，就要在一個規定 <M>{'x^7 - 1 \\equiv 0'}</M> 的世界裡計算——這就是商環 <M>{'R_7'}</M>。在 <M>{'R_7'}</M> 中，循環碼有一個漂亮的描述：它是一個<strong>理想 (Ideal)</strong>。
+              要讓「<M>{'x^7 = 1'}</M>」合法，就要在一個規定 <M>{'x^7 - 1 \\equiv 0'}</M> 的世界裡計算——這就是商環 <M>{'R_7'}</M>。在 <M>{'R_7'}</M> 中，循環碼有一個漂亮的描述：它是一個<strong>理想（Ideal）</strong>。
             </p>
           </Plain>
         ),
@@ -52,19 +52,19 @@ export default function A6Cyclic() {
             items={[
               { zh: '循環碼', en: 'Cyclic Code', def: <>線性碼，而且任何 codeword 循環位移後仍是 codeword。</> },
               { zh: '環', en: 'Ring', def: <>可以加、減、乘（滿足結合律、分配律），但<strong>不一定能除</strong>的結構。整數、GF(2)[x] 都是環。體是「每個非零元素都能除」的環。</> },
-              { zh: '商環 R₇', en: 'R₇ = GF(2)[x]/(x⁷ − 1)', def: <>次數 ≤ 6 的多項式，運算後用 <M>{'x^7 \\equiv 1'}</M> 化簡（<M>{'x^{7+i} \\equiv x^i'}</M>）。它有 <M>{'2^7 = 128'}</M> 個元素，就是所有 7 位元字串。<M>{'x^7-1'}</M> 可分解，所以 R₇ 是環不是體。</> },
+              { zh: '商環 R₇ = GF(2)[x]/(x⁷ − 1)', en: 'Quotient Ring', def: <>次數 ≤ 6 的多項式，運算後用 <M>{'x^7 \\equiv 1'}</M> 化簡（<M>{'x^{7+i} \\equiv x^i'}</M>）。它有 <M>{'2^7 = 128'}</M> 個元素，就是所有 7 位元字串。<M>{'x^7-1'}</M> 可分解，所以 R₇ 是環不是體。</> },
               {
                 zh: '理想',
                 en: 'Ideal',
                 def: (
                   <>
-                    環的一個子集 I，滿足：(1) I 中兩元素相加仍在 I；(2) I 中元素乘上<strong>環中任何元素</strong>仍在 I（會「吸收」乘法）。一般的子集合只要求 (1) 或什麼都不要求，理想多了「吸收」的條件。
+                    環的一個子集 I，滿足：(1) I 中兩元素相加仍在 I；(2) I 中元素乘上<strong>環中任何元素</strong>仍在 I（會「吸收」乘法）。加法子群（在 GF(2) 上就是子空間，也就是線性碼）只要求 (1)；理想多了「吸收」的條件。在 R₇ 中，吸收「乘以 x」正是「循環位移後仍是 codeword」。
                   </>
                 ),
               },
               {
-                zh: '主理想',
-                en: 'Principal Ideal ⟨g(x)⟩',
+                zh: '主理想 ⟨g(x)⟩',
+                en: 'Principal Ideal',
                 def: (
                   <>
                     <M>{'\\langle g(x) \\rangle = \\{ a(x)g(x) \\bmod (x^7-1) \\}'}</M>：g 的所有倍數。循環 Hamming Code <M>{'C = \\langle x^3+x+1 \\rangle'}</M>。
@@ -72,11 +72,10 @@ export default function A6Cyclic() {
                 ),
               },
               {
-                zh: '為什麼 g 要整除 x⁷ − 1？',
-                en: 'g(x) | x⁷ − 1',
+                zh: '為什麼 g(x) 要整除 x⁷ − 1？',
                 def: (
                   <>
-                    這保證繞回時不會「離開」g 的倍數。程式計算：<M>{`x^7 - 1 = (x^3+x+1)(${polyToTex(h)})`}</M>，商 <M>{'h(x)'}</M> 叫同位檢查多項式 (parity-check polynomial)。
+                    這保證繞回時不會「離開」g 的倍數。程式計算：<M>{`x^7 - 1 = (x^3+x+1)(${polyToTex(h)})`}</M>，商 <M>{'h(x)'}</M> 叫同位檢查多項式（Parity-check Polynomial）。
                   </>
                 ),
               },
@@ -167,12 +166,12 @@ export default function A6Cyclic() {
         ),
       }}
       example={{
-        title: '理想會「吸收」乘法：任意 r(x) × codeword 仍是 codeword',
+        title: '理想會「吸收」乘法：任意 a(x) × codeword 仍是 codeword',
         body: (
           <LabGrid
             main={
               <Card
-                title="r(x) 任意選（點位元），c(x) 從 codeword 中選"
+                title="a(x) 任意選（點位元），c(x) 從 codeword 中選"
                 actions={
                   <ResetButton
                     onClick={() => {
@@ -185,7 +184,7 @@ export default function A6Cyclic() {
               >
                 <div className="space-y-3">
                   <div>
-                    <div className="mb-1 text-xs font-semibold text-slate-500">r(x) ∈ R₇（不必是 codeword）</div>
+                    <div className="mb-1 text-xs font-semibold text-slate-500">a(x) ∈ R₇（不必是 codeword）</div>
                     <BitPolyEditor bits={r} onToggle={(i) => setR(flipBit(r, i) as Bit[])} />
                   </div>
                   <div>
@@ -199,7 +198,7 @@ export default function A6Cyclic() {
                     </select>
                   </div>
                   <div className="space-y-1 rounded-xl bg-slate-50 p-3 text-sm">
-                    <Tex block>{`r(x)c(x) = ${msbToTex(prod.full)}`}</Tex>
+                    <Tex block>{`a(x)c(x) = ${msbToTex(prod.full)}`}</Tex>
                     {prod.wrapped.length > 0 && <Tex block>{`${prod.wrapped.map((e) => `x^{${e}} \\equiv x^{${e - 7}}`).join(',\\ ')}\\quad (x^7 \\equiv 1)`}</Tex>}
                     <Tex block>{`\\equiv ${msbToTex(prod.folded)} \\pmod{x^7-1}\\quad [${prod.folded.join('')}]`}</Tex>
                   </div>
@@ -210,7 +209,7 @@ export default function A6Cyclic() {
               <>
                 <Checks
                   items={[
-                    { label: <>r(x)c(x) mod (x⁷−1) = {prod.folded.join('')} 是 codeword</>, pass: inCyclicCode(prod.folded) },
+                    { label: <>a(x)c(x) mod (x⁷−1) = {prod.folded.join('')} 是 codeword</>, pass: inCyclicCode(prod.folded) },
                     { label: <>c(x) 本身是 codeword</>, pass: inCyclicCode(c) },
                   ]}
                 />
@@ -247,7 +246,7 @@ export default function A6Cyclic() {
           { to: 'l2-12', text: '第二課：同樣的結構放大到 x¹²⁷ − 1' },
         ],
         misconceptions: [
-          { wrong: '循環位移是向右移。', right: '本課程最左邊是最高次項，乘以 x 讓每個係數往左移一格，最左邊的 x⁶ 繞到最右邊（x⁷ ≡ 1）。' },
+          { wrong: '循環位移是向右移。', right: '本章（和第二課）最左邊是最高次項，乘以 x 讓每個係數往左移一格，最左邊的 x⁶ 繞到最右邊（x⁷ ≡ 1）。' },
           { wrong: '理想就是「codeword 的集合」，任何子集合都可以。', right: '理想要對加法封閉，而且乘上環中任何元素都還在裡面。隨便挑的 codeword 集合通常不滿足。' },
           { wrong: 'R₇ 是一個體。', right: 'x⁷ − 1 = (x+1)(x³+x+1)(x³+x²+1) 可分解，所以 R₇ 有零因子，例如 (x³+x+1)(x⁴+x²+x+1) ≡ 0。' },
         ],

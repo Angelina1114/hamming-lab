@@ -141,7 +141,7 @@ export default function L2Playground() {
                       <>
                         <div className="mb-1 text-xs text-slate-500">
                           codeword c = u ‖ p，p = {enc.shifted.join('')} mod 1011 = {enc.parity.join('')}
-                          {secded && `，總同位 P = ${so.c8[7]}`}
+                          {secded && `，整體同位 P = ${so.c8[7]}`}
                         </div>
                         <BitStrip bits={secded ? so.c8 : enc.codeword} />
                       </>
@@ -293,7 +293,7 @@ export default function L2Playground() {
                   <Row label="原始 codeword">
                     <span className="mono">{(secded ? so.c8 : o.c).join('')}</span>
                   </Row>
-                  <Row label="接收 codeword">
+                  <Row label="接收字 r">
                     <span className="mono">{recvBits.join('')}</span>
                   </Row>
                   <Row label="錯誤向量">
@@ -313,7 +313,7 @@ export default function L2Playground() {
                     </Row>
                   )}
                   <Row label="錯誤定位結果">{secded ? (so.result.uncorrectable ? '雙錯：不定位' : so.result.position ? `位置 ${so.result.position}` : '無') : d.position ? `位置 ${d.position}` : '無'}</Row>
-                  <Row label="修正後 codeword">
+                  <Row label={secded && so.result.uncorrectable ? '解碼器輸出（未更正）' : '更正後 codeword'}>
                     <span className="mono">{(secded ? so.result.output : d.corrected).join('')}</span>
                   </Row>
                   <Row label="還原訊息">

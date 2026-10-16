@@ -16,6 +16,7 @@ import {
 } from '../core';
 import { Tex, M } from '../components/Tex';
 import { BitString } from '../components/Bits';
+import { BallDiagram, CubeBall, PackingDiagram } from '../components/BoundFigures';
 import { Callout, Card, Derivation, Expandable, FlowBar, LabGrid, Misconceptions, ModuleHeader, PrevNext, ResetButton, Segmented, Stage, Stat } from '../components/Lesson';
 
 const ID = 'bound';
@@ -62,30 +63,50 @@ export default function M5Bound() {
           <div className="prose-lab max-w-3xl">
             <p>
               若一個 code 要修正 <M>t</M> 個錯誤，那麼每個 codeword <M>c</M> 周圍「距離 ≤ t」的所有字串都必須被解碼回 <M>c</M>。不同 codeword 的這些區域不能重疊，否則某個接收字會不知道該解成誰。
-              這些區域加起來不能超過整個空間 <M>{'\\mathbb{F}_2^n'}</M> 的大小 <M>{'2^n'}</M>。這個簡單的計數論證就是 <strong>Hamming Bound（球填充界 Sphere-packing bound）</strong>。
+              這些區域加起來不能超過整個空間 <M>{'\\mathbb{F}_2^n'}</M> 的大小 <M>{'2^n'}</M>。這個簡單的計數論證就是 <strong>Hamming Bound（球填充界，Sphere-packing bound）</strong>。
             </p>
           </div>
         </Stage>
 
         <Stage kind="definition" moduleId={ID} title="漢明球與 Hamming Bound">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <Card title="漢明球 Hamming sphere">
-              <Tex block>{'B(c,t) = \\{\\, x \\in \\mathbb{F}_2^n : d_H(x,c) \\le t \\,\\}'}</Tex>
-              <p className="text-sm text-slate-600">離 c 最多 t 個位元不同的所有字串。注意這是一個<strong>有限集合</strong>，不是平面上的圓。</p>
-            </Card>
-            <Card title="球的體積 Volume">
-              <Tex block>{'V_2(n,t) = |B(c,t)| = \\sum_{i=0}^{t} \\binom{n}{i}'}</Tex>
-              <p className="text-sm text-slate-600">
-                <M>{'\\binom{n}{i}'}</M> = 恰好錯 <M>i</M> 個位置的選法數。
-              </p>
-            </Card>
-            <Card title="Hamming Bound">
-              <Tex block>{'2^k \\cdot V_2(n,t) \\le 2^n'}</Tex>
-              <p className="text-sm text-slate-600">
-                等號成立的 code 稱為<strong>完美碼 Perfect code</strong>：球恰好鋪滿整個空間。
-              </p>
-            </Card>
-          </div>
+          <Card title="漢明球（Hamming sphere）">
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+              <div className="min-w-0 space-y-2 text-sm text-slate-600">
+                <Tex block>{'B(c,t) = \\{\\, x \\in \\mathbb{F}_2^n : d_H(x,c) \\le t \\,\\}'}</Tex>
+                <p>
+                  以 codeword c 為中心、半徑 t 的球：離 c 最多 t 個位元不同的所有字串，也就是「c 錯了 t 個以內的位元，可能變成的所有樣子」。
+                </p>
+                <p>注意這是一個<strong>有限集合</strong>，不是平面上的圓。n = 3 時可以畫出它真正的樣子（圖①）：每個字串是立方體的一個頂點，球就是從中心出發、沿著邊走 t 步以內能到的頂點。</p>
+              </div>
+              <CubeBall />
+            </div>
+          </Card>
+          <Card title="球的體積（Volume）">
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+              <div className="min-w-0 space-y-2 text-sm text-slate-600">
+                <Tex block>{'V_2(n,t) = |B(c,t)| = \\sum_{i=0}^{t} \\binom{n}{i}'}</Tex>
+                <p>
+                  <M>{'\\binom{n}{i}'}</M> = 從 n 個位置裡挑 i 個來錯的選法數，也就是「離 c 恰好 i」的字串個數。把 i = 0, 1, …, t 加起來，就是球裡的字串個數。
+                </p>
+                <p>n 大的時候畫不出立方體，就改成按「翻了幾位」一圈一圈排（圖②，n = 7）。</p>
+              </div>
+              <BallDiagram />
+            </div>
+          </Card>
+          <Card title="Hamming Bound">
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+              <div className="min-w-0 space-y-2 text-sm text-slate-600">
+                <Tex block>{'2^k \\cdot V_2(n,t) \\le 2^n'}</Tex>
+                <p>
+                  每個 codeword 需要一顆 <M>{'V_2(n,t)'}</M> 個字串的球（圖②），球之間不能重疊，而整個空間只有 <M>{'2^n'}</M> 個字串（圖③）。<M>{'2^k'}</M> 顆球要全部放得下，就必須滿足上式。
+                </p>
+                <p>
+                  等號成立的 code 稱為<strong>完美碼（Perfect code）</strong>：球恰好鋪滿整個空間（圖①的「兩顆球」就是最小的例子）。
+                </p>
+              </div>
+              <PackingDiagram />
+            </div>
+          </Card>
         </Stage>
 
         <Stage kind="calculation" moduleId={ID} title="調整 n、k、t，檢查 Hamming Bound">
@@ -132,7 +153,7 @@ export default function M5Bound() {
                     給定 n = {n}, t = {t}，k 最大只能是 <strong>{Math.max(0, hb.maxK)}</strong>。
                   </div>
                 </Card>
-                <Card title="t = 1 的 Hamming Code家族">
+                <Card title="t = 1 的 Hamming Code 家族">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="text-left text-xs text-slate-500">
@@ -160,7 +181,14 @@ export default function M5Bound() {
                     </tbody>
                   </table>
                   <p className="mt-2 text-xs text-slate-500">
-                    因為 <M>{'1 + n = 2^r'}</M>，所以 <M>{'2^{n-r}\\cdot 2^r = 2^n'}</M>：每一個 Hamming Code都是完美碼。
+                    表中 r 是同位位元的個數（第二課 2-12 記作 m）。因為 <M>{'1 + n = 2^r'}</M>，所以 <M>{'2^{n-r}\\cdot 2^r = 2^n'}</M>：每一個 Hamming Code 都是完美碼。
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    訊息比 4 位元長怎麼辦？切成小塊還是換更長的 Hamming Code、長度對不上時的縮短碼，見{' '}
+                    <a href="#/l2-12" className="font-semibold text-overall-700 hover:underline">
+                      第二課 2-12
+                    </a>
+                    。
                   </p>
                 </Card>
               </>
@@ -267,7 +295,7 @@ export default function M5Bound() {
                       目前：{hoverWord.toString(2).padStart(code.n, '0')}（= {hoverWord}）
                     </span>
                   )}
-                  同一組的 8 個字串在數值上分散各處——漢明球並不是「一團相鄰的點」。
+                  同一組的 {part.groups[0].length} 個字串在數值上分散各處——漢明球並不是「一團相鄰的點」。
                 </p>
               </div>
             )}
@@ -326,7 +354,7 @@ export default function M5Bound() {
               <>
                 <Misconceptions
                   items={[
-                    { wrong: '漢明球就像平面上的圓，可以用圓形圖畫出來。', right: '漢明距離只計算「不同位元的個數」，不是歐氏距離。一個半徑 1 的球是 8 個離散字串，它們的數值彼此可以相差很遠（見「依數值排列」視圖）。' },
+                    { wrong: '漢明球就像平面上的圓：圖上靠得近的字串，距離就比較近。', right: 'Hamming 距離只計算「不同位元的個數」，不是歐氏距離。一個半徑 1 的球是 8 個離散字串，它們的數值彼此可以相差很遠（見「依數值排列」視圖）。上方圖②畫成同心圈只是按「翻幾位」分層，圈上的位置和角度沒有意義；真正的結構要看圖①的立方體（沿邊走的步數）。' },
                     { wrong: '滿足 Hamming Bound 的參數一定有對應的 code。', right: 'Hamming Bound 是必要條件，不是充分條件。例如 (n,k,t) = (90,78,2) 滿足等號，但不存在這樣的完美碼。' },
                     { wrong: '完美碼表示能修正所有錯誤。', right: '完美碼只代表「每個字串都恰好在一個半徑 t 的球內」。超過 t 個錯誤仍會被解成錯的 codeword。' },
                   ]}

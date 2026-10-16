@@ -90,12 +90,12 @@ export default function M4Distance() {
         <Stage kind="definition" moduleId={ID} title="Hamming 距離與最小距離">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <Card title="Hamming distance">
-              <Tex block>{'d_H(x,y) = \\#\\{\\, i : x_i \\neq y_i \\,\\}'}</Tex>
-              <p className="text-sm text-slate-600">在 GF(2) 中 <M>{'d_H(x,y) = \\mathrm{wt}(x+y)'}</M>。它是真正的度量 (metric)：滿足三角不等式。</p>
+              <Tex block>{'d_H(x,y) = \\left|\\{\\, i : x_i \\neq y_i \\,\\}\\right|'}</Tex>
+              <p className="text-sm text-slate-600">在 GF(2) 中 <M>{'d_H(x,y) = \\mathrm{wt}(x+y)'}</M>。它是真正的度量（metric）：滿足三角不等式。後文常省略下標，把 <M>{'d_H'}</M> 簡寫成 <M>d</M>。</p>
             </Card>
             <Card title="Minimum distance">
               <Tex block>{'d_{\\min} = \\min_{c \\neq c\' \\in C} d_H(c, c\')'}</Tex>
-              <p className="text-sm text-slate-600">所有<strong>不同</strong>Codeword 對之間最小的距離。</p>
+              <p className="text-sm text-slate-600">所有<strong>不同</strong>的 codeword 對之間最小的距離。</p>
             </Card>
             <Card title="修正與偵測能力">
               <Tex block>{'t = \\left\\lfloor \\frac{d_{\\min}-1}{2} \\right\\rfloor'}</Tex>
@@ -200,15 +200,15 @@ export default function M4Distance() {
                   </div>
                 </Card>
                 <Card title="從 A 走到 B：每次翻一個位元">
-                  <p className="mb-2 text-xs text-slate-500">這是一條漢明空間中的最短路徑（每一步距離 1），不是平面上的直線。最右欄是該字串真正的最近 codeword。</p>
+                  <p className="mb-2 text-xs text-slate-500">這是一條 Hamming 空間中的最短路徑（每一步距離 1），不是平面上的直線。最右欄是該字串真正的最近 codeword。</p>
                   <div className="overflow-x-auto">
                     <table className="w-full min-w-[420px] text-sm">
                       <thead>
                         <tr className="text-left text-xs text-slate-500">
                           <th className="py-1">步</th>
                           <th>字串</th>
-                          <th>d(·,A)</th>
-                          <th>d(·,B)</th>
+                          <th>d<sub>H</sub>(·,A)</th>
+                          <th>d<sub>H</sub>(·,B)</th>
                           <th>最近 codeword</th>
                         </tr>
                       </thead>
@@ -290,7 +290,7 @@ export default function M4Distance() {
           />
         </Stage>
 
-        <Stage kind="experiment" moduleId={ID} title="最近 codeword 解碼 Nearest-codeword decoding">
+        <Stage kind="experiment" moduleId={ID} title="最近 codeword 解碼（Nearest-codeword decoding）">
           <LabGrid
             main={
               <Card
@@ -373,7 +373,7 @@ export default function M4Distance() {
           </Callout>
           <Expandable title="定理證明：d_min ≥ 2t+1 ⇒ 最近 codeword 解碼可修正 t 個錯誤">
             <p>
-              設送出 <M>c</M>，錯誤數 <M>{'\\le t'}</M>，所以 <M>{'d(r,c) \\le t'}</M>。對任何其他 codeword <M>{"c'"}</M>，由三角不等式：
+              設送出 <M>c</M>、收到 <M>r</M>（這裡的 <M>d</M> 就是 <M>{'d_H'}</M>），錯誤數 <M>{'\\le t'}</M>，所以 <M>{'d(r,c) \\le t'}</M>。對任何其他 codeword <M>{"c'"}</M>，由三角不等式：
             </p>
             <Tex block>{"d(r,c') \\ge d(c,c') - d(r,c) \\ge (2t+1) - t = t+1 > t \\ge d(r,c)."}</Tex>
             <p>所以 <M>c</M> 是唯一的最近 codeword。∎</p>

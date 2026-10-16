@@ -126,7 +126,7 @@ export default function M7Secded() {
                 <Tex block>{'s = H\\,(r_1,\\dots,r_7)^T \\in \\mathbb{F}_2^3'}</Tex>
               </div>
               <div className="rounded-xl bg-slate-50 p-3 text-sm">
-                <div className="font-semibold">整體同位檢查 Overall parity（全部 8 位元）</div>
+                <div className="font-semibold">整體同位檢查（Overall parity，全部 8 位元）</div>
                 <Tex block>{'q = r_1 + r_2 + \\cdots + r_8 \\in \\mathbb{F}_2'}</Tex>
               </div>
             </div>
@@ -257,7 +257,7 @@ export default function M7Secded() {
                   <span className="text-slate-500">→ {CASE_INFO[r.case].title}</span>
                 </div>
                 <motion.div key={st8 + e.join('')} initial={{ scale: 0.97, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="mt-3">
-                  <StatusBadge status={st8} large zh={st8 === 'wrong' ? (r.case === 'no-error' ? '錯誤未被偵測' : '誤判 / 誤修正') : undefined} />
+                  <StatusBadge status={st8} large zh={st8 === 'wrong' ? (r.case === 'no-error' ? '未偵測錯誤' : '誤判 / 誤更正') : undefined} />
                 </motion.div>
                 <OutcomeNote weightE={weight(e)} status={st8} />
               </Card>
@@ -270,7 +270,7 @@ export default function M7Secded() {
                   <span className="text-slate-500">→ {o7.decoded.position === 0 ? '判定無錯誤' : `翻轉位置 ${o7.decoded.position}`}</span>
                 </div>
                 <motion.div key={st7 + e.join('')} initial={{ scale: 0.97, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="mt-3">
-                  <StatusBadge status={st7} large zh={st7 === 'wrong' ? (o7.undetected ? '錯誤未被偵測' : '誤修正 Miscorrection') : undefined} />
+                  <StatusBadge status={st7} large zh={st7 === 'wrong' ? (o7.undetected ? '未偵測錯誤' : '誤更正（Miscorrection）') : undefined} />
                 </motion.div>
                 {e[7] === 1 && <p className="mt-2 text-xs text-slate-500">（第 8 位的錯誤在 Hamming(7,4) 中不存在，已忽略。）</p>}
                 {weight(e.slice(0, 7)) === 2 && <p className="mt-2 text-sm text-rose-700">Hamming(7,4) 無法分辨「1 個錯」與「2 個錯」，於是把 2 個錯誤當成 1 個來修正。</p>}
@@ -280,7 +280,7 @@ export default function M7Secded() {
 
           <Callout kind="warning" title="保證只在「最多 2 個錯誤」時成立">
             <p>
-              上述四種分類假設錯誤數 ≤ 2。若有 3 個以上的錯誤，SECDED 可能誤判或誤修正：例如預設「三重錯誤 #1,#2,#3」中，前 7 位的錯誤 1110000 本身是 Hamming codeword，所以 <M>{'s = 0'}</M>，而 3 是奇數使 <M>{'q = 1'}</M>，解碼器以為是 P0 出錯並「修正」它，結果仍是錯的。
+              上述四種分類假設錯誤數 ≤ 2。若有 3 個以上的錯誤，SECDED 可能誤判或誤更正：例如預設「三重錯誤 #1,#2,#3」中，前 7 位的錯誤 1110000 本身是 Hamming(7,4) 的 codeword，所以 <M>{'s = 0'}</M>，而 3 是奇數使 <M>{'q = 1'}</M>，解碼器以為是 P0 出錯並「修正」它，結果仍是錯的。
             </p>
           </Callout>
 
@@ -301,9 +301,18 @@ export default function M7Secded() {
           <Callout kind="key" title="結論">
             <p>
               Hamming(7,4) 的 H 讓單一錯誤可定位（第 2–3 章）；<M>{'d_{\\min} = 3'}</M> 說明它恰好修正 1 個錯（第 4 章）；Hamming Bound 告訴我們它是完美碼、沒有多餘空間來偵測雙重錯誤（第 5 章）。
-              加入 1 個整體同位位元得到 <M>{'d_{\\min} = 4'}</M>（第 6 章），SECDED 解碼器用 <M>{'(s, q)'}</M> 兩個訊號，在至多 2 個錯誤時保證：<strong>1 個錯必修正，2 個錯必偵測</strong>。窮舉表中第 1、2 列的結果正是這個保證。
+              加入 1 個整體同位位元得到 <M>{'d_{\\min} = 4'}</M>（第 6 章），SECDED 解碼器用 <M>{'(s, q)'}</M> 兩個訊號，在至多 2 個錯誤時保證：<strong>1 個錯必修正，2 個錯必偵測</strong>。SECDED 窮舉表中 wt(e) = 1、2 這兩列的結果正是這個保證。
             </p>
           </Callout>
+          <Expandable title="實例：ECC 記憶體的 (72, 64)">
+            <p>
+              電腦的 ECC 記憶體每 64 位元資料配 8 個同位位元：把 Hamming(127, 120) 縮短成 (71, 64)，再加 1 個整體同位位元，就是 (72, 64) SECDED，判斷規則和本章完全一樣。參數怎麼來的，見{' '}
+              <a href="#/l2-12" className="font-semibold text-overall-700 hover:underline">
+                第二課 2-12 的縮短碼
+              </a>
+              。
+            </p>
+          </Expandable>
           <Expandable title="與距離觀點的對應">
             <p>
               <M>{'d_{\\min} = 4'}</M> 時，半徑 1 的球不重疊；而距離 2 的字串到最近 codeword 的距離為 2，可能同時離好幾個 codeword 一樣近。SECDED 的「偵測到雙重錯誤」就是接收字落在這些球之外的區域（第 5 章 Extended(8,4) 視圖中的 112 個平手字串）。

@@ -70,9 +70,9 @@ export default function A9HMatrix() {
           <>
             <Terms
               items={[
-                { zh: '基底', en: 'Basis (α², α, 1)', def: <>每個 GF(8) 元素唯一寫成 <M>{'a\\alpha^2 + b\\alpha + c'}</M>，對應向量 <M>{'(a, b, c)^T'}</M>。例如 <M>{'\\alpha^6 = \\alpha^2 + 1 \\leftrightarrow (1,0,1)^T'}</M>。</> },
+                { zh: '基底 α², α, 1', en: 'Basis', def: <>每個 GF(8) 元素唯一寫成 <M>{'a\\alpha^2 + b\\alpha + c'}</M>，對應向量 <M>{'(a, b, c)^T'}</M>。例如 <M>{'\\alpha^6 = \\alpha^2 + 1 \\leftrightarrow (1,0,1)^T'}</M>。</> },
                 { zh: '代入 α', en: 'Evaluation', def: <><M>{'c(\\alpha) = c_6\\alpha^6 + c_5\\alpha^5 + \\cdots + c_0'}</M>，每個 <M>{'c_i \\in \\{0,1\\}'}</M> 只決定「這一項要不要加」。</> },
-                { zh: '一條變三條', en: 'One GF(8) equation = three GF(2) equations', def: <>GF(8) 元素等於 0 ⇔ 三個座標都是 0。把 <M>{'c(\\alpha)'}</M> 的三個座標分開寫，就是 H 的三列。</> },
+                { zh: '一條 GF(8) 方程 = 三條 GF(2) 方程', def: <>GF(8) 元素等於 0 ⇔ 三個座標都是 0。把 <M>{'c(\\alpha)'}</M> 的三個座標分開寫，就是 H 的三列。</> },
               ]}
             />
             <Card>
@@ -82,7 +82,7 @@ export default function A9HMatrix() {
         ),
       }}
       how={{
-        title: '逐欄建立 H_cyclic',
+        title: '逐欄建立 H_cyc',
         body: (
           <LabGrid
             main={
@@ -123,7 +123,7 @@ export default function A9HMatrix() {
         ),
       }}
       example={{
-        title: 'c(α) = 0 ⇔ H_cyclic cᵀ = 0',
+        title: 'c(α) = 0 ⇔ H_cyc cᵀ = 0',
         body: (
           <>
             <LabGrid
@@ -172,9 +172,9 @@ export default function A9HMatrix() {
                 />
               }
             />
-            <Card title="同一個 code，不同座標：和第一課的 Hamming(7,4) 對照">
+            <Card title="等價的 code，不同座標：和第一課的 Hamming(7,4) 對照">
               <p className="text-sm text-slate-700">
-                H_cyc 第 k 欄是 <M>{'\\alpha^{6-k}'}</M> 的係數（由上而下 <M>{'\\alpha^2, \\alpha, 1'}</M>）；第一課 H 第 j 欄是 j 的二進位（低位在上）。把 <M>{'\\alpha^{6-k}'}</M> 的係數讀成 <M>{'j = b_0 + 2b_1 + 4b_2'}</M>，兩欄就是同一組位元，只是上下順序相反。所以兩個 code 只差一個座標排列：
+                H_cyc 第 k 欄（k = 1…7）是 <M>{'\\alpha^{7-k}'}</M> 的係數（由上而下 <M>{'\\alpha^2, \\alpha, 1'}</M>）；第一課 H 第 j 欄是 j 的二進位（低位在上）。把 <M>{'\\alpha^{7-k}'}</M> 的係數讀成 <M>{'j = b_0 + 2b_1 + 4b_2'}</M>，兩欄就是同一組位元，只是上下順序相反。所以兩個 code 只差一個座標排列：
               </p>
               <div className="mt-2 overflow-x-auto">
                 <table className="w-full min-w-[460px] text-center text-sm">
@@ -233,7 +233,7 @@ export default function A9HMatrix() {
           { to: 'l2-2', text: '第二課：用 LFSR 實作 g(x) 系統式編碼' },
         ],
         misconceptions: [
-          { wrong: 'H_cyc 和第一課的 H 是兩個不同的 code。', right: '它們的欄是同一組 7 個非零向量，只是順序不同（再加上列的上下順序），所以是等價碼。' },
+          { wrong: 'H_cyc 和第一課的 H 定義的 code 能力不同。', right: '它們的欄是同一組 7 個非零向量，只是順序不同（再加上列的上下順序），所以是等價碼：參數都是 [7,4,3]、能力相同，但 codeword 集合不同（差一個座標排列），矩陣不能混用。' },
           { wrong: '可以拿第一課的 H 檢查 m(x)g(x) 的 codeword。', right: '必須先做座標排列。上表顯示排列前後的對應；直接套用會得到錯的 Syndrome。' },
           { wrong: 'c(α) = 0 只是一條方程，所以比 Hcᵀ = 0 的三條方程限制少。', right: 'GF(8) 元素有 3 個座標，一條 GF(8) 方程 = 三條 GF(2) 方程，限制完全相同。' },
         ],

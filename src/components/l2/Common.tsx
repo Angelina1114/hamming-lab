@@ -16,7 +16,7 @@ export function ConventionBanner({ compact = false }: { compact?: boolean }) {
     <div className={`flex flex-wrap items-center gap-2 rounded-xl border-2 border-indigo-200 bg-indigo-50/70 text-indigo-900 ${compact ? 'px-3 py-1.5 text-xs' : 'mb-5 px-4 py-2.5 text-sm'}`}>
       <ArrowLeftRight className="h-4 w-4 shrink-0" />
       <span>
-        <strong>第二課位元順序：</strong>最左邊 = 最高次項。7 位元字串 <span className="mono">c₁c₂…c₇</span> 中，從左數第 <M>p</M> 個 bit 是 <M>{'x^{7-p}'}</M> 的係數。例：<span className="mono">1001110</span> <M>{'= x^6+x^3+x^2+x'}</M>，「位置 2」= <M>{'x^5'}</M>。
+        <strong>位元順序（代數章與第二課相同）：</strong>最左邊 = 最高次項。7 位元字串中，從左數第 <M>p</M> 個 bit（位置 <M>p</M>）是 <M>{'x^{7-p}'}</M> 的係數。例：<span className="mono">1001110</span> <M>{'= x^6+x^3+x^2+x'}</M>，「位置 2」= <M>{'x^5'}</M>。
       </span>
     </div>
   );
@@ -69,7 +69,7 @@ export function BitStrip({ bits, roles, states, onToggle, showExp = true, showPo
                 state={states?.[i] ?? 'normal'}
                 size={size}
                 onClick={onToggle ? () => onToggle(i) : undefined}
-                title={isOverall ? '整體同位位元 Overall parity' : `位置 ${i + 1}，x^${e} 的係數`}
+                title={isOverall ? '整體同位位元（Overall parity bit）' : `位置 ${i + 1}，${expLabel(e)} 的係數`}
               />
             </div>
           );
@@ -79,7 +79,7 @@ export function BitStrip({ bits, roles, states, onToggle, showExp = true, showPo
         <div className="mt-1 flex gap-1.5 text-[10px] font-semibold">
           {groupSpans(R).map((g, k) => (
             <div key={k} className={`border-t-2 pt-0.5 text-center ${g.role === 'info' ? 'border-data-300 text-data-600' : g.role === 'parity' ? 'border-parity-300 text-parity-600' : g.role === 'overall' ? 'ml-1.5 border-overall-300 pl-2.5 text-overall-600' : 'border-slate-200 text-slate-400'}`} style={{ width: g.len * w + (g.len - 1) * 6 }}>
-              {g.role === 'info' ? '資訊位元 u' : g.role === 'parity' ? '檢查位元 p' : g.role === 'overall' ? '總同位' : ''}
+              {g.role === 'info' ? '資訊位元 u' : g.role === 'parity' ? '同位位元 p' : g.role === 'overall' ? '整體同位' : ''}
             </div>
           ))}
         </div>
@@ -101,22 +101,24 @@ function groupSpans(roles: L2Role[]) {
 /** Legend: every colour also has a symbol/text. */
 export function L2Legend({ overall = false, errors = true }: { overall?: boolean; errors?: boolean }) {
   const items: [string, ReactNode, string][] = [
-    ['bg-data-50 border-data-300', '資訊位元 Information bit', '下方標「資訊位元 u」'],
-    ['bg-parity-50 border-parity-300', '檢查位元 Parity bit', '下方標「檢查位元 p」'],
+    ['bg-data-50 border-data-300', '資訊位元（Information bit）', '下方標「資訊位元 u」'],
+    ['bg-parity-50 border-parity-300', '同位位元（Parity bit）', '下方標「同位位元 p」'],
   ];
-  if (overall) items.push(['bg-overall-50 border-overall-300', '總同位位元 Overall parity', '上方標「P」']);
+  if (overall) items.push(['bg-overall-50 border-overall-300', '整體同位位元（Overall parity bit）', '上方標「P」']);
   if (errors) {
-    items.push(['bg-rose-50 border-rose-500', <>錯誤位元 Error bit</>, '⚡ 符號']);
-    items.push(['bg-emerald-50 border-emerald-500', <>已更正 Corrected bit</>, '✓ 符號']);
-    items.push(['bg-orange-50 border-orange-500', <>錯誤翻轉 Wrong flip</>, '✗ 符號']);
+    items.push(['bg-rose-50 border-rose-500', <>錯誤位元（Error bit）</>, '⚡ 符號']);
+    items.push(['bg-emerald-50 border-emerald-500', <>已更正（Corrected bit）</>, '✓ 符號']);
+    items.push(['bg-orange-50 border-orange-500', <>錯誤翻轉（Wrong flip）</>, '✗ 符號']);
   }
   return (
     <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-slate-500">
       {items.map(([cls, text, sym], k) => (
         <span key={k} className="inline-flex items-center gap-1.5">
           <span className={`inline-block h-3.5 w-3.5 rounded border-2 ${cls}`} />
-          {text}
-          <span className="text-slate-400">（{sym}）</span>
+          <span>
+            {text}
+            <span className="text-slate-400">：{sym}</span>
+          </span>
         </span>
       ))}
     </div>

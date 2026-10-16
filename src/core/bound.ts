@@ -122,11 +122,11 @@ export function partitionByNearest(code: readonly BitVector[], n: number): Parti
 
 /** Known non-trivial perfect binary codes, for the UI checklist. */
 export function knownPerfectFamily(n: number, k: number, t: number): string | null {
-  if (t === 0 && k === n) return '平凡碼 (trivial code：整個空間)';
-  if (k === 0 && t >= n) return '平凡碼 (trivial code：只有一個 codeword)';
-  if (k === 1 && n % 2 === 1 && t === (n - 1) / 2) return `重複碼 Repetition code [${n},1,${n}]`;
+  if (t === 0 && k === n) return '平凡碼（trivial code，整個空間）';
+  if (k === 0 && t >= n) return '平凡碼（trivial code，只有一個 codeword）';
+  if (k === 1 && n % 2 === 1 && t === (n - 1) / 2) return `重複碼（Repetition code）[${n},1,${n}]`;
   const r = n - k;
-  if (t === 1 && r >= 2 && n === 2 ** r - 1) return `Hamming code [${n},${k},3]`;
+  if (t === 1 && r >= 2 && n === 2 ** r - 1) return `Hamming Code [${n},${k},3]`;
   if (n === 23 && k === 12 && t === 3) return 'Binary Golay code [23,12,7]';
   return null;
 }

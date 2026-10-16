@@ -48,7 +48,7 @@ export default function M6Extended() {
     { k: '碼率 k/n', a: (4 / 7).toFixed(3), b: (4 / 8).toFixed(3) },
     { k: '最小距離 d_min（窮舉）', a: String(md7.dmin), b: String(md8.dmin) },
     { k: '保證修正 t', a: String(correctionCapability(md7.dmin)), b: String(correctionCapability(md8.dmin)) },
-    { k: '保證偵測 d_min − 1', a: String(detectionCapability(md7.dmin)), b: String(detectionCapability(md8.dmin)) },
+    { k: '保證偵測 d_min − 1（只偵測、不修正時）', a: String(detectionCapability(md7.dmin)), b: String(detectionCapability(md8.dmin)) },
     { k: '同時修正 1 + 偵測 2', a: '✗', b: '✓（SECDED）' },
     { k: '完美碼？', a: hammingBound(7, 4, 1).equality ? '是' : '否', b: hammingBound(8, 4, 1).equality ? '是' : '否（144 < 256）' },
     { k: 'rank(H)', a: '3', b: String(rank(H84)) },
@@ -57,7 +57,7 @@ export default function M6Extended() {
   return (
     <div>
       <ModuleHeader moduleId={ID}>
-        <p>在 Hamming(7,4) codeword 後面再加一個「整體同位位元 Overall parity bit」，代價是 1 個位元，收穫是最小距離從 3 變成 4。</p>
+        <p>在 Hamming(7,4) codeword 後面再加一個「整體同位位元（Overall parity bit）」，代價是 1 個位元，收穫是最小距離從 3 變成 4。</p>
       </ModuleHeader>
       <FlowBar moduleId={ID} />
 
@@ -86,7 +86,7 @@ export default function M6Extended() {
                 <RoleLegend overall />
               </div>
             </Card>
-            <Card title="Parity-check matrix（4×8）">
+            <Card title="同位檢查矩陣 H₈（Parity-check matrix，4×8）">
               <MatrixView matrix={H84} colLabels={LAYOUT_84.map((p) => p.label)} rowLabels={['P1', 'P2', 'P4', '全']} highlightRows={[3]} rowHighlightClass="bg-overall-100 text-overall-800" />
               <p className="mt-2 text-sm text-slate-600">原本的 H 補一個零欄，再加上全 1 的一列（整體同位檢查）。<M>{`\\operatorname{rank} = ${rank(H84)}`}</M>，所以 code 的維度仍是 <M>{'8 - 4 = 4'}</M>。</p>
             </Card>
@@ -262,7 +262,7 @@ export default function M6Extended() {
           </Card>
           <Misconceptions
             items={[
-              { wrong: 'd_min = 4，所以 t = ⌊3/2⌋ = 1，Extended Hamming 沒有比較好。', right: '修正能力確實仍是 1，但多了「同時偵測 2 個錯誤」的能力：d_min = 4 ≥ t + s + 1 = 1 + 2 + 1。' },
+              { wrong: 'd_min = 4，所以 t = ⌊3/2⌋ = 1，Extended Hamming 沒有比較好。', right: '修正能力確實仍是 1，但多了「同時偵測 2 個錯誤」的能力：d_min = 4 ≥（修正數）+（偵測數）+ 1 = 1 + 2 + 1。' },
               { wrong: 'P0 是第 5 個資訊位元。', right: 'P0 完全由其他 7 個位元決定，k 仍是 4。' },
             ]}
           />

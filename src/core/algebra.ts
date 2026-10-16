@@ -1,5 +1,5 @@
 /**
- * Abstract-algebra foundations for the cyclic Hamming code ("代數基礎與循環碼" chapter).
+ * Abstract-algebra foundations for the cyclic Hamming Code ("代數基礎與循環碼" chapter).
  *
  * Conventions (identical to Lesson 2, see cyclic.ts):
  *   • Codewords / GF(2) polynomials shown as bit strings are MSB-first (leftmost = highest power).

@@ -25,13 +25,13 @@ export default function A10Syndrome() {
     <AlgebraUnit
       id={ID}
       convention
-      lead={<p>本章最後一步：把代數用在解碼上。因為每個 codeword 都滿足 <M>{'c(\\alpha) = 0'}</M>，接收字在 α 的值只剩下錯誤的貢獻——錯誤的位置就寫在它的指數裡。σ(z)、Chien Search 與 XOR 修正的完整操作在第二課 2-6 ~ 2-8。</p>}
+      lead={<p>本章最後一步：把代數用在解碼上。因為每個 codeword 都滿足 <M>{'c(\\alpha) = 0'}</M>，接收字在 α 的值只剩下錯誤的貢獻——錯誤的位置就寫在它的指數裡。σ(z)、Chien Search 與 XOR 更正的完整操作在第二課 2-6 ~ 2-8。</p>}
       why={{
         title: '解碼就是「解方程」',
         body: (
           <Plain>
             <p>
-              第一課用查表：Syndrome 等於 H 的哪一欄。有了 GF(8) 之後可以換個說法：Syndrome 是一個「數」 <M>{'S_1 = r(\\alpha)'}</M>，錯誤位置 <M>{'x^i'}</M> 滿足 <M>{'\\alpha^i = S_1'}</M>。把「找位置」寫成「解方程」，就能用 Chien Search 這種可以推廣到多錯誤 BCH Code的通用演算法。
+              第一課用查表：Syndrome 等於 H 的哪一欄。有了 GF(8) 之後可以換個說法：Syndrome 是一個「數」 <M>{'S_1 = r(\\alpha)'}</M>，錯誤位置 <M>{'x^i'}</M> 滿足 <M>{'\\alpha^i = S_1'}</M>。把「找位置」寫成「解方程」，就能用 Chien Search 這種可以推廣到多錯誤 BCH Code 的通用演算法。
             </p>
           </Plain>
         ),
@@ -42,8 +42,8 @@ export default function A10Syndrome() {
           <>
             <Terms
               items={[
-                { zh: 'Syndrome（GF(8) 版）', en: 'S₁ = r(α)', def: <>把接收字當多項式，代入 α。因為 <M>{'g(\\alpha) = 0'}</M>，它也等於 <M>{'r(x) \\bmod g(x)'}</M> 的 3 位元餘數（第二課 2-4）讀成 GF(8) 元素。</> },
-                { zh: '錯誤定位數', en: 'Error locator X', def: <>單一錯誤 <M>{'e(x) = x^i'}</M> 時 <M>{'S_1 = \\alpha^i =: X'}</M>。指數 i 就是錯誤的次方，位置 = 7 − i。</> },
+                { zh: 'GF(8) 版 Syndrome：S₁ = r(α)', def: <>把接收字當多項式，代入 α。因為 <M>{'g(\\alpha) = 0'}</M>，它也等於 <M>{'r(x) \\bmod g(x)'}</M> 的 3 位元餘數（第二課 2-4）讀成 GF(8) 元素。</> },
+                { zh: '錯誤定位數 X', en: 'Error Locator', def: <>單一錯誤 <M>{'e(x) = x^i'}</M> 時 <M>{'S_1 = \\alpha^i =: X'}</M>。指數 i 就是錯誤的次方，位置 = 7 − i。</> },
               ]}
             />
             <Derivation
@@ -56,7 +56,7 @@ export default function A10Syndrome() {
                 { title: '取對數', body: <Tex block>{'i = \\log_\\alpha S_1,\\quad \\text{位置} = 7 - i\\quad(\\alpha^0,\\dots,\\alpha^6 \\text{ 兩兩相異，A4})'}</Tex> },
                 {
                   title: '下一步（第二課）',
-                  body: <p>寫成錯誤定位多項式 <M>{'\\sigma(z) = 1 + S_1 z'}</M>，用 Chien Search 找根（2-6、2-7），再用 XOR 修正（2-8）。</p>,
+                  body: <p>寫成錯誤定位多項式 <M>{'\\sigma(z) = 1 + S_1 z'}</M>，用 Chien Search 找根（2-6、2-7），再用 XOR 更正（2-8）。</p>,
                 },
               ]}
             />
@@ -147,7 +147,7 @@ export default function A10Syndrome() {
               <Tex block>{'r = 1101110,\\quad S_1 = r(\\alpha) = \\alpha^6 + \\alpha^5 + \\alpha^3 + \\alpha^2 + \\alpha'}</Tex>
               <Tex block>{`= ${[6, 5, 3, 2, 1].map((x) => gf8Bits(alphaPow(x))).join(' \\oplus ')} = ${gf8Bits(teacherS)} = \\alpha^{${LOG[teacherS]}}`}</Tex>
               <p>
-                所以錯在 <M>{`x^{${LOG[teacherS]}}`}</M>，從左數第 {7 - LOG[teacherS]} 個 bit。上面的計算器預設就是這個例子。接下來在第二課：<M>{`\\sigma(z) = 1 + \\alpha^{${LOG[teacherS]}}z`}</M> 的 Chien Search（2-7）、XOR 修正為 1001110（2-8）。
+                所以錯在 <M>{`x^{${LOG[teacherS]}}`}</M>，從左數第 {7 - LOG[teacherS]} 個 bit。上面的計算器預設就是這個例子。接下來在第二課：<M>{`\\sigma(z) = 1 + \\alpha^{${LOG[teacherS]}}z`}</M> 的 Chien Search（2-7）、XOR 更正為 1001110（2-8）。
               </p>
             </div>
           </Card>

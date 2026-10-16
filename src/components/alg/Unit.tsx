@@ -73,15 +73,16 @@ export function Plain({ children }: { children: ReactNode }) {
   return <div className="prose-lab max-w-3xl">{children}</div>;
 }
 
-/** Small "名詞 (English)" definition list */
-export function Terms({ items }: { items: { zh: string; en: string; def: ReactNode }[] }) {
+/** Small 「名詞（English）」 definition list; omit `en` for labels that are not a named concept */
+export function Terms({ items }: { items: { zh: string; en?: string; def: ReactNode }[] }) {
   return (
     <Card>
       <dl className="grid grid-cols-1 gap-3 md:grid-cols-2">
         {items.map((t) => (
-          <div key={t.en} className="rounded-xl bg-slate-50 p-3">
+          <div key={t.zh} className="rounded-xl bg-slate-50 p-3">
             <dt className="text-sm font-bold text-slate-900">
-              {t.zh} <span className="font-normal text-slate-500">{t.en}</span>
+              {t.zh}
+              {t.en && <span className="font-normal text-slate-500">（{t.en}）</span>}
             </dt>
             <dd className="mt-1 text-sm leading-relaxed text-slate-700">{t.def}</dd>
           </div>

@@ -10,7 +10,7 @@ const ID = 'l2-14';
 const MAP: [string, string, string][] = [
   ['2-1', '完整流程', 'u → c → r → S → 定位 → ĉ → û'],
   ['2-2', 'LFSR', "R_2'=R_1,\\ R_1'=R_0\\oplus\\text{fb},\\ R_0'=\\text{fb}"],
-  ['2-3', '長除法', 'a(x) = q(x)g(x) + r(x)'],
+  ['2-3', '長除法', 'a(x) = q(x)g(x) + \\rho(x)'],
   ['2-4', 'Syndrome', 'S(x) = r(x) \\bmod g(x) = e(x) \\bmod g(x)'],
   ['2-5', '查表', 'x^i \\bmod g(x)\\ \\text{兩兩相異}'],
   ['2-6', 'Key Equation', 'S_1 = \\alpha^i,\\ \\sigma(z) = 1 + S_1z'],
@@ -39,7 +39,7 @@ export default function L2Quiz() {
         body: (
           <Callout kind="key" title="從編碼到錯誤更正">
             <p>
-              編碼把訊息變成 <M>{'g(x)'}</M> 的倍數；通道加上錯誤；除以 <M>{'g(x)'}</M> 的餘數只剩下錯誤的指紋；在 GF(8) 中這個指紋是 <M>{'\\alpha^i'}</M>，它的指數就是錯誤位置；翻轉那一位就完成更正——前提是錯誤不超過一個。超過時，SECDED 至少能告訴你「修不好」。
+              編碼把訊息變成 <M>{'g(x)'}</M> 的倍數；通道加上錯誤；除以 <M>{'g(x)'}</M> 的餘數只剩下錯誤的指紋；在 GF(8) 中這個指紋是 <M>{'\\alpha^i'}</M>，它的指數 i 就是錯誤的次方（從左數位置 = 7 − i）；翻轉那一位就完成更正——前提是錯誤不超過一個。超過時，SECDED 至少能告訴你「修不好」。
             </p>
           </Callout>
         ),

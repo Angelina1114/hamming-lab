@@ -77,10 +77,10 @@ export default function A3Construct() {
           <>
             <Terms
               items={[
-                { zh: '多項式環', en: 'Polynomial Ring GF(2)[x]', def: <>所有係數在 GF(2) 的多項式，可以相加、相乘（係數 mod 2），但一般不能相除。例如 <M>{'(x+1)^2 = x^2 + 1'}</M>。</> },
+                { zh: '多項式環 GF(2)[x]', en: 'Polynomial Ring', def: <>所有係數在 GF(2) 的多項式，可以相加、相乘（係數 mod 2），但一般不能相除。例如 <M>{'(x+1)^2 = x^2 + 1'}</M>。</> },
                 { zh: '不可約多項式', en: 'Irreducible Polynomial', def: <>不能寫成兩個次數較低的多項式相乘。三次多項式若可分解，一定有一次因式 <M>{'x'}</M> 或 <M>{'x+1'}</M>，也就是有根 0 或 1。所以：<strong>三次多項式在 GF(2) 中沒有根 ⇔ 不可約</strong>。</> },
-                { zh: '商環', en: 'Quotient Ring GF(2)[x]/(p(x))', def: <>把「相差 <M>{'p(x)'}</M> 的倍數」的多項式視為同一個，只留下除以 <M>{'p(x)'}</M> 的餘數。三次 <M>{'p'}</M> 的餘數次數 ≤ 2，正好 8 種。</> },
-                { zh: 'α 的意義', en: 'α = the class of x', def: <>α 就是商環裡的 <M>x</M>。因為 <M>{'p(x) \\equiv 0'}</M>，所以 <M>{'p(\\alpha) = \\alpha^3+\\alpha+1 = 0'}</M>，移項得 <M>{'\\alpha^3 = \\alpha + 1'}</M>（GF(2) 中減 = 加）。</> },
+                { zh: '商環 GF(2)[x]/(p(x))', en: 'Quotient Ring', def: <>把「相差 <M>{'p(x)'}</M> 的倍數」的多項式視為同一個，只留下除以 <M>{'p(x)'}</M> 的餘數。三次 <M>{'p'}</M> 的餘數次數 ≤ 2，正好 8 種。</> },
+                { zh: 'α = x 的等價類', en: 'Equivalence Class of x', def: <>α 就是商環裡的 <M>x</M>。因為 <M>{'p(x) \\equiv 0'}</M>，所以 <M>{'p(\\alpha) = \\alpha^3+\\alpha+1 = 0'}</M>，移項得 <M>{'\\alpha^3 = \\alpha + 1'}</M>（GF(2) 中減 = 加）。</> },
               ]}
             />
             <LabGrid
@@ -95,7 +95,7 @@ export default function A3Construct() {
                   </div>
                   <div className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-3">
                     <div className="rounded-lg bg-slate-50 p-2">
-                      <M>{`q(0) = ${evalGF2(q, 0)}`}</M>，<M>{`q(1) = ${evalGF2(q, 1)}`}</M>
+                      <M>{`p(0) = ${evalGF2(q, 0)}`}</M>，<M>{`p(1) = ${evalGF2(q, 1)}`}</M>
                     </div>
                     <div className="rounded-lg bg-slate-50 p-2">
                       分解：<M>{factors.length > 1 ? factors.map((f) => `(${polyToTex(f)})`).join('') : polyToTex(q)}</M>

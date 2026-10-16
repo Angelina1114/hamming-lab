@@ -9,3 +9,4 @@ export * from './cyclic';
 export * from './gfm';
 export * from './quiz';
 export * from './algebra';
+export * from './scaling';

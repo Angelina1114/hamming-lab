@@ -50,11 +50,11 @@ export default function L2Lookup() {
           <Card>
             <Tex block>{'S_i(x) = x^i \\bmod g(x),\\qquad i = 0,1,\\dots,6'}</Tex>
             <p className="text-sm text-slate-700">
-              若 <M>{'S_i = S_j'}</M>（<M>{'i > j'}</M>），則 <M>{'g(x) \\mid x^i - x^j = x^j(x^{i-j} - 1)'}</M>。<M>{'g(x)'}</M> 與 <M>{'x'}</M> 互質，所以 <M>{'g(x) \\mid x^{i-j} - 1'}</M>，其中 <M>{'0 < i - j < 7'}</M>。但 <M>{'g(x)'}</M> 是原根多項式，使 <M>{'g \\mid x^k - 1'}</M> 的最小 k 是 7，矛盾。所以 7 個 Syndrome 兩兩相異，且都不為 0（<M>{'g \\nmid x^i'}</M>）。
+              若 <M>{'S_i = S_j'}</M>（<M>{'i > j'}</M>），則 <M>{'g(x) \\mid x^i - x^j = x^j(x^{i-j} - 1)'}</M>。<M>{'g(x)'}</M> 與 <M>{'x'}</M> 互質，所以 <M>{'g(x) \\mid x^{i-j} - 1'}</M>，其中 <M>{'0 < i - j < 7'}</M>。但 <M>{'g(x)'}</M> 是本原多項式（Primitive Polynomial，見 A4），使 <M>{'g \\mid x^k - 1'}</M> 的最小 k 是 7，矛盾。所以 7 個 Syndrome 兩兩相異，且都不為 0（<M>{'g \\nmid x^i'}</M>）。
             </p>
-            <p className="text-sm text-slate-700">3 位元的非零值剛好只有 7 個，所以這是一一對應——Hamming Code是「完美」的（第一課第 5 章）。</p>
+            <p className="text-sm text-slate-700">3 位元的非零值剛好只有 7 個，所以這是一一對應——Hamming Code 是「完美」的（第一課第 5 章）。</p>
             <p className="mt-2 text-sm text-slate-700">
-              換個角度看：把這 7 個 Syndrome 依位置 1 ~ 7 排成直行，得到的正是循環碼的 parity-check matrix <M>{'H_{\\text{cyc}}'}</M>（第 k 欄 = <M>{'\\alpha^{6-k}'}</M>）。所以「查表」就是第一課「比對 H 的哪一欄」，只是位元排列不同——詳見 <a className="text-indigo-700 underline" href="#/a-9">A9 用 GF(8) 推導 H</a>。
+              換個角度看：把這 7 個 Syndrome 依位置 1 ~ 7 排成直行，得到的正是循環碼的同位檢查矩陣（parity-check matrix）<M>{'H_{\\text{cyc}}'}</M>（第 k 欄 = <M>{'\\alpha^{7-k}'}</M>，k = 1, …, 7）。所以「查表」就是第一課「比對 H 的哪一欄」，只是位元排列不同——詳見 <a className="text-indigo-700 underline" href="#/a-9">A9 用 GF(8) 推導 H</a>。
             </p>
           </Card>
         ),
@@ -118,7 +118,14 @@ export default function L2Lookup() {
             {nErr >= 2 && (
               <div className="mt-3">
                 <Callout kind="warning" title={`目前有 ${nErr} 個錯誤`}>
-                  <p>查表假設「最多一個錯誤」。現在 S = {S.join('')} 會被當成位置 {pos || '—'} 的單一錯誤，結果會是錯的（2-9、2-10）。</p>
+                  <p>
+                    查表假設「最多一個錯誤」。
+                    {pos > 0 ? (
+                      <>現在 S = {S.join('')} 會被當成位置 {pos} 的單一錯誤，結果會是錯的（2-9、2-10）。</>
+                    ) : (
+                      <>現在 S = 000，解碼器會判定「沒有錯誤」，這些錯誤完全沒被發現（2-10）。</>
+                    )}
+                  </p>
                 </Callout>
               </div>
             )}
@@ -127,7 +134,7 @@ export default function L2Lookup() {
             </div>
             {conv === 'lsb' && (
               <p className="mt-2 text-sm text-amber-800">
-                改變位元順序後，同一個「位置」對應到不同的次方，整張表都變了。同一個 S 在兩種慣例下指向不同位置——查表必須和編碼時的位元順序一致。
+                改變位元順序後，除了正中間的位置 4（不論從哪一端數都是 x³）以外，其餘六個位置都對應到不同的次方，表格的六列都變了；同一個 S 在兩種慣例下通常指向不同位置——查表必須和編碼時的位元順序一致。
               </p>
             )}
           </Card>

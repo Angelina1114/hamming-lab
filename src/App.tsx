@@ -75,7 +75,7 @@ function SharedMessageChip() {
         <span className="text-slate-500">→</span>
         <BitString bits={c} className="text-slate-100" highlight={(i) => ([0, 1, 3].includes(i) ? 'text-parity-300' : 'text-data-300')} />
       </div>
-      <div className="mt-1 text-[11px] leading-snug text-slate-500">模組 1、2、3、6、7 使用同一組訊息，方便串連觀念。</div>
+      <div className="mt-1 text-[11px] leading-snug text-slate-500">第一課第 1、2、3、6、7 章使用同一組訊息，方便串連觀念。</div>
     </div>
   );
 }

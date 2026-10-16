@@ -24,7 +24,7 @@ export default function L2ThreeErrors() {
       id={ID}
       lead={
         <p>
-          原始 codeword <span className="mono">1001110</span>，錯誤落在 <M>{'x^3, x^1, x^0'}</M>。收到的 <span className="mono">1000101</span> 剛好也是一個合法 codeword——Syndrome = 000，解碼器以為一切正常。這是 <strong>Undetected Error（未偵測錯誤）</strong>。
+          原始 codeword <span className="mono">1001110</span>，錯誤落在 <M>{'x^3, x^1, x^0'}</M>。收到的 <span className="mono">1000101</span> 剛好也是一個合法 codeword——Syndrome = 000，解碼器以為一切正常。這是 <strong>未偵測錯誤（Undetected Error）</strong>。
         </p>
       }
       goals={[
@@ -33,7 +33,7 @@ export default function L2ThreeErrors() {
         </>,
         '理解「錯誤模式本身是合法 codeword」時錯誤不可見',
         '計算 35 種三錯中有幾種未偵測',
-        '用 codeword 集合圖理解最小漢明距離',
+        '用 codeword 集合圖理解最小 Hamming 距離',
       ]}
       intuition={{
         title: '從一個 codeword 直接跳到另一個 codeword',
@@ -91,7 +91,13 @@ export default function L2ThreeErrors() {
             <DecodeReport o={o} method="lookup" onToggle={(i) => setErrors(toggleError(errors, i + 1, 3))} />
             <div className="mt-3 rounded-xl bg-slate-50 p-3 text-sm">
               <M>{`e(x) = ${msbToTex(o.e)}`}</M>，<M>{`e(x) \\bmod g(x) = ${polyModMsb(o.e, G_MSB).join('')}`}</M>
-              {eIsCodeword && o.errorCount > 0 ? <strong className="ml-2 text-rose-700">→ e 本身是 codeword，錯誤不可見</strong> : <span className="ml-2 text-slate-600">→ e 不是 codeword，S ≠ 0（但仍會誤更正）</span>}
+              {o.errorCount === 0 ? (
+                <span className="ml-2 text-slate-600">→ 沒有錯誤（e = 0）</span>
+              ) : eIsCodeword ? (
+                <strong className="ml-2 text-rose-700">→ e 本身是 codeword，錯誤不可見</strong>
+              ) : (
+                <span className="ml-2 text-slate-600">→ e 不是 codeword，S ≠ 0{o.success ? '（單一錯誤，可正確更正）' : '（但會誤更正）'}</span>
+              )}
             </div>
             <div className="mt-5">
               <div className="mb-2 text-sm font-semibold text-slate-700">Codeword 集合圖：r 落在哪裡？</div>

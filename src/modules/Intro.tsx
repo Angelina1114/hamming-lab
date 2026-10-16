@@ -23,9 +23,9 @@ const PARTS = [
 const SENT: Bit[] = [1, 0, 1, 1];
 
 const SCHEMES = [
-  { name: '不編碼 Uncoded', n: 4, k: 4, detect: 0, correct: 0, note: '任何錯誤都變成另一個「合法」訊息' },
-  { name: '單一同位位元 Single parity', n: 5, k: 4, detect: 1, correct: 0, note: '知道「有錯」，不知道「錯在哪」' },
-  { name: '三重重複碼 Repetition ×3', n: 12, k: 4, detect: 2, correct: 1, note: '每個位元送三次，多數決；代價很高' },
+  { name: '不編碼（Uncoded）', n: 4, k: 4, detect: 0, correct: 0, note: '任何錯誤都變成另一個「合法」訊息' },
+  { name: '單一同位位元（Single parity）', n: 5, k: 4, detect: 1, correct: 0, note: '知道「有錯」，不知道「錯在哪」' },
+  { name: '三重重複碼（Repetition ×3）', n: 12, k: 4, detect: 2, correct: 1, note: '每個位元送三次，多數決；代價很高' },
   { name: 'Hamming(7,4)', n: 7, k: 4, detect: 2, correct: 1, note: '只多 3 個位元，就能修正任一個錯誤' },
 ];
 
@@ -44,7 +44,7 @@ export default function Intro() {
     <div>
       <ModuleHeader moduleId={ID}>
         <p>
-          這是一個給大學生的「錯誤更正碼 Error-Correcting Codes」數學實驗室。每一章都依照
+          這是一個給大學生的「錯誤更正碼（Error-Correcting Codes）」數學實驗室。每一章都依照
           <strong>為什麼 → 定義 → 計算 → 視覺化 → 實驗 → 結論</strong> 的順序展開：先遇到問題，再動手操作，最後才用數學把觀察整理成定理。
         </p>
       </ModuleHeader>
@@ -88,7 +88,7 @@ export default function Intro() {
             </div>
           </Card>
           <Callout kind="key" title="核心問題">
-            <p>如果每一個 4-bit 字串都是合法訊息，那麼任何錯誤都只會把一個合法訊息變成另一個合法訊息。要偵測或修正錯誤，我們必須<strong>刻意加入冗餘 (redundancy)</strong>，讓「合法」字串變得稀少。</p>
+            <p>如果每一個 4-bit 字串都是合法訊息，那麼任何錯誤都只會把一個合法訊息變成另一個合法訊息。要偵測或修正錯誤，我們必須<strong>刻意加入冗餘（redundancy）</strong>，讓「合法」字串變得稀少。</p>
           </Callout>
         </Stage>
 
@@ -106,10 +106,10 @@ export default function Intro() {
                 </div>
                 <div>
                   <dt className="font-semibold">
-                    <M>[n,k]</M> 線性碼 Linear code
+                    <M>{'(n,k)'}</M> code
                   </dt>
                   <dd className="text-slate-600">
-                    把 <M>k</M> 個資訊位元編成 <M>n</M> 個位元；共有 <M>2^k</M> 個 codeword。碼率 Code rate <M>{'R = k/n'}</M>。
+                    把 <M>k</M> 個資訊位元編成 <M>n</M> 個位元；共有 <M>2^k</M> 個 codeword。碼率（Code rate）<M>{'R = k/n'}</M>。例如 Hamming(7,4)：<M>{'n = 7,\\ k = 4'}</M>。
                   </dd>
                 </div>
               </dl>
@@ -141,10 +141,10 @@ export default function Intro() {
                 </div>
               </div>
               <p className="text-sm text-slate-600">
-                也就是 XOR：翻兩次等於沒翻。乘法照常（<M>{'a \\cdot b = a \\wedge b'}</M>，AND）。只有 <M>{'\\{0,1\\}'}</M> 兩個元素、用這套加法與乘法的系統，稱為<strong>二元體 GF(2)</strong>（Binary field）。之後所有的同位檢查與矩陣乘法都在 GF(2) 裡計算。
+                也就是 XOR：翻兩次等於沒翻。換句話說，這就是 <strong>mod 2 的算術</strong>：照常加、照常乘，最後只看除以 2 的餘數（奇偶）——<M>{'1+1 = 2 \\equiv 0 \\pmod 2'}</M>，乘法 mod 2 剛好是 AND。這套算術記作 <strong>GF(2)</strong>，之後所有的同位檢查與矩陣乘法都用它計算。（它為什麼被稱為「體（field）」、有什麼好處，在代數章節 A1 說明。）
               </p>
               <p className="mt-2 rounded-lg bg-amber-50 p-2 text-sm text-slate-700">
-                <strong>注意：這不是二進位數字的加法。</strong>把 1011 當成數字 11 時，<M>{'1+1 = 10_2'}</M> 會進位到左邊。但在這裡每個位元是一個獨立的位置，雜訊翻轉第 2 位不會影響第 1 位，所以<strong>不進位</strong>：<M>{'1+1=0'}</M>，各位置分開算。
+                <strong>注意：這不是二進位數字的加法。</strong>把 1011 當成數字 11 時，<M>{'1+1 = 10_2'}</M> 會進位到左邊。但在這裡每個位元是一個獨立的位置，雜訊翻轉第 2 位不會影響第 1 位，所以<strong>不進位</strong>：<M>{'1+1=0'}</M>，每一位各自 mod 2。
               </p>
               <p className="mt-2 text-sm text-slate-600">
                 因為 <M>1+1=0</M>，<strong>減法就是加法</strong>：把同一個錯誤再加一次，就能把它抵銷。
@@ -208,14 +208,14 @@ export default function Intro() {
                 </tbody>
               </table>
             </div>
-            <p className="mt-3 text-xs text-slate-500">重複碼的「修正 1 個」是指每一組 3 個重複位元中最多錯 1 個。Hamming(7,4) 用更少的冗餘達到同樣的單一錯誤修正能力。</p>
+            <p className="mt-3 text-xs text-slate-500">重複碼的「修正 1 個」是指每一組 3 個重複位元中最多錯 1 個。Hamming(7,4) 用更少的冗餘達到同樣的單一錯誤更正能力。</p>
           </Card>
         </Stage>
 
         <Stage kind="experiment" moduleId={ID} title="一個同位位元夠嗎？">
           <LabGrid
             main={
-              <Card title="實驗：在 1011 後面加一個偶同位位元 (even parity bit)" actions={<ResetButton onClick={() => setParityErr([0, 0, 0, 0, 0])} />}>
+              <Card title="實驗：在 1011 後面加一個偶同位位元（even parity bit）" actions={<ResetButton onClick={() => setParityErr([0, 0, 0, 0, 0])} />}>
                 <p className="mb-3 text-sm text-slate-600">傳送 <span className="mono">1011</span> 加上同位位元 <span className="mono">1</span>（讓 1 的總數為偶數）。點擊位元製造錯誤。</p>
                 <BitRow
                   bits={parityRecv}
@@ -229,7 +229,7 @@ export default function Intro() {
                     1 的總數 = <span className="font-mono font-bold">{parityRecv.filter(Boolean).length}</span>，檢查值 <M>{`\\sum r_i = ${parityCheck}`}</M>
                   </span>
                   {parityCheck === 0 ? (
-                    nErr === 0 ? <StatusBadge status="ok" /> : <StatusBadge status="wrong" zh="未偵測到錯誤！" />
+                    nErr === 0 ? <StatusBadge status="ok" /> : <StatusBadge status="wrong" zh="未偵測到錯誤！" en="Undetected error" />
                   ) : (
                     <StatusBadge status="detected" />
                   )}
@@ -259,7 +259,7 @@ export default function Intro() {
               3 個檢查有 <M>{'2^3 - 1 = 7'}</M> 種非空組合，剛好對應 7 個位置——這就是 Hamming(7,4)。
             </p>
           </Callout>
-          <Card icon={<ListChecks className="h-4 w-4 text-slate-500" />} title="課程地圖 Roadmap：三個部分">
+          <Card icon={<ListChecks className="h-4 w-4 text-slate-500" />} title="課程地圖（Roadmap）：三個部分">
             <ol className="grid grid-cols-1 gap-2 md:grid-cols-3">
               {PARTS.map((p) => (
                 <li key={p.to}>

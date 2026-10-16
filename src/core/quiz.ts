@@ -147,13 +147,13 @@ export function makeQuestion(type: QuizType, seed: number): QuizQuestion {
         type,
         chapter: 'l2-3',
         chapterLabel: '2-3 手算 GF(2) 多項式除法',
-        prompt: `訊息 $u = ${s(u)}$，補三個 0 後計算 $${s(enc.shifted)} \\bmod 1011$，得到的檢查碼 $p$ 是？`,
+        prompt: `訊息 $u = ${s(u)}$，補三個 0 後計算 $${s(enc.shifted)} \\bmod 1011$，得到的同位位元 $p$ 是？`,
         options: finalize(
           { text: s(enc.parity), correct: true, why: `長除法：每次把 1011 對齊目前最高位的 1 並 XOR，最後剩下 3 位餘數 $${s(enc.parity)}$。` },
           [
             { text: s(noPad), correct: false, why: '忘了先補三個 0（乘以 $x^3$），直接計算 $u(x) \\bmod g(x)$。' },
-            { text: s(reversed), correct: false, why: '餘數的位元順序寫反了。本課程最左邊是最高次項。' },
-            { text: s(enc.division.quotient.slice(1)), correct: false, why: '這是商的一部分，不是餘數。檢查碼是「餘數」。' },
+            { text: s(reversed), correct: false, why: '餘數的位元順序寫反了。第二課最左邊是最高次項。' },
+            { text: s(enc.division.quotient.slice(1)), correct: false, why: '這是商的一部分，不是餘數。同位位元是「餘數」。' },
           ],
           r,
           randBitsStr(3, r),
@@ -178,7 +178,7 @@ export function makeQuestion(type: QuizType, seed: number): QuizQuestion {
           [
             { text: s(intToBits(pos, 3)), correct: false, why: '把錯誤「位置」直接寫成二進位。Syndrome 是餘數，不是位置編號。' },
             { text: s(intToBits(exp, 3)), correct: false, why: '把錯誤「次方」寫成二進位。Syndrome 是 $x^i \\bmod g(x)$，不是 $i$ 本身。' },
-            { text: s([...S].reverse() as Bit[]), correct: false, why: '餘數位元順序寫反了（本課程最左邊是 $x^2$ 係數）。' },
+            { text: s([...S].reverse() as Bit[]), correct: false, why: '餘數位元順序寫反了（第二課最左邊是 $x^2$ 係數）。' },
           ],
           r,
           randBitsStr(3, r),
@@ -194,7 +194,7 @@ export function makeQuestion(type: QuizType, seed: number): QuizQuestion {
         type,
         chapter: 'l2-6',
         chapterLabel: '2-6 Key Equation',
-        prompt: `在 $\\mathrm{GF}(8)$（$p(x)=x^3+x+1$，$\\alpha^3=\\alpha+1$）中，$\\alpha^{${k}}$ 的三位元表示（$\\alpha^2\\,\\alpha\\,1$ 的係數）是？`,
+        prompt: `在 $\\mathrm{GF}(8)$（$g(x)=x^3+x+1$，$\\alpha^3=\\alpha+1$）中，$\\alpha^{${k}}$ 的三位元表示（$\\alpha^2\\,\\alpha\\,1$ 的係數）是？`,
         options: finalize(
           { text: s(fieldToBits(a)), correct: true, why: `逐次乘 $\\alpha$，遇到 $\\alpha^3$ 就換成 $\\alpha+1$，得到 $\\alpha^{${k}}$ = ${s(fieldToBits(a))}。` },
           [
@@ -274,7 +274,7 @@ export function makeQuestion(type: QuizType, seed: number): QuizQuestion {
         chapterLabel: '2-9 超過更正能力：兩個錯誤',
         prompt: `送出 $c = ${s(c)}$，位置 ${p1}、${p2} 發生錯誤，收到 $r = ${s(rv)}$。只能更正一個錯誤的 Hamming(7,4) 解碼器輸出什麼？`,
         options: finalize(
-          { text: s(d.corrected), correct: true, why: `$S = ${s(d.syndrome)}$ 剛好等於位置 ${d.position} 的單一錯誤 Syndrome，解碼器翻轉位置 ${d.position}，得到另一個合法 codeword（誤更正 Miscorrection）。` },
+          { text: s(d.corrected), correct: true, why: `$S = ${s(d.syndrome)}$ 剛好等於位置 ${d.position} 的單一錯誤 Syndrome，解碼器翻轉位置 ${d.position}，得到另一個合法 codeword：這就是誤更正（Miscorrection）。` },
           [
             { text: s(c), correct: false, why: '兩個錯誤超出 $t=1$ 的能力，解碼器無法還原原 codeword。' },
             { text: s(rv), correct: false, why: '普通 Hamming 解碼器沒有「偵測雙錯並保留」的機制；那是 SECDED 才有的行為。' },
@@ -321,10 +321,10 @@ export function makeQuestion(type: QuizType, seed: number): QuizQuestion {
       const r8 = vecAdd(c8, errorVector(positions, 8));
       const res = secdedDecodeL2(r8);
       const LABEL: Record<SecdedL2Case, string> = {
-        'no-error': '沒有錯誤 No Error',
-        single: '單一錯誤，更正 Single Error, Correct',
-        overall: '整體同位位元錯誤 Overall Parity Bit Error',
-        double: '偵測到雙重錯誤，不更正 Double Error Detected',
+        'no-error': '沒有錯誤（No Error）',
+        single: '單一錯誤，更正（Single Error, Correct）',
+        overall: '整體同位位元錯誤（Overall Parity Bit Error）',
+        double: '偵測到雙重錯誤，不更正（Double Error Detected）',
       };
       const WHY: Record<SecdedL2Case, string> = {
         'no-error': '需要 $S = 0$ 且整體同位為偶。',
