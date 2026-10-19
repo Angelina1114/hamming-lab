@@ -1,18 +1,14 @@
 import { useState } from 'react';
 import { Radio, MousePointerClick, Layers, ListChecks } from 'lucide-react';
-import { type Bit, type PositionInfo, sum, flipBit } from '../core';
+import { type Bit, flipBit } from '../core';
 import { Tex, M } from '../components/Tex';
 import { BitRow } from '../components/Bits';
-import { Callout, Card, Expandable, FlowBar, LabGrid, Misconceptions, ModuleHeader, PrevNext, ResetButton, Stage, StatusBadge } from '../components/Lesson';
+import { Callout, Card, Expandable, FlowBar, LabGrid, Misconceptions, ModuleHeader, PrevNext, ResetButton, Stage } from '../components/Lesson';
 import { MODULES, type ModuleMeta } from '../lib/modules';
 import { RelatedLinks } from '../components/alg/Links';
+import { ParityLab } from '../components/ParityLab';
 
 const ID = 'intro';
-
-const PARITY_LAYOUT: PositionInfo[] = [
-  ...[0, 1, 2, 3].map((i): PositionInfo => ({ index: i, position: i + 1, label: `d${i + 1}`, role: 'data' })),
-  { index: 4, position: 5, label: 'p', role: 'parity' },
-];
 
 const PARTS = [
   { to: 'encode', tag: '第一課', title: 'Hamming Code 是什麼', desc: '編碼、矩陣 H 與 G、Syndrome、距離、Hamming Bound、SECDED', filter: (m: ModuleMeta) => !m.group && !m.lesson && m.id !== 'intro' },
@@ -32,12 +28,6 @@ const SCHEMES = [
 export default function Intro() {
   const [raw, setRaw] = useState<Bit[]>([1, 0, 1, 1]);
   const [rawFlips, setRawFlips] = useState<number[]>([]);
-  const [parityErr, setParityErr] = useState<Bit[]>([0, 0, 0, 0, 0]);
-
-  const parityWord: Bit[] = [1, 0, 1, 1, sum([1, 0, 1, 1])];
-  const parityRecv = parityWord.map((b, i) => (b ^ parityErr[i]) as Bit);
-  const parityCheck = sum(parityRecv);
-  const nErr = parityErr.filter(Boolean).length;
   const errVec: Bit[] = SENT.map((_, i) => (rawFlips.includes(i) ? 1 : 0));
 
   return (
@@ -212,43 +202,66 @@ export default function Intro() {
           </Card>
         </Stage>
 
-        <Stage kind="experiment" moduleId={ID} title="一個同位位元夠嗎？">
-          <LabGrid
-            main={
-              <Card title="實驗：在 1011 後面加一個偶同位位元（even parity bit）" actions={<ResetButton onClick={() => setParityErr([0, 0, 0, 0, 0])} />}>
-                <p className="mb-3 text-sm text-slate-600">傳送 <span className="mono">1011</span> 加上同位位元 <span className="mono">1</span>（讓 1 的總數為偶數）。點擊位元製造錯誤。</p>
-                <BitRow
-                  bits={parityRecv}
-                  layout={PARITY_LAYOUT}
-                  states={parityErr.map((e) => (e ? 'error' : 'normal'))}
-                  onToggle={(i) => setParityErr((e) => flipBit(e, i))}
-                  showPositions={false}
-                />
-                <div className="mt-4 flex flex-wrap items-center gap-3">
-                  <span className="text-sm">
-                    1 的總數 = <span className="font-mono font-bold">{parityRecv.filter(Boolean).length}</span>，檢查值 <M>{`\\sum r_i = ${parityCheck}`}</M>
-                  </span>
-                  {parityCheck === 0 ? (
-                    nErr === 0 ? <StatusBadge status="ok" /> : <StatusBadge status="wrong" zh="未偵測到錯誤！" en="Undetected error" />
-                  ) : (
-                    <StatusBadge status="detected" />
-                  )}
-                </div>
-                <p className="mt-3 text-sm text-slate-600">
-                  {nErr === 0 && '試著翻轉一個位元。'}
-                  {nErr === 1 && '偵測到錯誤了！但是…是哪一個位元錯？5 個位置都有可能，所以無法修正。'}
-                  {nErr >= 2 && (nErr % 2 === 0 ? '偶數個錯誤讓同位檢查「恢復正常」：錯誤完全隱形。' : '奇數個錯誤會被偵測到，但同樣無法定位。')}
+        <Stage kind="experiment" moduleId={ID} title="同位位元：一個、兩個為什麼不夠？">
+          <Card title="什麼是同位位元（parity bit）？">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="min-w-0 space-y-2 text-sm text-slate-700">
+                <p>
+                  在資料後面<strong>多加一個位元</strong>，專門用來「湊成偶數個 1」，這個多出來的位元就叫同位位元（偶同位，even parity）。
                 </p>
-              </Card>
-            }
-            aside={
-              <Misconceptions
-                items={[
-                  { wrong: '同位檢查通過，就代表資料正確。', right: '只代表錯誤個數是偶數（包含 0）。兩個錯誤會互相抵銷。' },
-                  { wrong: '偵測到錯誤就等於能修正錯誤。', right: '修正需要「定位」。一個檢查只能回答一個是非題，不足以指出 n 個位置中的哪一個。' },
-                ]}
-              />
-            }
+                <p>
+                  接收端收到後只做一件事：<strong>數 1 的個數</strong>。偶數 → 檢查通過；奇數 → 一定有位元被翻轉過。
+                </p>
+                <p className="rounded-lg bg-amber-50 p-2 text-amber-900">
+                  弱點：翻轉 1 個位元，1 的個數會從偶數變奇數，所以抓得到；但翻轉 2 個，奇偶又變回來，檢查照樣通過。而且就算抓到了，也不知道是哪一個位元錯。
+                </p>
+              </div>
+              <div className="min-w-0 rounded-xl border border-slate-200 p-3 text-sm">
+                <table className="w-full text-center font-mono">
+                  <tbody>
+                    <tr className="text-xs text-slate-500">
+                      <td className="py-1 text-left font-sans">資料</td>
+                      <td colSpan={4}>1 0 1 1</td>
+                      <td className="font-sans">1 的個數</td>
+                    </tr>
+                    <tr>
+                      <td className="py-1 text-left font-sans text-slate-600">原本</td>
+                      <td colSpan={4} className="font-bold text-data-700">1 0 1 1</td>
+                      <td>3（奇數）</td>
+                    </tr>
+                    <tr>
+                      <td className="py-1 text-left font-sans text-slate-600">加上 P</td>
+                      <td colSpan={4} className="font-bold text-data-700">
+                        1 0 1 1 <span className="text-parity-600">1</span>
+                      </td>
+                      <td>4（偶數）✓</td>
+                    </tr>
+                    <tr>
+                      <td className="py-1 text-left font-sans text-slate-600">錯 1 個</td>
+                      <td colSpan={4} className="font-bold">
+                        1 <span className="text-rose-600">1</span> 1 1 <span className="text-parity-600">1</span>
+                      </td>
+                      <td className="text-orange-700">5（奇數）→ 抓到</td>
+                    </tr>
+                    <tr>
+                      <td className="py-1 text-left font-sans text-slate-600">錯 2 個</td>
+                      <td colSpan={4} className="font-bold">
+                        1 <span className="text-rose-600">1</span> <span className="text-rose-600">0</span> 1 <span className="text-parity-600">1</span>
+                      </td>
+                      <td className="text-rose-700">4（偶數）→ 沒發現</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </Card>
+          <ParityLab />
+          <Misconceptions
+            items={[
+              { wrong: '同位檢查通過，就代表資料正確。', right: '只代表錯誤個數是偶數（包含 0）。兩個錯誤會互相抵銷，檢查照樣通過。' },
+              { wrong: '偵測到錯誤就等於能修正錯誤。', right: '修正需要「定位」：知道是哪一個位元錯，才能把它翻回來。一個檢查只能回答一個是非題，指不出 n 個位置中的哪一個。' },
+              { wrong: '加到兩個同位位元，就能定位錯誤。', right: '兩個檢查只有 4 種結果，扣掉「全部通過」只剩 3 種，卻要分辨 6 個位置，一定有位置共用同一種結果。不管兩個檢查怎麼安排都一樣（4096 種安排已全部驗證過）。要定位 7 個位置，需要 3 個檢查。' },
+            ]}
           />
         </Stage>
 
