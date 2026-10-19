@@ -1,123 +1,184 @@
 import { useState } from 'react';
-import { type Bit, type Design, H74, LAYOUT_74, analyzeDesign, checkBitsFor, signature } from '../core';
+import { type Bit, LAYOUT_74, checkBitsFor, encode74, flipBit } from '../core';
 import { M, Tex } from './Tex';
-import { Card } from './Lesson';
+import { Card, ResetButton, Segmented } from './Lesson';
 
-const CHECKS = ['P1', 'P2', 'P4'];
-const posName = (j: number) => `${j + 1}（${LAYOUT_74[j].label}）`;
+type K = '1' | '2' | '3' | '4';
+const bin = (v: number, r: number) => v.toString(2).padStart(r, '0');
 
-const PRESETS: { label: string; make: () => Design }[] = [
-  { label: 'Hamming 的安排', make: () => H74.map((r) => [...r]) },
-  { label: 'P1 只管 3 個', make: () => H74.map((r, i) => r.map((v, j) => (i === 0 && j === 6 ? 0 : v)) as Bit[]) },
-  { label: 'P1 只管 2 個', make: () => H74.map((r, i) => r.map((v, j) => (i === 0 && (j === 4 || j === 6) ? 0 : v)) as Bit[]) },
-  { label: '每個只管自己', make: () => CHECKS.map((_, i) => Array.from({ length: 7 }, (_, j) => (j === [0, 1, 3][i] ? 1 : 0)) as Bit[]) },
-];
+/** Fewer data bits: take the first n positions of the Hamming(7,4) layout (the dropped data bits are 0). */
+function smallCode(k: number) {
+  const r = checkBitsFor(k);
+  const n = k + r;
+  return { r, n, outcomes: 2 ** r - 1, wasted: 2 ** r - 1 - n, rate: k / n, perData: r / k };
+}
 
-/** Let the reader design the three checks and see which single errors become unlocatable. */
-export function CoverageDesigner() {
-  const [cover, setCover] = useState<Design>(() => H74.map((r) => [...r]));
-  const a = analyzeDesign(cover);
-  const clashOf = (j: number) => a.clashes.findIndex((g) => g.includes(j));
-  const toggle = (i: number, j: number) => setCover(cover.map((row, r) => row.map((v, c) => (r === i && c === j ? ((1 - v) as Bit) : v))));
+export function MessageSizeLab() {
+  const [kStr, setK] = useState<K>('4');
+  const [msg, setMsg] = useState<Bit[]>([1, 0, 1, 1]);
+  const [flips, setFlips] = useState<number[]>([]);
+  const k = Number(kStr);
+  const { r, n, outcomes, wasted } = smallCode(k);
+  const data = msg.slice(0, k);
+  const sent = encode74([...data, ...Array<Bit>(4 - k).fill(0)]).slice(0, n);
+  const recv = sent.map((b, j) => (flips.includes(j) ? ((b ^ 1) as Bit) : b));
+  // syndrome = XOR of the positions holding a 1 (column j of H is the binary of j)
+  const s = recv.reduce<number>((acc, b, j) => (b ? acc ^ (j + 1) : acc), 0);
+  const label = (pos: number) => LAYOUT_74[pos - 1].label;
+  const fixed = s >= 1 && s <= n ? flipBit(recv, s - 1) : recv;
+  const why =
+    k === 1
+      ? '2 個同位位元有 2² − 1 = 3 種結果，剛好對上 3 個位置。其實 P1、P2 都會等於 D1：就是把資料重複送 3 次。'
+      : k < 4
+        ? `如果只用 2 個同位位元，只有 3 種結果，卻要分辨 ${k + 2} 個位置，不夠；所以還是得用 3 個同位位元。3 個有 7 種結果，這裡只用到 ${n} 種，${wasted} 種浪費掉。`
+        : '3 個同位位元的 7 種結果全部用上，一種都沒浪費：這就是 3 個同位位元最多能保護的資料量。';
 
   return (
-    <Card title="為什麼每個檢查剛好管 4 個位置？不能管 1、2、3 個嗎？">
-      <div className="space-y-2 text-sm text-slate-700">
-        <p>
-          要能修正，接收端必須從「哪些檢查失敗」反推出錯在哪裡。所以 7 個位置，每一個都要有<strong>自己專屬的一組檢查</strong>：
-        </p>
-        <ul className="list-disc space-y-1 pl-5">
-          <li>每個位置至少被一個檢查管到，不然它錯了，所有檢查都照樣通過，根本看不到。</li>
-          <li>任兩個位置被管到的檢查組合不能一樣，不然錯在其中一個時分不出是誰。</li>
-        </ul>
-        <p>
-          3 個檢查的非空組合只有 <M>{'2^3 - 1 = 7'}</M> 種：{'{P1}、{P2}、{P4}、{P1,P2}、{P1,P4}、{P2,P4}、{P1,P2,P4}'}。7 個位置剛好把這 7 種<strong>全部用掉，一種一個</strong>。其中含有 P1 的有 4 種（{'{P1}、{P1,P2}、{P1,P4}、{P1,P2,P4}'}），所以 P1 一定剛好管 4 個位置；P2、P4 也一樣。
-        </p>
-        <p>
-          如果讓 P1 只管 1、2 或 3 個位置，含 P1 的組合就有幾種沒被用到，不被 P1 管的位置至少有 4 個，卻只剩 {'{P2}、{P4}、{P2,P4}'} 3 種組合可用，<strong>一定有兩個位置撞在一起，或有位置完全沒被檢查到</strong>。自己點下面的格子試試看。
-        </p>
-      </div>
+    <Card
+      title="為什麼訊息是 4 個位元？可以更少嗎？"
+      actions={
+        <>
+          <Segmented
+            ariaLabel="資訊位元數"
+            value={kStr}
+            onChange={(v) => {
+              setK(v);
+              setFlips([]);
+            }}
+            options={(['1', '2', '3', '4'] as K[]).map((v) => ({ value: v, label: `${v} 位元` }))}
+          />
+          <ResetButton
+            onClick={() => {
+              setMsg([1, 0, 1, 1]);
+              setFlips([]);
+            }}
+          />
+        </>
+      }
+    >
+      <p className="mb-3 text-sm text-slate-700">
+        <strong>可以更少。</strong>做法是只用 Hamming(7,4) 排列的前 n 個位置（少掉的資訊位元當成 0、不送出去）。用上面的按鈕切換資料有幾個位元，看要付幾個同位位元，也可以點 codeword 製造一個錯，確認它照樣能修正。
+      </p>
 
-      <div className="mt-3 flex flex-wrap gap-1.5">
-        {PRESETS.map((p) => (
-          <button key={p.label} type="button" className="btn-ghost !px-2 !py-1 text-xs" onClick={() => setCover(p.make())}>
-            {p.label}
-          </button>
-        ))}
-      </div>
-
-      <div className="mt-3 overflow-x-auto">
-        <table className="mx-auto text-center text-sm">
-          <thead>
-            <tr className="text-xs text-slate-500">
-              <th className="px-1 py-1 text-left">檢查</th>
-              {LAYOUT_74.map((p) => (
-                <th key={p.index} className={`px-1 py-1 ${p.role === 'parity' ? 'text-parity-600' : 'text-data-600'}`}>
-                  {p.position}
-                  <div className="text-[10px] font-normal">{p.label}</div>
-                </th>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div className="min-w-0 space-y-3">
+          <div>
+            <div className="mb-1 text-xs text-slate-500">資料（點擊切換）</div>
+            <div className="flex gap-1.5">
+              {data.map((b, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => {
+                    setMsg(msg.map((x, j) => (j === i ? ((1 - x) as Bit) : x)));
+                    setFlips([]);
+                  }}
+                  aria-label={`D${i + 1} = ${b}，點擊切換`}
+                  className="flex w-10 flex-col items-center rounded-lg border-2 border-data-300 bg-data-50 py-1"
+                >
+                  <span className="text-[10px] font-semibold text-data-700">D{i + 1}</span>
+                  <span className="font-mono text-lg font-bold">{b}</span>
+                </button>
               ))}
-              <th className="px-1 py-1">管幾個</th>
-            </tr>
-          </thead>
-          <tbody>
-            {cover.map((row, i) => (
-              <tr key={i}>
-                <td className="px-1 py-1 text-left font-semibold text-parity-700">{CHECKS[i]}</td>
-                {row.map((v, j) => (
-                  <td key={j} className="px-1 py-1">
-                    <button
-                      type="button"
-                      onClick={() => toggle(i, j)}
-                      aria-label={`${CHECKS[i]} 管位置 ${j + 1}（${LAYOUT_74[j].label}）`}
-                      aria-pressed={v === 1}
-                      className={`h-6 w-6 rounded-md border text-sm font-bold sm:h-8 sm:w-8 sm:text-base ${v ? 'border-parity-400 bg-parity-100 text-parity-700' : 'border-slate-200 bg-white text-slate-300'}`}
-                    >
-                      {v ? '●' : '·'}
-                    </button>
-                  </td>
-                ))}
-                <td className={`px-1 py-1 font-mono font-bold ${a.rowWeights[i] === 4 ? 'text-emerald-700' : 'text-orange-700'}`}>{a.rowWeights[i]}</td>
-              </tr>
-            ))}
-            <tr className="border-t border-slate-200 text-[11px]">
-              <td className="px-1 py-1 text-left text-slate-500">失敗</td>
-              {LAYOUT_74.map((p) => {
-                const s = signature(cover, p.index);
-                const none = !s.some(Boolean);
-                const c = clashOf(p.index);
+            </div>
+          </div>
+          <div>
+            <div className="mb-1 text-xs text-slate-500">
+              送出的 codeword：{n} 個位元，其中 {r} 個是同位位元（點擊製造錯誤）
+            </div>
+            <div className="flex flex-wrap gap-1 sm:gap-1.5">
+              {recv.map((b, j) => {
+                const parity = LAYOUT_74[j].role === 'parity';
+                const flipped = flips.includes(j);
                 return (
-                  <td key={p.index} className={`px-1 py-1 font-semibold ${none ? 'text-rose-600' : c >= 0 ? 'text-orange-600' : 'text-emerald-700'}`}>
-                    {none ? '無' : CHECKS.filter((_, i) => s[i]).map((x) => x.slice(1)).join(',')}
-                  </td>
+                  <button
+                    key={j}
+                    type="button"
+                    onClick={() => setFlips(flipped ? flips.filter((x) => x !== j) : [...flips, j])}
+                    aria-label={`位置 ${j + 1} ${LAYOUT_74[j].label} = ${b}${flipped ? '（已翻轉）' : ''}，點擊翻轉`}
+                    aria-pressed={flipped}
+                    className={`flex w-10 flex-col items-center rounded-lg border-2 py-1 ${flipped ? 'border-rose-500 bg-rose-50' : parity ? 'border-parity-300 bg-parity-50' : 'border-data-300 bg-data-50'}`}
+                  >
+                    <span className={`text-[10px] font-semibold ${parity ? 'text-parity-700' : 'text-data-700'}`}>{LAYOUT_74[j].label}</span>
+                    <span className={`font-mono text-lg font-bold ${flipped ? 'text-rose-600' : ''}`}>{b}</span>
+                  </button>
                 );
               })}
-              <td />
-            </tr>
-          </tbody>
-        </table>
+            </div>
+          </div>
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm" aria-live="polite">
+            {s === 0 ? (
+              flips.length === 0 ? (
+                <>所有檢查都通過：沒有錯。</>
+              ) : (
+                <>所有檢查都通過，但其實錯了 {flips.length} 個（錯誤剛好互相抵銷）。</>
+              )
+            ) : s <= n ? (
+              <>
+                檢查結果是 <span className="font-mono font-bold">{bin(s, r)}</span>（= {s}）→ 指向位置 {s}（{label(s)}），翻回來得到{' '}
+                <span className="font-mono font-bold">{fixed.join('')}</span>
+                {flips.length === 1 ? (fixed.join('') === sent.join('') ? <span className="text-emerald-700">　✓ 修正成功</span> : null) : <span className="text-rose-700">　✗ 錯了不只一個，改錯了</span>}
+              </>
+            ) : (
+              <>
+                檢查結果是 <span className="font-mono font-bold">{bin(s, r)}</span>（= {s}），但這種結果<strong>沒有對應的位置</strong>（是浪費掉的那幾種）→ 知道有錯，而且一定錯了不只一個。
+              </>
+            )}
+          </div>
+        </div>
+
+        <div className="min-w-0 space-y-3">
+          <div>
+            <div className="mb-1 text-xs text-slate-500">
+              {r} 個同位位元 → {outcomes} 種「有錯」的檢查結果，分給 {n} 個位置
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {Array.from({ length: outcomes }, (_, i) => i + 1).map((p) => (
+                <span
+                  key={p}
+                  className={`rounded-md border px-2 py-1 font-mono text-xs ${p === s ? 'ring-2 ring-amber-400' : ''} ${p <= n ? 'border-sky-300 bg-sky-50 text-sky-800' : 'border-dashed border-slate-300 text-slate-500'}`}
+                >
+                  {bin(p, r)} → {p <= n ? label(p) : '沒用到'}
+                </span>
+              ))}
+            </div>
+          </div>
+          <p className="text-sm text-slate-700">{why}</p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm tabular-nums">
+              <thead>
+                <tr className="text-left text-xs text-slate-500">
+                  <th className="py-1 pr-2">資料</th>
+                  <th className="pr-2">code</th>
+                  <th className="pr-2">同位位元</th>
+                  <th className="pr-2">每個資訊位元配幾個同位位元</th>
+                  <th>浪費的結果</th>
+                </tr>
+              </thead>
+              <tbody className="font-mono">
+                {[1, 2, 3, 4].map((kk) => {
+                  const c = smallCode(kk);
+                  return (
+                    <tr key={kk} className={`border-t border-slate-100 ${kk === k ? 'bg-amber-50' : ''}`}>
+                      <td className="py-1 pr-2">{kk}</td>
+                      <td className="pr-2">
+                        ({c.n},{kk})
+                      </td>
+                      <td className="pr-2">{c.r}</td>
+                      <td className="pr-2">{c.perData.toFixed(2)}</td>
+                      <td>{c.wasted}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
-      <p className="mt-1 text-center text-xs text-slate-500">最下面一列「失敗」= 錯在這個位置時，哪幾個檢查會失敗（1 = P1、2 = P2、4 = P4）。</p>
-      <div className={`mt-3 rounded-xl border p-3 text-sm ${a.locatesEverySingleError ? 'border-emerald-300 bg-emerald-50 text-emerald-900' : 'border-orange-300 bg-orange-50 text-orange-900'}`}>
-        {a.locatesEverySingleError ? (
-          <>✓ 7 個位置各有一組不同的檢查，任何單一錯誤都能定位。每個檢查都剛好管 4 個位置。</>
-        ) : (
-          <ul className="space-y-1">
-            {a.invisible.map((j) => (
-              <li key={`i${j}`}>✗ 位置 {posName(j)} 沒有任何檢查管：錯在這裡，所有檢查照樣通過，完全看不到。</li>
-            ))}
-            {a.clashes.map((g) => (
-              <li key={g.join()}>
-                ✗ 位置 {g.map(posName).join('、')} 的檢查組合一樣：錯在其中一個時，分不出是誰。
-              </li>
-            ))}
-          </ul>
-        )}
+      <div className="mt-4 rounded-xl border border-emerald-300 bg-emerald-50 p-3 text-sm text-emerald-900">
+        <strong>為什麼選 4？</strong>資料少於 4 個位元也能修正錯誤，但同位位元省不下來：2 或 3 個資訊位元一樣要 3 個同位位元，等於花一樣的成本送更少的資料。只有降到 1 個資訊位元才省成 2 個同位位元，可是那時同位位元是資料的 2 倍。所以 4 是「3 個同位位元最划算」的資料量：每個資訊位元只要配 0.75 個同位位元，而且 7 種檢查結果一種都沒浪費。
       </div>
-      <p className="mt-2 text-xs text-slate-500">
-        網站的測試把所有「能定位每個單一錯誤」的安排都列出來檢查過（共 5040 種，就是 7 種組合的所有排列），每一種都是三個檢查各管 4 個位置。
-      </p>
     </Card>
   );
 }
@@ -132,14 +193,14 @@ export function CodeSizeTable() {
     return { k, r, n, outcomes, full: n === outcomes, rate: k / n };
   });
   return (
-    <Card title="為什麼是 (7,4)？資料可以是別的長度嗎？">
+    <Card title="資料更多的話呢？">
       <div className="space-y-2 text-sm text-slate-700">
         <p>
-          可以！關鍵在上一題：r 個同位位元有 <M>{'2^r'}</M> 種檢查結果。扣掉「全部通過 = 沒有錯」，剩 <M>{'2^r - 1'}</M> 種要分給 n = k + r 個位置（k 個資訊位元加 r 個同位位元），所以必須
+          規則和上面一樣：r 個同位位元有 <M>{'2^r - 1'}</M> 種「有錯」的檢查結果，要分給 n = k + r 個位置（k 個資訊位元加 r 個同位位元），所以必須
         </p>
         <Tex block>{'k + r \\le 2^r - 1'}</Tex>
         <p>
-          r = 2 時 k 最多 1；<strong>r = 3 時 k 最多 4</strong>；r = 4 時 k 最多 11。所以 4 不是隨便選的：它是 3 個同位位元最多能保護的資料量，7 = 4 + 3 剛好用光全部 7 種結果。
+          r = 2 時 k 最多 1；<strong>r = 3 時 k 最多 4</strong>；r = 4 時 k 最多 11。資料超過 4 個位元，就要第 4 個同位位元。
         </p>
       </div>
       <div className="mt-3 overflow-x-auto">
@@ -174,7 +235,7 @@ export function CodeSizeTable() {
       </div>
       <div className="mt-3 space-y-1 text-sm text-slate-700">
         <p>
-          資料只有 1 個位元時用 (3,1)，其實就是三重重複；2、3 個位元也可以，但一樣要付 3 個同位位元，有些結果浪費掉。資料一多到 5 個，n = 8 已經超過 7 種結果，只好加到 4 個同位位元，一直到 (15,11) 才又剛好用滿。
+          資料一多到 5 個，如果還用 3 個同位位元，n = 5 + 3 = 8 已經超過 7 種結果，只好加到 4 個同位位元（n = 9），一直到 (15,11) 才又剛好用滿。
         </p>
         <p>
           課本選 (7,4)，是因為它是除了重複碼之外<strong>最小的完整 Hamming Code</strong>：小到可以手算、畫成 Venn 圖，又已經有「重疊檢查定位錯誤」的全部精神。實際系統用的是更長的版本：家族表與 Hamming Bound 見

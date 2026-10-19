@@ -6,7 +6,7 @@ import { useMessage } from '../lib/store';
 import { Tex, M } from '../components/Tex';
 import { BitCell, BitRow, MessageInput, RoleLegend } from '../components/Bits';
 import { Venn } from '../components/Venn';
-import { CodeSizeTable, CoverageDesigner } from '../components/WhySevenFour';
+import { CodeSizeTable, MessageSizeLab } from '../components/WhySevenFour';
 import { Callout, Card, Derivation, Expandable, FlowBar, LabGrid, Misconceptions, ModuleHeader, PrevNext, ResetButton, Stage, StatusBadge } from '../components/Lesson';
 
 const ID = 'encode';
@@ -118,7 +118,6 @@ export default function M1Encoding() {
               </p>
             </Card>
           </div>
-          <CoverageDesigner />
         </Stage>
 
         <Stage kind="calculation" moduleId={ID} title="用 mod 2 計算三個同位位元">
@@ -305,6 +304,7 @@ export default function M1Encoding() {
               這三個式子對資料是<strong>線性</strong>的——下一章我們把它們寫成矩陣，用線性代數來理解整個 code。
             </p>
           </Callout>
+          <MessageSizeLab />
           <CodeSizeTable />
         </Stage>
       </div>
