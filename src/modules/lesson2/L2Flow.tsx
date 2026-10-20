@@ -33,7 +33,7 @@ export default function L2Flow() {
       intuition={{
         title: '一封信的旅程',
         body: (
-          <div className="prose-lab max-w-3xl">
+          <div className="prose-lab">
             <p>
               把資料想成寄信：寄件人在信末附上「同位位元」（編碼）；郵差可能弄髒幾個字（通道）；收件人先算一次同位位元，發現「症狀值」（Syndrome），從症狀值推理是哪個字被弄髒（錯誤定位），最後把那個字改回來（XOR 更正）。
             </p>

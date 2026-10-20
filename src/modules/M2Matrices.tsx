@@ -103,7 +103,7 @@ export default function M2Matrices() {
 
       <div className="space-y-12">
         <Stage kind="why" moduleId={ID} title="為什麼要用矩陣？">
-          <div className="prose-lab max-w-3xl">
+          <div className="prose-lab">
             <p>
               逐條寫 XOR 方程在 7 個位元時還算容易，但當碼長變成 64、128、甚至上千位元時，我們需要一套能<strong>系統化計算</strong>與<strong>證明性質</strong>的語言。
               線性代數正好提供這套語言：「有多少個 codeword？」是維度的問題，「哪些字串合法？」是解方程組的問題。
@@ -249,7 +249,7 @@ export default function M2Matrices() {
                   <p>
                     <M>{'C = \\ker H'}</M> 是 <M>{'\\mathbb{F}_2^7'}</M> 的<strong>子空間</strong>。codeword 的集合是子空間的 code，稱為<strong>線性碼</strong>。在 GF(2) 裡純量只有 0 和 1，所以條件化簡成一句話：
                   </p>
-                  <div className="max-w-[52em] rounded-lg bg-slate-50 p-2 text-center font-semibold text-slate-800">任兩個 codeword 相加，還是 codeword。</div>
+                  <div className="rounded-lg bg-slate-50 p-2 text-center font-semibold text-slate-800">任兩個 codeword 相加，還是 codeword。</div>
                   <p>
                     記作 <M>{'[n,k]'}</M>：方括號表示線性，<M>k</M> 是子空間的維度，所以有 <M>{'2^k'}</M> 個 codeword。Hamming(7,4) 是 <M>{'[7,4]'}</M> 線性碼；之後常寫成 <M>{'[n,k,d]'}</M>，多記最小距離 <M>d</M>（第 4 章）。
                   </p>

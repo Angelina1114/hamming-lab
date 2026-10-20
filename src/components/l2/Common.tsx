@@ -15,7 +15,7 @@ export function ConventionBanner({ compact = false }: { compact?: boolean }) {
   return (
     <div className={`flex items-start gap-2 rounded-xl border-2 border-indigo-200 bg-indigo-50/70 text-indigo-900 ${compact ? 'px-3 py-1.5 text-xs' : 'mb-5 px-4 py-2.5 text-sm'}`}>
       <ArrowLeftRight className="mt-0.5 h-4 w-4 shrink-0" />
-      <span className="min-w-0 max-w-[52em]">
+      <span className="min-w-0">
         <strong>位元順序（代數章與第二課相同）：</strong>最左邊 = 最高次項。7 位元字串中，從左數第 <M>p</M> 個 bit（位置 <M>p</M>）是 <M>{'x^{7-p}'}</M> 的係數。例：<span className="mono">1001110</span> <M>{'= x^6+x^3+x^2+x'}</M>，「位置 2」= <M>{'x^5'}</M>。
       </span>
     </div>

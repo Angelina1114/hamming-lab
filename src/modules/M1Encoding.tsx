@@ -48,7 +48,7 @@ export default function M1Encoding() {
 
       <div className="space-y-12">
         <Stage kind="why" moduleId={ID} title="一個檢查不夠，那就三個，但要「重疊」">
-          <div className="prose-lab max-w-3xl">
+          <div className="prose-lab">
             <p>
               導論中我們看到：一個同位位元只能告訴我們「有沒有奇數個錯誤」。Hamming 的想法是讓每個位置都被一組<strong>不同的</strong>同位檢查覆蓋。
               錯誤發生時，「哪些檢查失敗」就像一串二進位數字，直接寫出錯誤的位置。

@@ -42,7 +42,7 @@ export default function L2Lfsr() {
         title: '暫存器 = 餘數的係數',
         body: (
           <>
-            <div className="prose-lab max-w-3xl">
+            <div className="prose-lab">
               <p>
                 除以三次多項式 <M>{'g(x)'}</M> 的餘數，次數最多是 2，也就是 <M>{'R_2x^2 + R_1x + R_0'}</M>——剛好三個係數，所以需要三個暫存器 <M>{'R_2R_1R_0'}</M>。
               </p>

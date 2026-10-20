@@ -40,7 +40,7 @@ export default function L2KeyEquation() {
       intuition={{
         title: '把 Syndrome 當成一個「數」',
         body: (
-          <div className="prose-lab max-w-3xl">
+          <div className="prose-lab">
             <p>
               代數基礎章（A3、A4）建立了 GF(8)：8 個 3 位元字串可以相加、相乘、相除，而且 7 個非零元素剛好都是 <M>{'\\alpha'}</M> 的次方。這一章直接使用這個結果：每個非零 Syndrome 都有一個「指數」，而這個指數就是錯誤的次方。接下來把它寫成一個方程式——Key Equation。
             </p>

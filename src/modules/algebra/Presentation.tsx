@@ -137,18 +137,15 @@ function TitleSlide() {
           </li>
         ))}
       </ol>
-      <div className="space-y-4">
-        <div className="rounded-2xl bg-overall-50 p-5 text-xl leading-relaxed text-overall-900">
-          同一個 Hamming(7,4)，換成<strong>多項式與 GF(8)</strong> 的語言：編碼變成多項式乘法，檢查變成一條方程，解碼變成找根。
-        </div>
-        <div className="rounded-2xl border-2 border-slate-200 p-5 text-lg text-slate-600">
-          <div className="mb-2 font-semibold text-slate-800">操作</div>
-          <ul className="space-y-1">
-            <li>→ / 空白鍵：下一步（動畫走完再換頁）</li>
-            <li>←：上一步　P：播放 / 暫停　F：全螢幕</li>
-            <li>位元、按鈕都可以直接點，和網頁上一樣</li>
-          </ul>
-        </div>
+      <div className="flex flex-col justify-center gap-4 rounded-2xl bg-overall-50 p-6 text-xl leading-relaxed text-overall-700">
+        <p>
+          同一個 Hamming(7,4)，換成<strong>多項式與 GF(8)</strong> 的語言：
+        </p>
+        <ul className="space-y-2">
+          <li>編碼 → 多項式乘法 <M>{'c(x) = m(x)g(x)'}</M></li>
+          <li>檢查 → 一條方程 <M>{'c(\\alpha) = 0'}</M></li>
+          <li>解碼 → 找根 <M>{'S_1 = r(\\alpha) = \\alpha^i'}</M></li>
+        </ul>
       </div>
     </div>
   );
@@ -299,7 +296,7 @@ function HcSlide({ s }: { s: Stepper }) {
           <span className="pb-3 text-2xl text-slate-300">→</span>
           <BitRow bits={r} layout={LAYOUT_74} size="md" states={r.map((_, i) => (i === flip ? 'error' : 'normal'))} onToggle={(i) => setFlip(flip === i ? null : i)} />
         </div>
-        <p className="text-lg text-slate-600">點右邊的位元製造一個錯誤（再點一次取消）。</p>
+        <p className="text-lg text-slate-600">{flip === null ? '右邊是編好的 codeword c，沒有錯誤。' : `右邊的字第 ${flip + 1} 個位元被翻轉（紅色）。`}</p>
         {s.step >= 1 && (
           <div style={{ zoom: 1.35 }}>
             <MatrixView matrix={H74} name="H" colLabels={r.map((x) => `r=${x}`)} highlightCols={r.flatMap((x, j) => (x ? [j] : []))} />
@@ -752,7 +749,7 @@ function IdealSlide({ s }: { s: Stepper }) {
   return (
     <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_380px]">
       <div className="space-y-4">
-        <div className="text-lg font-semibold text-slate-600">a(x)：環 R₇ 中任意一個元素（點位元修改）</div>
+        <div className="text-lg font-semibold text-slate-600">a(x)：環 R₇ 中任意一個元素</div>
         <BitPolyEditor bits={a} onToggle={(i) => setA(flipBit(a, i) as Bit[])} />
         <div className="flex flex-wrap items-center gap-2 text-lg">
           <span className="font-semibold text-slate-600">c(x)：</span>
@@ -1171,7 +1168,7 @@ function SyndromeExampleSlide({ s }: { s: Stepper }) {
           <BitStrip bits={c} size="md" groups={false} showPos={false} />
         </div>
         <div>
-          <div className="mb-1 text-base font-semibold text-slate-500">接收 r（點位元改變錯誤位置）</div>
+          <div className="mb-1 text-base font-semibold text-slate-500">接收 r</div>
           <BitStrip bits={r} size="md" groups={false} showPos={false} states={e.map((b) => (b ? 'error' : 'normal'))} onToggle={(k) => setPos(pos === k + 1 ? 0 : k + 1)} />
         </div>
       </div>
@@ -1266,9 +1263,9 @@ const SLIDES: DeckSlide<Ctx>[] = [
   { title: 'A8 最小多項式：把共軛根乘起來', sub: '(x + α)(x + α²)(x + α⁴) = x³ + x + 1', steps: () => 4, render: (s) => <MinPolySlide s={s} /> },
   { title: 'A8 x⁷ − 1 = (x + 1)(x³ + x + 1)(x³ + x² + 1)', sub: '三個陪集 → 三個最小多項式', steps: () => 3, render: (s) => <FactorSlide s={s} /> },
   { title: 'A9 用 GF(8) 推導 H 矩陣', sub: '一條 GF(8) 方程 = 三條 GF(2) 方程', steps: () => 8, render: (s) => <BuildHSlide s={s} /> },
-  { title: 'A9 c(α) = 0 ⇔ H_cyc cᵀ = 0', sub: '點位元改變 c：兩種算法永遠一致', steps: () => 3, render: (s) => <CompareSlide s={s} /> },
+  { title: 'A9 c(α) = 0 ⇔ H_cyc cᵀ = 0', sub: '換任何 c，兩種算法都一致', steps: () => 3, render: (s) => <CompareSlide s={s} /> },
   { title: 'A10 Syndrome 的 GF(8) 觀點', sub: 'S₁ = r(α) = e(α) = αⁱ', steps: () => DERIVE_LINES.length, render: (s) => <DeriveSlide s={s} /> },
-  { title: 'A10 例子：c = 1001110，點位元製造錯誤', sub: 'S₁ = r(α) = αⁱ ⇒ 錯在從左數第 7 − i 個 bit（預設錯在 x⁵）', steps: () => 3, render: (s) => <SyndromeExampleSlide s={s} /> },
+  { title: 'A10 例子：c = 1001110 錯一個位元', sub: 'S₁ = r(α) = αⁱ ⇒ 錯在從左數第 7 − i 個 bit', steps: () => 3, render: (s) => <SyndromeExampleSlide s={s} /> },
   { title: '總結：一個訊息走完整章', sub: 'u → c → r → S₁ → σ(z) → 更正', steps: () => 8, render: (s) => <JourneySlide s={s} /> },
 ];
 

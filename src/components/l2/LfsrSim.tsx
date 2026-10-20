@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { usePresenting } from '../../lib/presenting';
 import { motion } from 'framer-motion';
 import { type Bit, type LfsrKind, G_MSB, msbToTex, polyModMsb, runLfsr } from '../../core';
 import { M, Tex } from '../Tex';
@@ -30,6 +31,7 @@ interface LfsrSimProps {
 
 /** The circuit + state table for g(x) = x³ + x + 1. All values come from runLfsr. */
 export function LfsrSim({ kind, input, stepper, detailed = true, large = false, onInputToggle, extraTail = 0 }: LfsrSimProps) {
+  const presenting = usePresenting();
   const run = useMemo(() => runLfsr(input, kind, G_MSB), [input, kind]);
   const total = lfsrTotalFrames(input.length, detailed);
   const own = useStepper(total, { interval: detailed ? 900 : 1300 });
@@ -49,7 +51,7 @@ export function LfsrSim({ kind, input, stepper, detailed = true, large = false, 
   };
 
   const caption = !st ? (
-    <span>初始狀態 R₂R₁R₀ = 000。按「下一步」開始逐 bit 輸入。</span>
+    <span>初始狀態 R₂R₁R₀ = 000。{!presenting && '按「下一步」開始逐 bit 輸入。'}</span>
   ) : phase === 0 ? (
     <span>
       第 {t + 1} 個時脈：讀入 bit <strong>{st.input}</strong>，更新前 R₂R₁R₀ = <span className="mono">{st.before.join('')}</span>

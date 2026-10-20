@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Expand, Minimize, Pause, Play, X, Keyboard } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Expand, Minimize, Pause, Play, X } from 'lucide-react';
 import { useStepper, type Stepper } from './l2/Stepper';
+import { PresentingContext } from '../lib/presenting';
 
 /** One slide: how many animation steps it has, and how to draw a given step. */
 export interface DeckSlide<C> {
@@ -172,12 +173,14 @@ function SlideHost<C>({
   return (
     <>
       <main ref={mainRef} className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
-        <div ref={contentRef} style={{ zoom, maxWidth: DESIGN_W }} className="mx-auto px-4 py-6 sm:px-8">
+        <div ref={contentRef} style={{ zoom, maxWidth: DESIGN_W }} className="mx-auto px-4 py-4 sm:px-8">
           <motion.section initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.25 }}>
             <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">{slide.title}</h1>
             {slide.sub && <p className="mt-1 text-lg text-slate-500">{slide.sub}</p>}
             {/* a lesson card reused as the whole slide drops its own frame: one frame per slide */}
-            <div className="mt-6 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-8 [&>.card]:border-0 [&>.card]:p-0 [&>.card]:shadow-none">{slide.render(s, ctx)}</div>
+            <div className="mt-4 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:px-8 sm:py-6 [&>.card]:border-0 [&>.card]:p-0 [&>.card]:shadow-none [&_li]:text-pretty [&_p]:text-pretty">
+              <PresentingContext.Provider value={true}>{slide.render(s, ctx)}</PresentingContext.Provider>
+            </div>
           </motion.section>
         </div>
       </main>
@@ -200,9 +203,6 @@ function SlideHost<C>({
             <button key={k} onClick={() => go(k)} title={sl.title} className={`h-2.5 rounded-full transition-all ${k === idx ? 'w-6 bg-slate-900' : 'w-2.5 bg-slate-300 hover:bg-slate-500'}`} aria-label={`第 ${k + 1} 頁：${sl.title}`} />
           ))}
         </div>
-        <span className="hidden items-center gap-1 text-xs text-slate-400 lg:flex">
-          <Keyboard className="h-3.5 w-3.5" /> ← → 空白 · P · F
-        </span>
       </footer>
     </>
   );

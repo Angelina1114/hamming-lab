@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { type Bit, type Design, H74, encode74, failingChecks, outcomeTable, singleErrorCandidates } from '../core';
 import { M } from './Tex';
 import { Card, ResetButton, Segmented } from './Lesson';
+import { usePresenting } from '../lib/presenting';
 
 type Mode = '1' | '2' | '3';
 
@@ -54,6 +55,7 @@ const patternText = (s: Setup, p: readonly boolean[]) => (p.some(Boolean) ? s.ch
 
 /** Interactive comparison of 1, 2 and 3 parity bits on the message 1011. */
 export function ParityLab() {
+  const presenting = usePresenting();
   const [mode, setMode] = useState<Mode>('1');
   const [flips, setFlips] = useState<number[]>([]);
   const s = SETUPS[mode];
@@ -102,7 +104,7 @@ export function ParityLab() {
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,24rem)]">
         <div className="min-w-0">
           <p className="mb-3 text-sm text-slate-600">
-            傳送資料 <span className="mono">1011</span>。{s.how}點擊位元製造錯誤（可以點好幾個），看接收端怎麼判斷。
+            傳送資料 <span className="mono">1011</span>。{s.how}{!presenting && '點擊位元製造錯誤（可以點好幾個），看接收端怎麼判斷。'}
           </p>
 
           <div className="flex flex-wrap gap-1.5">

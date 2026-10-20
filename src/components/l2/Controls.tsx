@@ -1,5 +1,6 @@
 import type { Bit } from '../../core';
 import { BitStrip } from './Common';
+import { usePresenting } from '../../lib/presenting';
 
 /** The unified Lesson 2 examples. Only error positions are listed; every value shown is computed. */
 export const L2_PRESETS: { key: string; label: string; errors: number[] }[] = [
@@ -10,9 +11,10 @@ export const L2_PRESETS: { key: string; label: string; errors: number[] }[] = [
 ];
 
 export function MessagePicker({ u, onChange, size = 'md' }: { u: Bit[]; onChange: (u: Bit[]) => void; size?: 'sm' | 'md' | 'lg' }) {
+  const presenting = usePresenting();
   return (
     <div className="flex flex-wrap items-center gap-3">
-      <span className="text-xs font-semibold text-slate-500">訊息 u（點擊切換）</span>
+      <span className="text-xs font-semibold text-slate-500">訊息 u{!presenting && '（點擊切換）'}</span>
       <BitStrip bits={u} topExp={3} roles={['info', 'info', 'info', 'info']} groups={false} size={size} onToggle={(i) => onChange(u.map((b, j) => (j === i ? ((1 - b) as Bit) : b)))} />
     </div>
   );

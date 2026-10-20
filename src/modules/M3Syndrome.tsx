@@ -94,7 +94,7 @@ export default function M3Syndrome() {
 
       <div className="space-y-12">
         <Stage kind="why" moduleId={ID} title="接收端要如何找出錯誤？">
-          <div className="prose-lab max-w-3xl">
+          <div className="prose-lab">
             <p>
               傳送端送出合法 codeword <M>c</M>，通道加上錯誤 <M>e</M>，接收端得到 <M>{'r = c + e'}</M>。接收端手上只有 <M>r</M>。
               如果能從 <M>r</M> 算出某個「只與 <M>e</M> 有關」的量，就可以推測錯誤在哪裡——這個量就是 <strong>症狀值（Syndrome）</strong>。
@@ -122,7 +122,7 @@ export default function M3Syndrome() {
         </Stage>
 
         <Stage kind="calculation" moduleId={ID} title="單一錯誤時，Syndrome 就是 H 的某一欄">
-          <div className="prose-lab max-w-3xl">
+          <div className="prose-lab">
             <p>
               若只有第 <M>j</M> 個位元出錯，<M>{'e = e_j'}</M>（單位向量），則 <M>{'s = He_j^{T}'}</M> = <strong>H 的第 j 欄</strong>。
               因為 H 的第 j 欄就是 j 的二進位，<M>{'s_1 + 2s_2 + 4s_3 = j'}</M> 直接給出錯誤位置。H 的 7 個欄兩兩不同且非零，所以 7 種單一錯誤可以完全區分。

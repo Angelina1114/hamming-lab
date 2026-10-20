@@ -34,7 +34,7 @@ export default function L2Xor() {
       intuition={{
         title: '翻轉一個開關',
         body: (
-          <div className="prose-lab max-w-3xl">
+          <div className="prose-lab">
             <p>
               GF(2) 中 <M>{'b \\oplus 1'}</M> 會把 b 翻轉，<M>{'b \\oplus 0 = b'}</M> 不變。所以「在第 2 位放 1、其他放 0」的向量 <span className="mono">0100000</span>，和 r 做 XOR，就剛好只改第 2 位。
             </p>

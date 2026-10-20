@@ -36,7 +36,7 @@ export default function L2Lookup() {
       intuition={{
         title: '每個位置都有獨一無二的指紋',
         body: (
-          <div className="prose-lab max-w-3xl">
+          <div className="prose-lab">
             <p>
               上一章證明 <M>{'S = e(x) \\bmod g(x)'}</M>。若只有一個錯誤在 <M>{'x^i'}</M>，<M>{'S = x^i \\bmod g(x)'}</M>——只和 i 有關。只要 7 個位置的指紋兩兩不同，看到指紋就能認出位置。
             </p>

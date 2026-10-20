@@ -17,6 +17,7 @@ import { StatusBadge, type DecodeStatus } from '../Lesson';
 import type { BitState } from '../Bits';
 import { BitStrip } from './Common';
 import { StepControls, useStepper, type Stepper } from './Stepper';
+import { usePresenting } from '../../lib/presenting';
 
 const aTex = (a: number) => (a === 0 ? '0' : LOG[a] === 0 ? '1' : LOG[a] === 1 ? '\\alpha' : `\\alpha^{${LOG[a]}}`);
 
@@ -148,6 +149,7 @@ export function correctedStates(e: Bit[], flippedPos: number): BitState[] {
 }
 
 export function DecodeReport({ o, method, large = false, onToggle }: { o: L2Outcome; method: L2Method; large?: boolean; onToggle?: (i: number) => void }) {
+  const presenting = usePresenting();
   const d = o.decode;
   const st = outcomeStatus(o);
   const size = large ? 'lg' : 'sm';
@@ -166,7 +168,7 @@ export function DecodeReport({ o, method, large = false, onToggle }: { o: L2Outc
       <Line label="錯誤向量 e">
         <BitStrip bits={o.e} roles="plain" size={size} showExp={false} states={o.e.map((b) => (b ? 'error' : 'muted'))} />
       </Line>
-      <Line label={onToggle ? '接收 r = c ⊕ e（點擊注入）' : '接收 r = c ⊕ e'}>
+      <Line label={onToggle && !presenting ? '接收 r = c ⊕ e（點擊注入）' : '接收 r = c ⊕ e'}>
         <BitStrip bits={o.r} size={size} groups={false} states={receivedStates(o.e)} onToggle={onToggle} />
       </Line>
       <Line label="Syndrome S">

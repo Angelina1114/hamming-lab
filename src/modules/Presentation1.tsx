@@ -32,6 +32,10 @@ import { BallDiagram, CubeBall, PackingDiagram } from '../components/BoundFigure
 import { DistanceLine } from '../components/DistanceLine';
 import { Deck, type DeckSlide } from '../components/Deck';
 import type { Stepper } from '../components/l2/Stepper';
+import { INTRO_CH0_PARITY_SLIDES, INTRO_CH0_SLIDES, INTRO_CH1_SLIDES } from './presentation1/IntroCh0to1';
+import { CH2_SLIDES } from './presentation1/Ch2Matrices';
+import { INTRO_CH3_SLIDES, INTRO_CH4_SLIDES } from './presentation1/IntroCh3to4';
+import { INTRO_CH5_SLIDES, INTRO_CH6_SLIDES, INTRO_CH7_SLIDES } from './presentation1/IntroCh5to7';
 
 type Ctx = null;
 const LAYOUT_84 = [...LAYOUT_74.map((p) => p.label), 'P0'];
@@ -63,14 +67,13 @@ function TitleSlide() {
           </li>
         ))}
       </ol>
-      <div className="rounded-2xl border-2 border-slate-200 p-5 text-lg text-slate-600">
-        <div className="mb-2 font-semibold text-slate-800">操作</div>
-        <ul className="space-y-1">
-          <li>→ / 空白鍵：下一步（動畫走完再換頁）</li>
-          <li>←：上一步　P：播放 / 暫停　F：全螢幕</li>
-          <li>每一頁的位元、按鈕都可以直接點，和網頁上一樣</li>
-          <li>右上角可切換範例訊息（導論的 r = c + e 與第 1–3、6、7 章共用）</li>
-        </ul>
+      <div className="space-y-4">
+        <div className="rounded-2xl bg-data-50 p-5 text-xl leading-relaxed text-data-700">
+          4 個資訊位元 + 3 個同位位元 = 7 個位元：接收端<strong>不必知道原本送了什麼</strong>，就能自己找出並修正任何 1 個錯誤。
+        </div>
+        <div className="rounded-2xl bg-overall-50 p-5 text-xl leading-relaxed text-overall-700">
+          再多 1 個整體同位位元（SECDED）：修正 1 個錯誤，同時偵測 2 個錯誤。
+        </div>
       </div>
     </div>
   );
@@ -82,7 +85,7 @@ function NoiseSlide() {
   return (
     <div className="space-y-5 text-xl">
       <p>
-        傳送訊息 <span className="mono font-bold">1011</span>。點一個位元，模擬雜訊把它翻轉：
+        傳送訊息 <span className="mono font-bold">1011</span>。雜訊可能把其中任何一個位元翻轉：
       </p>
       <BitRow
         bits={bits}
@@ -137,7 +140,7 @@ function FlipSumSlide() {
         </p>
       </div>
       <div className="space-y-4 text-xl">
-        <p>點下面的錯誤向量 e 決定翻哪幾位：</p>
+        <p>錯誤向量 e：是 1 的位置就是被翻轉的位元。</p>
         <BitRow bits={e} plain size="lg" states={e.map((b) => (b ? 'error' : 'normal'))} onToggle={(i) => setE(flipBit(e, i))} />
         <Tex block>{`\\underbrace{${message.join('')}}_{c\\ (\\text{送出})} + \\underbrace{${e.join('')}}_{e\\ (\\text{錯誤})} = \\underbrace{${r.join('')}}_{r\\ (\\text{收到})}`}</Tex>
         <p className="text-lg text-slate-600">接收端只看得到 r。整門課的任務：只靠 r，找出 e。</p>
@@ -222,11 +225,11 @@ function EncodeSlide({ s }: { s: Stepper }) {
         )}
       </div>
       <p className="text-lg text-slate-600">
-        {s.step === 0 && '先把 4 個資訊位元放進位置 3、5、6、7。按「下一步」逐一算出 P1、P2、P4：每個檢查管到的位元要有偶數個 1。'}
+        {s.step === 0 && '先把 4 個資訊位元放進位置 3、5、6、7，再逐一算出 P1、P2、P4：每個檢查管到的位元要有偶數個 1。'}
         {s.step > 0 && s.step < 4 && `算出 ${PARITY_CHECKS[s.step - 1].name}：讓它管的 4 個位置有偶數個 1。`}
         {s.step === 4 && (
           <>
-            完成！訊息 {message.join('')} 編成 codeword <strong className="mono">{enc.codeword.join('')}</strong>。點左邊的 D1–D4 換一個訊息試試。
+            完成！訊息 {message.join('')} 編成 codeword <strong className="mono">{enc.codeword.join('')}</strong>。
           </>
         )}
       </p>
@@ -244,7 +247,7 @@ function VennSlide() {
     <div className="grid grid-cols-1 items-center gap-6 lg:grid-cols-2">
       <Venn word={r} errorIdx={e} onToggle={(i) => setE(e.includes(i) ? e.filter((j) => j !== i) : [...e, i])} />
       <div className="space-y-4 text-xl">
-        <p>每個圓圈是一個檢查：圈裡必須有偶數個 1。點圖中的位元製造錯誤：</p>
+        <p>每個圓圈是一個檢查：圈裡必須有偶數個 1。</p>
         <div className="rounded-2xl bg-slate-50 p-4">
           {e.length === 0 && <>三個圓圈都是偶數個 1（綠色）：沒有錯。</>}
           {e.length > 0 && d.position > 0 && (
@@ -293,7 +296,7 @@ function MatrixSlide({ s }: { s: Stepper }) {
         )}
       </div>
       <p className="text-lg text-slate-600">
-        {s.step === 0 ? '編碼就是矩陣乘法 c = mG。按下一步看「檢查」怎麼寫成矩陣。' : '合法 codeword 一定滿足 Hcᵀ = 0：三個檢查全部通過。第 j 欄正好是 j 的二進位（由下往上讀）。'}
+        {s.step === 0 ? '編碼就是矩陣乘法 c = mG：把 m 裡是 1 的那幾列加起來。' : '合法 codeword 一定滿足 Hcᵀ = 0：三個檢查全部通過。第 j 欄正好是 j 的二進位（由下往上讀）。'}
       </p>
     </div>
   );
@@ -336,7 +339,7 @@ function SyndromeSlide({ s }: { s: Stepper }) {
         </div>
       )}
       <p className="text-lg text-slate-600">
-        {s.step === 0 && '點位元注入錯誤（可以點好幾個），再按下一步計算 Syndrome。'}
+        {s.step === 0 && (e.length ? `紅色是被翻轉的 ${e.length} 個位元。接收端看不到紅色，只能用 r 計算 Syndrome。` : '這次沒有錯誤。接收端不知道這件事，只能用 r 計算 Syndrome。')}
         {s.step === 1 && 's = Hrᵀ = Heᵀ：codeword 的部分全部消掉，只剩錯誤。'}
         {s.step === 2 && '只錯一個時，s 就是錯誤位置那一欄 = 位置的二進位。錯兩個一定會改錯；錯三個以上可能改錯，也可能完全沒發現（第 4 章解釋原因）。'}
       </p>
@@ -500,7 +503,7 @@ function SecdedSlide() {
           })}
         </tbody>
       </table>
-      <p className="text-lg text-slate-600">點位元注入 0–3 個錯誤。至多 2 個錯誤時保證判斷正確；錯 3 個就可能被當成單一錯誤而改錯。</p>
+      <p className="text-lg text-slate-600">至多 2 個錯誤時保證判斷正確；錯 3 個就可能被當成單一錯誤而改錯。</p>
     </div>
   );
 }
@@ -520,28 +523,39 @@ function SummarySlide() {
         <li>多一個整體同位位元 → (8,4)，d_min = 4：SECDED 修 1 個、偵測 2 個。</li>
       </ol>
       <p className="text-lg text-slate-600">
-        第二課：同一個 code 換成多項式與 GF(8) 的觀點，用 LFSR 編碼、用 Chien Search 解碼（報告模式「第二課」）。
+        第二課：同一個 code 換成多項式與 GF(8) 的觀點，用 LFSR 編碼、用 Chien Search 解碼。
       </p>
     </div>
   );
 }
 
+// each chapter opens with its explanation slides (presentation1/*), then the live examples
 const SLIDES: DeckSlide<Ctx>[] = [
   { title: 'Lesson 1 — Hamming(7,4)：從同位位元到 SECDED', sub: '第一課報告：導論與第 1–7 章', steps: () => 1, render: () => <TitleSlide /> },
+  ...INTRO_CH0_SLIDES,
   { title: '導論：雜訊會翻轉位元', sub: '沒有保護時，錯了也看不出來', steps: () => 1, render: () => <NoiseSlide /> },
   { title: '導論：翻轉 = 加 1（mod 2）', sub: 'r = c + e', steps: () => 1, render: () => <FlipSumSlide /> },
-  { title: '導論：要幾個同位位元，才找得到錯？', sub: '切換 1／2／3 個同位位元，點位元製造錯誤', steps: () => 1, render: () => <ParityLab /> },
+  ...INTRO_CH0_PARITY_SLIDES,
+  { title: '導論：要幾個同位位元，才找得到錯？', sub: '1 個只能偵測；3 個重疊的檢查才能定位', steps: () => 1, render: () => <ParityLab /> },
+  ...INTRO_CH1_SLIDES,
   { title: '第 1 章：三個互相重疊的檢查', sub: 'P_b 管「二進位含有 b」的位置', steps: () => 1, render: () => <CoverageSlide /> },
   { title: '第 1 章：一步一步編碼', sub: '每個檢查管到的位元要有偶數個 1', steps: () => 5, render: (s) => <EncodeSlide s={s} /> },
   { title: '第 1 章：Venn 圖', sub: '每個圓圈都要有偶數個 1', steps: () => 1, render: () => <VennSlide /> },
-  { title: '第 1 章：為什麼訊息是 4 個位元？', sub: '可以更少，但 4 個最划算', steps: () => 1, render: () => <MessageSizeLab /> },
-  { title: '第 2 章：矩陣 G 與 H', sub: 'c = mG、Hcᵀ = 0', steps: () => 2, render: (s) => <MatrixSlide s={s} /> },
-  { title: '第 3 章：Syndrome 解碼', sub: 's = Hrᵀ = Heᵀ', steps: () => 3, render: (s) => <SyndromeSlide s={s} /> },
-  { title: '第 4 章：Hamming 距離與 d_min', sub: '拉動滑桿看地盤怎麼變', steps: () => 1, render: () => <DistanceSlide /> },
+  { title: '第 1 章：為什麼訊息是 4 個位元？', sub: 'k + r ≤ 2ʳ − 1：r = 3 時 k 最多 4', steps: () => 1, render: () => <MessageSizeLab /> },
+  ...CH2_SLIDES,
+  { title: '第 2 章：實例：c = mG、Hcᵀ = 0', sub: 'G 負責編碼，H 負責檢查', steps: () => 2, render: (s) => <MatrixSlide s={s} /> },
+  ...INTRO_CH3_SLIDES,
+  { title: '第 3 章：實例：Syndrome 解碼', sub: 's = Hrᵀ = Heᵀ', steps: () => 3, render: (s) => <SyndromeSlide s={s} /> },
+  ...INTRO_CH4_SLIDES,
+  { title: '第 4 章：d_min 決定更正與偵測能力', sub: 'd_min 越大，每個 codeword 的地盤越大', steps: () => 1, render: () => <DistanceSlide /> },
+  INTRO_CH5_SLIDES[0],
   { title: '第 5 章：漢明球', sub: 'n = 3 的立方體：沿著邊走的步數 = 距離', steps: () => 1, render: () => <CubeBall /> },
   { title: '第 5 章：Hamming Bound', sub: '球不能重疊，空間只有 2ⁿ 個字串', steps: () => 1, render: () => <BoundSlide /> },
-  { title: '第 6 章：Extended Hamming(8,4)', sub: '多一個整體同位位元', steps: () => 1, render: () => <ExtendedSlide /> },
-  { title: '第 7 章：SECDED', sub: '用 s 和 q 兩個訊號判斷四種情況', steps: () => 1, render: () => <SecdedSlide /> },
+  ...INTRO_CH5_SLIDES.slice(1),
+  ...INTRO_CH6_SLIDES,
+  { title: '第 6 章：實例：編碼成 8 個位元', sub: '多一個整體同位位元 P0', steps: () => 1, render: () => <ExtendedSlide /> },
+  ...INTRO_CH7_SLIDES,
+  { title: '第 7 章：實例：SECDED 解碼器', sub: '用 s 和 q 兩個訊號判斷四種情況', steps: () => 1, render: () => <SecdedSlide /> },
   { title: '總結', steps: () => 1, render: () => <SummarySlide /> },
 ];
 

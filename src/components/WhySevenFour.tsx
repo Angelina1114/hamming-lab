@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { type Bit, LAYOUT_74, checkBitsFor, encode74, flipBit } from '../core';
 import { M, Tex } from './Tex';
 import { Card, ResetButton, Segmented } from './Lesson';
+import { usePresenting } from '../lib/presenting';
 
 type K = '1' | '2' | '3' | '4';
 const bin = (v: number, r: number) => v.toString(2).padStart(r, '0');
@@ -14,6 +15,7 @@ function smallCode(k: number) {
 }
 
 export function MessageSizeLab() {
+  const presenting = usePresenting();
   const [kStr, setK] = useState<K>('4');
   const [msg, setMsg] = useState<Bit[]>([1, 0, 1, 1]);
   const [flips, setFlips] = useState<number[]>([]);
@@ -57,13 +59,13 @@ export function MessageSizeLab() {
       }
     >
       <p className="mb-3 text-sm text-slate-700">
-        <strong>可以更少。</strong>做法是只用 Hamming(7,4) 排列的前 n 個位置（少掉的資訊位元當成 0、不送出去）。用上面的按鈕切換資料有幾個位元，看要付幾個同位位元，也可以點 codeword 製造一個錯，確認它照樣能修正。
+        <strong>可以更少。</strong>做法是只用 Hamming(7,4) 排列的前 n 個位置（少掉的資訊位元當成 0、不送出去）。{!presenting && '用上面的按鈕切換資料有幾個位元，看要付幾個同位位元，也可以點 codeword 製造一個錯，確認它照樣能修正。'}
       </p>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <div className="min-w-0 space-y-3">
           <div>
-            <div className="mb-1 text-xs text-slate-500">資料（點擊切換）</div>
+            <div className="mb-1 text-xs text-slate-500">資料{!presenting && '（點擊切換）'}</div>
             <div className="flex gap-1.5">
               {data.map((b, i) => (
                 <button
@@ -84,7 +86,7 @@ export function MessageSizeLab() {
           </div>
           <div>
             <div className="mb-1 text-xs text-slate-500">
-              送出的 codeword：{n} 個位元，其中 {r} 個是同位位元（點擊製造錯誤）
+              送出的 codeword：{n} 個位元，其中 {r} 個是同位位元{!presenting && '（點擊製造錯誤）'}
             </div>
             <div className="flex flex-wrap gap-1 sm:gap-1.5">
               {recv.map((b, j) => {

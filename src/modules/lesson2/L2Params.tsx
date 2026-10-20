@@ -73,7 +73,7 @@ export default function L2Params() {
       intuition={{
         title: '同位位元只隨 log n 成長',
         body: (
-          <div className="prose-lab max-w-3xl">
+          <div className="prose-lab">
             <p>
               m 個同位位元可以產生 <M>{'2^m - 1'}</M> 種非零 Syndrome，每一種對應一個錯誤位置。所以碼長加倍，只需要多 1 個同位位元——這就是長 Hamming Code 效率極高的原因。代價是：每個 codeword 仍然只能更正 1 個錯誤，而 code 越長，同一個 codeword 裡出現 2 個錯誤的機率越高（下面的互動範例會算出實際的機率）。
             </p>

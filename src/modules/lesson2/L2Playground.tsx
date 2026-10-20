@@ -62,7 +62,7 @@ export default function L2Playground() {
       intuition={{
         title: '先預測，再按下去',
         body: (
-          <div className="prose-lab max-w-3xl">
+          <div className="prose-lab">
             <p>建議的使用方式：每次改變錯誤之前，先寫下你預期的 Syndrome 與解碼結果，再對照右側摘要。預測錯了的地方，就是需要回頭複習的章節。</p>
           </div>
         ),

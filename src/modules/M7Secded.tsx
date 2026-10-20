@@ -110,7 +110,7 @@ export default function M7Secded() {
 
       <div className="space-y-12">
         <Stage kind="why" moduleId={ID} title="伺服器記憶體每天都在用的技術">
-          <div className="prose-lab max-w-3xl">
+          <div className="prose-lab">
             <p>
               ECC 記憶體（伺服器 DRAM）、快取、許多儲存控制器都使用 SECDED。理由很實際：單一位元錯誤最常見，應該自動修好；雙位元錯誤較少見，但一旦發生必須<strong>回報</strong>（例如讓作業系統停止使用該頁面），絕不能默默交出錯誤資料。
             </p>

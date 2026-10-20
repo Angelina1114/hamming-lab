@@ -38,7 +38,7 @@ export default function L2Syndrome() {
       intuition={{
         title: '症狀，而不是病因',
         body: (
-          <div className="prose-lab max-w-3xl">
+          <div className="prose-lab">
             <p>
               醫生看到發燒（症狀）時不知道病人原本的體溫，但知道「正常人的體溫在某個範圍」。同樣地，接收端不知道 <M>c</M>，但知道「所有合法 codeword 除以 <M>{'g(x)'}</M> 的餘數都是 0」。
             </p>

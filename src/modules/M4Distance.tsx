@@ -80,7 +80,7 @@ export default function M4Distance() {
 
       <div className="space-y-12">
         <Stage kind="why" moduleId={ID} title="為什麼 Hamming(7,4) 只能修正 1 個錯？">
-          <div className="prose-lab max-w-3xl">
+          <div className="prose-lab">
             <p>
               上一章看到：兩個錯誤會被「修」成錯的 codeword。原因是錯誤把接收字推得離另一個 codeword 比較近。要量化「近」，我們需要一個距離：
               <strong>兩個字串在幾個位置不同</strong>。codeword 之間最近的距離越大，錯誤就越難把一個 codeword「推」到另一個 codeword 的地盤。

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { type Bit, allVectors, binomial, codewords74, encode74, flipBit, hammingBound, hammingDistance } from '../core';
 import { M } from './Tex';
 import { Segmented } from './Lesson';
+import { usePresenting } from '../lib/presenting';
 
 /* ------------------------------------------------------------------ */
 /* 1. One Hamming ball, drawn as rings around its codeword              */
@@ -127,6 +128,7 @@ const HUES = ['fill-sky-300', 'fill-violet-300', 'fill-amber-300', 'fill-emerald
 const HUES_DARK = ['fill-sky-600', 'fill-violet-600', 'fill-amber-600', 'fill-emerald-600'];
 
 export function PackingDiagram() {
+  const presenting = usePresenting();
   const [key, setKey] = useState<PackKey>('h74');
   const p = PACKS[key];
   const hb = hammingBound(p.n, p.k, p.t);
@@ -216,7 +218,7 @@ export function PackingDiagram() {
           )}
           {!hb.satisfied && <strong className="text-rose-700">裝不下！所以 n = {p.n}、要修 {p.t} 個錯時，k 最多只能是 {hb.maxK}。</strong>}
         </p>
-        <p className="text-slate-500">格子怎麼排只是為了好數；真正同一顆球的字串在數值上分散各處（見下方「視覺化」）。</p>
+        <p className="text-slate-500">格子怎麼排只是為了好數；真正同一顆球的字串在數值上分散各處{!presenting && '（見下方「視覺化」）'}。</p>
       </div>
     </div>
   );
@@ -234,6 +236,7 @@ const CUBE_EDGES: [Bit[], Bit[]][] = [];
 CUBE.forEach((u, i) => CUBE.forEach((w, j) => j > i && hammingDistance(u, w) === 1 && CUBE_EDGES.push([u, w])));
 
 export function CubeBall() {
+  const presenting = usePresenting();
   const [mode, setMode] = useState<'one' | 'rep'>('one');
   const [center, setCenter] = useState<Bit[]>([0, 0, 0]);
   const [tStr, setTStr] = useState<'0' | '1' | '2' | '3'>('1');
@@ -259,7 +262,7 @@ export function CubeBall() {
         <div className="mb-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
           半徑 t
           <Segmented ariaLabel="半徑 t" value={tStr} onChange={setTStr} options={(['0', '1', '2', '3'] as const).map((v) => ({ value: v, label: v }))} />
-          <span>點任一個頂點當中心 c</span>
+          {!presenting && <span>點任一個頂點當中心 c</span>}
         </div>
       )}
       <svg viewBox="0 0 340 280" className="mx-auto w-full max-w-[340px]" role="img" aria-label="3 位元字串的立方體：頂點是字串，邊連接只差 1 位的兩個字串">

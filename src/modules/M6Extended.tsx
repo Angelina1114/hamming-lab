@@ -63,7 +63,7 @@ export default function M6Extended() {
 
       <div className="space-y-12">
         <Stage kind="why" moduleId={ID} title="兩個錯誤被「自信地修錯」怎麼辦？">
-          <div className="prose-lab max-w-3xl">
+          <div className="prose-lab">
             <p>
               第 3 章看到：Hamming(7,4) 遇到兩個錯誤時，Syndrome 不為 0，解碼器以為是單一錯誤，結果翻轉了第三個位元——錯誤從 2 個變成 3 個，而且<strong>沒有人知道</strong>。
               在記憶體、硬碟等系統中，「發現資料壞了」遠比「默默交出錯誤資料」好。我們希望至少能<strong>偵測</strong>到雙重錯誤。

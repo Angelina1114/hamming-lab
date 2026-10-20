@@ -49,7 +49,7 @@ export default function L2Chien() {
       intuition={{
         title: '把每個候選位置都問一次',
         body: (
-          <div className="prose-lab max-w-3xl">
+          <div className="prose-lab">
             <p>
               σ(z) 的設計是：如果錯誤在 <M>{'x^i'}</M>，那麼 <M>{'z = \\alpha^{-i}'}</M> 會讓 σ 變成 0。所以只要對每個可能的位置「問一次」：σ 在這裡是 0 嗎？答案是「是」的那個位置就是錯誤。
             </p>

@@ -70,7 +70,7 @@ export function AlgebraUnit({ id, lead, convention = false, why, what, how, exam
 
 /** Plain-language box ("白話解釋") */
 export function Plain({ children }: { children: ReactNode }) {
-  return <div className="prose-lab max-w-3xl">{children}</div>;
+  return <div className="prose-lab">{children}</div>;
 }
 
 /** Small 「名詞（English）」 definition list; omit `en` for labels that are not a named concept */

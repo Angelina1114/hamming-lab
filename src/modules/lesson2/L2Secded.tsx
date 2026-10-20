@@ -64,7 +64,7 @@ export default function L2Secded() {
       intuition={{
         title: '同一套規則，換到循環碼上實作',
         body: (
-          <div className="prose-lab max-w-3xl">
+          <div className="prose-lab">
             <p>
               第一課已經證明：Syndrome 回答「像是錯在哪」，整體同位位元回答「錯誤個數是奇數還是偶數」，兩者合起來就能分辨 0、1、2 個錯誤（<a className="text-indigo-700 underline" href="#/secded">第一課第 7 章 SECDED 實驗器</a>）。這一章不再重新推導，而是把同一套規則放到第二課的系統式循環碼上，並處理硬體真正要做的事：<strong>雙錯時輸出什麼、旗標怎麼設</strong>。
             </p>

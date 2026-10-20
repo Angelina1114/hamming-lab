@@ -60,7 +60,7 @@ export default function M5Bound() {
 
       <div className="space-y-12">
         <Stage kind="why" moduleId={ID} title="空間是有限的">
-          <div className="prose-lab max-w-3xl">
+          <div className="prose-lab">
             <p>
               若一個 code 要修正 <M>t</M> 個錯誤，那麼每個 codeword <M>c</M> 周圍「距離 ≤ t」的所有字串都必須被解碼回 <M>c</M>。不同 codeword 的這些區域不能重疊，否則某個接收字會不知道該解成誰。
               這些區域加起來不能超過整個空間 <M>{'\\mathbb{F}_2^n'}</M> 的大小 <M>{'2^n'}</M>。這個簡單的計數論證就是 <strong>Hamming Bound（球填充界，Sphere-packing bound）</strong>。

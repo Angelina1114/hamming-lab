@@ -175,7 +175,7 @@ export function ModuleHeader({ moduleId, children }: { moduleId: string; childre
       </div>
       <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">{m.title}</h1>
       <p className="mt-1 text-sm text-slate-500">{m.en}</p>
-      {children && <div className="prose-lab mt-3 max-w-3xl">{children}</div>}
+      {children && <div className="prose-lab mt-3">{children}</div>}
     </header>
   );
 }
@@ -299,7 +299,7 @@ export function Callout({ kind = 'info', title, children }: { kind?: CalloutKind
         <Icon className="h-4 w-4 shrink-0" />
         {title ?? c.label}
       </div>
-      <div className="space-y-1.5 [&:not(:has(.katex-display))]:max-w-[52em] [&_p]:leading-relaxed">{children}</div>
+      <div className="space-y-1.5 [&_p]:leading-relaxed">{children}</div>
     </div>
   );
 }

@@ -48,29 +48,21 @@ const SLIDES: Slide[] = [
       return (
         <div className="space-y-6 text-2xl">
           <ConventionBanner />
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div className="rounded-2xl border-2 border-slate-200 bg-white p-6">
-              <div className="text-base text-slate-500">統一範例</div>
-              <div className="mt-2 space-y-2">
-                <div>
-                  <M>{'g(x) = x^3 + x + 1'}</M> = <span className="mono">1011</span>
-                </div>
-                <div>
-                  <M>u</M> = <span className="mono font-bold">{c.u.join('')}</span> → <M>{'x^3u(x)'}</M> = <span className="mono">{enc.shifted.join('')}</span>
-                </div>
-                <div>
-                  <M>p</M> = <span className="mono font-bold text-parity-600">{enc.parity.join('')}</span>，<M>c</M> = <span className="mono font-bold">{enc.codeword.join('')}</span>
-                </div>
+          <div className="rounded-2xl border-2 border-slate-200 bg-white p-6">
+            <div className="text-base text-slate-500">統一範例</div>
+            <div className="mt-3 grid grid-cols-1 gap-4 lg:grid-cols-3">
+              <div className="rounded-xl bg-slate-50 p-4">
+                <div className="text-base text-slate-500">生成多項式</div>
+                <M>{'g(x) = x^3 + x + 1'}</M> = <span className="mono">1011</span>
               </div>
-            </div>
-            <div className="rounded-2xl border-2 border-slate-200 bg-white p-6 text-lg text-slate-600">
-              <div className="mb-2 font-semibold text-slate-800">操作</div>
-              <ul className="space-y-1">
-                <li>→ / 空白鍵：下一步（動畫走完再換頁）</li>
-                <li>←：上一步</li>
-                <li>P：播放 / 暫停　F：全螢幕</li>
-                <li>上方可切換範例、注入錯誤</li>
-              </ul>
+              <div className="rounded-xl bg-data-50 p-4">
+                <div className="text-base text-slate-500">訊息</div>
+                <M>u</M> = <span className="mono font-bold">{c.u.join('')}</span> → <M>{'x^3u(x)'}</M> = <span className="mono">{enc.shifted.join('')}</span>
+              </div>
+              <div className="rounded-xl bg-parity-50 p-4">
+                <div className="text-base text-slate-500">編碼結果</div>
+                <M>p</M> = <span className="mono font-bold text-parity-600">{enc.parity.join('')}</span>，<M>c</M> = <span className="mono font-bold">{enc.codeword.join('')}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -101,7 +93,7 @@ const SLIDES: Slide[] = [
   },
   {
     title: '2-4 Syndrome：S(x) = r(x) mod g(x)',
-    sub: '點擊接收字注入錯誤',
+    sub: '餘式只和錯誤有關',
     steps: () => divisionTotalFrames(7),
     render: (s, c) => {
       const o = simulateL2(c.u, c.errors.filter((p) => p <= 7), c.method);
@@ -221,7 +213,7 @@ const SLIDES: Slide[] = [
   },
   {
     title: '2-13 現場實驗',
-    sub: '點擊位元注入 0–3 個錯誤',
+    sub: '0–3 個錯誤時，解碼器怎麼判斷？',
     steps: () => 1,
     render: (_s, c) => {
       const o = simulateL2(c.u, c.errors.filter((p) => p <= 7), c.method);

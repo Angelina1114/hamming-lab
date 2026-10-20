@@ -40,7 +40,7 @@ export default function L2TwoErrors() {
       intuition={{
         title: '被推到鄰居家門口',
         body: (
-          <div className="prose-lab max-w-3xl">
+          <div className="prose-lab">
             <p>
               每個合法 codeword 周圍有一圈「距離 1」的字串，解碼器會把它們都拉回中心的 codeword。兩個錯誤把 c 推到距離 2 的地方——那裡已經是<strong>另一個 codeword 的地盤</strong>（距離 1），解碼器就把它拉到那個錯的 codeword 去。
             </p>

@@ -16,19 +16,6 @@
   ::selection {
     @apply bg-data-100;
   }
-  /* wide screens: keep running text near 50 characters a line instead of spanning the whole card */
-  main p,
-  main li:not(.flex),
-  main dd {
-    max-width: 52em;
-  }
-  main p.text-center {
-    margin-inline: auto;
-  }
-  /* a few short columns should not spread across a 1000px card */
-  .card table.w-full {
-    max-width: 48rem;
-  }
 }
 
 @layer components {

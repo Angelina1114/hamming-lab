@@ -45,7 +45,7 @@ export default function L2Division() {
       intuition={{
         title: '沒有借位的長除法',
         body: (
-          <div className="prose-lab max-w-3xl">
+          <div className="prose-lab">
             <p>
               一般的長除法要「估商、相乘、相減、借位」。在 GF(2) 中只剩下最簡單的情況：商的每一位不是 0 就是 1，而「相減」就是 XOR，<strong>永遠不需要借位</strong>。
             </p>

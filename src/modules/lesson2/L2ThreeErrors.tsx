@@ -38,7 +38,7 @@ export default function L2ThreeErrors() {
       intuition={{
         title: '從一個 codeword 直接跳到另一個 codeword',
         body: (
-          <div className="prose-lab max-w-3xl">
+          <div className="prose-lab">
             <p>
               codeword 之間最近相距 3。如果剛好有 3 個錯誤落在「兩個 codeword 之間的差異」上，c 就被整個搬到另一個合法 codeword。接收端看到的是一個完美的合法 codeword，沒有任何症狀可言。
             </p>
