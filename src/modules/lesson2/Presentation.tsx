@@ -1,6 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Expand, Minimize, Pause, Play, X, Keyboard } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import {
   type Bit,
   type L2Method,
@@ -14,7 +12,7 @@ import {
 } from '../../core';
 import { M, Tex } from '../../components/Tex';
 import { StatusBadge } from '../../components/Lesson';
-import { useStepper, type Stepper } from '../../components/l2/Stepper';
+import { Deck, type DeckSlide } from '../../components/Deck';
 import { BitStrip, ConventionBanner, L2Legend } from '../../components/l2/Common';
 import { FlowDiagram, flowSequence } from '../../components/l2/FlowDiagram';
 import { LfsrSim, OverflowViz, lfsrTotalFrames } from '../../components/l2/LfsrSim';
@@ -31,12 +29,7 @@ interface Ctx {
   method: L2Method;
 }
 
-interface Slide {
-  title: string;
-  sub?: string;
-  steps: (c: Ctx) => number;
-  render: (s: Stepper, c: Ctx) => ReactNode;
-}
+type Slide = DeckSlide<Ctx>;
 
 const SECDED_ROWS = [
   ['S = 0', '偶（Even）', 'No Error', 'ok'],
@@ -314,55 +307,23 @@ function SecdedSlide({ u }: { u: Bit[] }) {
 /* ------------------------------------------------------------------ */
 
 export default function Presentation() {
-  const [idx, setIdx] = useState(0);
-  const [atEnd, setAtEnd] = useState(false);
   const [u, setU] = useState<Bit[]>([...DEFAULT_U]);
   const [errors, setErrors] = useState<number[]>([2]);
   const [secded, setSecded] = useState(false);
   const [method, setMethod] = useState<L2Method>('chien');
-  const [full, setFull] = useState(false);
-  const [zoom, setZoom] = useState(1);
   const [exampleKey, setExampleKey] = useState(0);
   const ctx: Ctx = useMemo(() => ({ u, errors, setErrors, secded, method }), [u, errors, secded, method]);
-
-  const go = useCallback((n: number, toEnd = false) => {
-    setIdx(Math.max(0, Math.min(SLIDES.length - 1, n)));
-    setAtEnd(toEnd);
-  }, []);
-
-  const toggleFull = useCallback(() => {
-    // fullscreen is optional: some viewers (embedded frames, phones) refuse it
-    if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
-    else document.documentElement.requestFullscreen?.().catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    const onFs = () => setFull(!!document.fullscreenElement);
-    document.addEventListener('fullscreenchange', onFs);
-    return () => document.removeEventListener('fullscreenchange', onFs);
-  }, []);
-
-  // scale content to the projector: wider screens get larger content
-  useEffect(() => {
-    const fit = () => setZoom(Math.max(0.75, Math.min(1.6, Math.min(window.innerWidth / 1280, window.innerHeight / 820))));
-    fit();
-    window.addEventListener('resize', fit);
-    return () => window.removeEventListener('resize', fit);
-  }, []);
-
   const restart = () => setExampleKey((k) => k + 1);
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-100">
-      <header className="sticky top-0 z-30 flex flex-wrap items-center gap-2 bg-slate-900 px-3 py-2 text-white sm:px-5">
-        <a href="#/l2-1" className="rounded-lg p-1.5 hover:bg-white/10" title="離開報告模式">
-          <X className="h-5 w-5" />
-        </a>
-        <span className="text-sm font-bold">報告模式</span>
-        <span className="font-mono text-xs text-slate-400">
-          {idx + 1}/{SLIDES.length}
-        </span>
-        <div className="ml-auto flex flex-wrap items-center gap-2 text-xs">
+    <Deck
+      slides={SLIDES}
+      ctx={ctx}
+      label="第二課報告"
+      exitHref="#/l2-1"
+      resetKey={exampleKey}
+      toolbar={
+        <>
           <select
             aria-label="切換範例"
             className="rounded-md border border-slate-600 bg-slate-800 px-2 py-1"
@@ -410,84 +371,8 @@ export default function Presentation() {
           >
             SECDED {secded ? 'ON' : 'OFF'}
           </button>
-          <button className="rounded-md p-1.5 hover:bg-white/10" onClick={toggleFull} title="全螢幕 (F)">
-            {full ? <Minimize className="h-4 w-4" /> : <Expand className="h-4 w-4" />}
-          </button>
-        </div>
-      </header>
-      <SlideHost key={`${idx}-${exampleKey}`} idx={idx} ctx={ctx} startAtEnd={atEnd} zoom={zoom} go={go} toggleFull={toggleFull} />
-    </div>
-  );
-}
-
-/** One slide with its own stepper (re-mounted per slide so frame counts never leak between slides). */
-function SlideHost({ idx, ctx, startAtEnd, zoom, go, toggleFull }: { idx: number; ctx: Ctx; startAtEnd: boolean; zoom: number; go: (n: number, toEnd?: boolean) => void; toggleFull: () => void }) {
-  const slide = SLIDES[idx];
-  const total = slide.steps(ctx);
-  const s = useStepper(total, { interval: 1100, initial: startAtEnd ? total - 1 : 0 });
-
-  const forward = useCallback(() => {
-    if (s.step < total - 1) s.next();
-    else if (idx < SLIDES.length - 1) go(idx + 1);
-  }, [s, total, idx, go]);
-  const back = useCallback(() => {
-    if (s.step > 0) s.prev();
-    else if (idx > 0) go(idx - 1, true);
-  }, [s, idx, go]);
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      const t = e.target as HTMLElement;
-      if (t && (t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.tagName === 'TEXTAREA')) return;
-      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
-        e.preventDefault();
-        forward();
-      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
-        e.preventDefault();
-        back();
-      } else if (e.key === 'p' || e.key === 'P') s.toggle();
-      else if (e.key === 'f' || e.key === 'F') toggleFull();
-      else if (e.key === 'Home') go(0);
-      else if (e.key === 'End') go(SLIDES.length - 1);
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [forward, back, s, toggleFull, go]);
-
-  return (
-    <>
-      <main className="flex-1 overflow-x-hidden">
-        <div style={{ zoom }} className="mx-auto max-w-[1240px] px-4 py-6 sm:px-8">
-          <motion.section initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.25 }}>
-            <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">{slide.title}</h1>
-            {slide.sub && <p className="mt-1 text-lg text-slate-500">{slide.sub}</p>}
-            <div className="mt-6 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-8">{slide.render(s, ctx)}</div>
-          </motion.section>
-        </div>
-      </main>
-      <footer className="sticky bottom-0 z-30 flex flex-wrap items-center gap-2 border-t border-slate-200 bg-white/95 px-3 py-2 backdrop-blur sm:px-5">
-        <button className="btn-ghost !px-4 !py-2 text-base" onClick={back} disabled={idx === 0 && s.step === 0}>
-          <ChevronLeft className="h-5 w-5" /> 上一步
-        </button>
-        <button className="btn-ghost !px-4 !py-2 text-base" onClick={s.toggle} disabled={total <= 1} aria-pressed={s.playing}>
-          {s.playing ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
-          {s.playing ? '暫停' : '播放'}
-        </button>
-        <button className="btn-primary !px-4 !py-2 text-base" onClick={forward} disabled={idx === SLIDES.length - 1 && s.step >= total - 1}>
-          下一步 <ChevronRight className="h-5 w-5" />
-        </button>
-        <span className="ml-1 font-mono text-sm text-slate-500">
-          步驟 {s.step + 1}/{total}
-        </span>
-        <div className="ml-auto flex items-center gap-1">
-          {SLIDES.map((sl, k) => (
-            <button key={k} onClick={() => go(k)} title={sl.title} className={`h-2.5 rounded-full transition-all ${k === idx ? 'w-6 bg-slate-900' : 'w-2.5 bg-slate-300 hover:bg-slate-500'}`} aria-label={`第 ${k + 1} 頁：${sl.title}`} />
-          ))}
-        </div>
-        <span className="hidden items-center gap-1 text-xs text-slate-400 lg:flex">
-          <Keyboard className="h-3.5 w-3.5" /> ← → 空白 · P · F
-        </span>
-      </footer>
-    </>
+        </>
+      }
+    />
   );
 }

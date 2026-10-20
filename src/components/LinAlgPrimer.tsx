@@ -426,8 +426,10 @@ export function LinAlgPrimer({ tab, onTab }: { tab?: number; onTab?: (i: number)
           </div>
         </div>
         <div className="mt-3 rounded-xl border border-sky-200 bg-sky-50/60 p-3 text-sm text-slate-700">
-          <span className="mr-1 font-semibold text-sky-800">在 Hamming(7,4) 裡：</span>
-          {c.use}
+          <p>
+            <span className="mr-1 font-semibold text-sky-800">在 Hamming(7,4) 裡：</span>
+            {c.use}
+          </p>
         </div>
       </div>
       <div className="mt-4 flex items-center justify-between text-sm">

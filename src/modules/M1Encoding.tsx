@@ -149,6 +149,7 @@ export default function M1Encoding() {
             }
             aside={
               <Derivation
+                defaultOpen
                 resetKey={message.join('')}
                 steps={[
                   { title: '寫下偶同位條件', body: <Tex block>{'c_1 + c_3 + c_5 + c_7 = 0'}</Tex> },
@@ -286,7 +287,7 @@ export default function M1Encoding() {
                   items={[
                     { wrong: '同位位元只檢查資訊位元，自己不算在內。', right: '偶同位的條件是「整個圓圈（含同位位元本身）有偶數個 1」，所以 P1 = D1⊕D2⊕D4。' },
                     { wrong: '⊕ 就是一般加法，1⊕1 = 2。', right: '這裡的加法是 mod 2：1 + 1 = 2 ≡ 0，不進位，只在乎奇偶。' },
-                    { wrong: '同位位元一定放在資料後面。', right: '第一課採用「位置 1, 2, 4 放同位位元」的標準排列；第二課（以及許多教科書）改用系統形式 [D | P]（c = u‖p），兩者是座標排列不同的等價碼。' },
+                    { wrong: '同位位元一定放在資料後面。', right: '第一課採用「位置 1, 2, 4 放同位位元」的標準排列；第二課改用系統形式 [D | P]（c = u‖p），這也是更常見的寫法。兩者只差座標的排列，是等價的 code。' },
                   ]}
                 />
                 <Expandable title="為什麼每個位置都被不同的檢查組合覆蓋？">

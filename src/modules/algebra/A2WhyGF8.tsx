@@ -23,7 +23,7 @@ export default function A2WhyGF8() {
   return (
     <AlgebraUnit
       id={ID}
-      lead={<p>GF(2) 的矩陣已經足以建構 Hamming(7,4)。那為什麼教科書還要大費周章建立一個有 8 個元素的體？這一單元先回答「為什麼」，再看 GF(8) 長什麼樣子。</p>}
+      lead={<p>GF(2) 的矩陣已經足以建構 Hamming(7,4)。那為什麼還要大費周章建立一個有 8 個元素的體？這一單元先回答「為什麼」，再看 GF(8) 長什麼樣子。</p>}
       why={{
         title: '線性代數夠用了，為什麼還要 GF(8)？',
         body: (

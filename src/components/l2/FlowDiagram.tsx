@@ -166,12 +166,37 @@ export function FlowDiagram({ u, errors, secded, method, stepper, large = false 
     { key: 'dec', zh: '解碼器 Decoder' },
   ];
 
+  // on a slide the explanation fills the room under the two short columns, beside the tall decoder column
+  const panel = (
+    <motion.div key={focus.id} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className={`rounded-2xl border-2 border-indigo-200 bg-white p-4 ${large ? 'text-lg lg:col-span-2' : 'text-sm'}`}>
+      <div className="mb-1 flex items-center gap-2 font-bold text-indigo-900">
+        <Info className="h-4 w-4" />
+        {focus.zh} <span className="font-normal text-slate-400">{focus.en}</span>
+        {selected && <span className="chip bg-indigo-100 text-indigo-700">你點選的模組</span>}
+      </div>
+      <p className="text-slate-700">{focus.desc}</p>
+      {!(focus.secdedOnly && !secded) && reached(focus.id) && (
+        <div className="mt-2 grid gap-2 sm:grid-cols-2">
+          <div className="rounded-lg bg-slate-50 p-2">
+            <div className="text-xs text-slate-500">目前資料 Current data</div>
+            <div className="overflow-x-auto">{view[focus.id].data}</div>
+          </div>
+          <div className="rounded-lg bg-slate-50 p-2">
+            <div className="text-xs text-slate-500">目前運算 Current operation</div>
+            <div className="overflow-x-auto">{view[focus.id].op}</div>
+          </div>
+        </div>
+      )}
+      {!reached(focus.id) && <p className="mt-1 text-xs text-slate-400">（播放到這個模組時會顯示資料）</p>}
+    </motion.div>
+  );
+
   return (
     <div ref={rootRef} className="space-y-4">
       {!stepper && <StepControls s={s} label={`${current.zh}（${current.en}）`} />}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.25fr)]">
         {cols.map((c) => (
-          <div key={c.key} className="min-w-0 rounded-2xl border border-slate-200 bg-slate-50/60 p-2.5">
+          <div key={c.key} className={`min-w-0 rounded-2xl border border-slate-200 bg-slate-50/60 p-2.5 ${large && c.key === 'dec' ? 'lg:row-span-2' : ''}`}>
             <div className="mb-2 text-center text-xs font-bold uppercase tracking-wider text-slate-500">{c.zh}</div>
             <div className="space-y-1">
               {FLOW_NODES.filter((n) => n.col === c.key).map((n, k, arr) => {
@@ -206,28 +231,9 @@ export function FlowDiagram({ u, errors, secded, method, stepper, large = false 
             </div>
           </div>
         ))}
+        {large && panel}
       </div>
-      <motion.div key={focus.id} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className={`rounded-2xl border-2 border-indigo-200 bg-white p-4 ${large ? 'text-lg' : 'text-sm'}`}>
-        <div className="mb-1 flex items-center gap-2 font-bold text-indigo-900">
-          <Info className="h-4 w-4" />
-          {focus.zh} <span className="font-normal text-slate-400">{focus.en}</span>
-          {selected && <span className="chip bg-indigo-100 text-indigo-700">你點選的模組</span>}
-        </div>
-        <p className="text-slate-700">{focus.desc}</p>
-        {!(focus.secdedOnly && !secded) && reached(focus.id) && (
-          <div className="mt-2 grid gap-2 sm:grid-cols-2">
-            <div className="rounded-lg bg-slate-50 p-2">
-              <div className="text-xs text-slate-500">目前資料 Current data</div>
-              <div className="overflow-x-auto">{view[focus.id].data}</div>
-            </div>
-            <div className="rounded-lg bg-slate-50 p-2">
-              <div className="text-xs text-slate-500">目前運算 Current operation</div>
-              <div className="overflow-x-auto">{view[focus.id].op}</div>
-            </div>
-          </div>
-        )}
-        {!reached(focus.id) && <p className="mt-1 text-xs text-slate-400">（播放到這個模組時會顯示資料）</p>}
-      </motion.div>
+      {!large && panel}
     </div>
   );
 }

@@ -42,13 +42,14 @@ const PAGES: Record<string, ComponentType> = {
 };
 
 const Presentation = lazy(() => import('./modules/lesson2/Presentation'));
+const Presentation1 = lazy(() => import('./modules/Presentation1'));
 
 function useHashRoute(): string {
   const read = () => {
     const raw = window.location.hash.replace(/^#\/?/, '').split(/[/?#]/)[0];
     // former pages that were merged: optional GF(8) page → A0, old A11 (decoder) → A10
     const id = raw === 'advanced' ? 'a-0' : raw === 'a-11' ? 'a-10' : raw;
-    return PAGES[id] || id === 'present' ? id : 'intro';
+    return PAGES[id] || id === 'present' || id === 'present-1' ? id : 'intro';
   };
   const [route, setRoute] = useState(read);
   useEffect(() => {
@@ -111,14 +112,23 @@ function Sidebar({ route, onNavigate }: { route: string; onNavigate?: () => void
             <NavItem key={m.id} m={m} active={route === m.id} onNavigate={onNavigate} />
           ))}
         </ul>
-        <a
-          href="#/present"
-          onClick={onNavigate}
-          className="mt-4 flex items-center gap-2 rounded-lg border border-slate-700 px-3 py-2 text-sm font-semibold text-slate-200 hover:bg-white/5"
-        >
-          <PresentationIcon className="h-4 w-4 text-parity-300" />
-          報告模式 Presentation Mode
-        </a>
+        <div className="mt-4 px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-slate-500">報告模式 Presentation Mode</div>
+        <div className="grid grid-cols-2 gap-2">
+          {[
+            ['#/present-1', '第一課'],
+            ['#/present', '第二課'],
+          ].map(([href, text]) => (
+            <a
+              key={href}
+              href={href}
+              onClick={onNavigate}
+              className="flex items-center justify-center gap-1.5 rounded-lg border border-slate-700 px-2 py-2 text-sm font-semibold text-slate-200 hover:bg-white/5"
+            >
+              <PresentationIcon className="h-4 w-4 text-parity-300" />
+              {text}
+            </a>
+          ))}
+        </div>
       </nav>
       <div className="space-y-3 border-t border-slate-800 p-4">
         <SharedMessageChip />
@@ -167,10 +177,10 @@ function Shell() {
     document.title = `${current ? current.title : '報告模式'} · Hamming Lab`;
   }, [current]);
 
-  if (route === 'present') {
+  if (route === 'present' || route === 'present-1') {
     return (
       <Suspense fallback={<div className="py-20 text-center text-slate-400">載入中…</div>}>
-        <Presentation />
+        {route === 'present' ? <Presentation /> : <Presentation1 />}
       </Suspense>
     );
   }

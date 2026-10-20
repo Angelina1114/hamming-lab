@@ -177,7 +177,9 @@ export function MessageSizeLab() {
       </div>
 
       <div className="mt-4 rounded-xl border border-emerald-300 bg-emerald-50 p-3 text-sm text-emerald-900">
-        <strong>為什麼選 4？</strong>資料少於 4 個位元也能修正錯誤，但同位位元省不下來：2 或 3 個資訊位元一樣要 3 個同位位元，等於花一樣的成本送更少的資料。只有降到 1 個資訊位元才省成 2 個同位位元，可是那時同位位元是資料的 2 倍。所以 4 是「3 個同位位元最划算」的資料量：每個資訊位元只要配 0.75 個同位位元，而且 7 種檢查結果一種都沒浪費。
+        <p>
+          <strong>為什麼選 4？</strong>資料少於 4 個位元也能修正錯誤，但同位位元省不下來：2 或 3 個資訊位元一樣要 3 個同位位元，等於花一樣的成本送更少的資料。只有降到 1 個資訊位元才省成 2 個同位位元，可是那時同位位元是資料的 2 倍。所以 4 是「3 個同位位元最划算」的資料量：每個資訊位元只要配 0.75 個同位位元，而且 7 種檢查結果一種都沒浪費。
+        </p>
       </div>
     </Card>
   );
@@ -238,7 +240,7 @@ export function CodeSizeTable() {
           資料一多到 5 個，如果還用 3 個同位位元，n = 5 + 3 = 8 已經超過 7 種結果，只好加到 4 個同位位元（n = 9），一直到 (15,11) 才又剛好用滿。
         </p>
         <p>
-          課本選 (7,4)，是因為它是除了重複碼之外<strong>最小的完整 Hamming Code</strong>：小到可以手算、畫成 Venn 圖，又已經有「重疊檢查定位錯誤」的全部精神。實際系統用的是更長的版本：家族表與 Hamming Bound 見
+          (7,4) 是最常用來入門的 Hamming Code，因為它是除了重複碼之外<strong>最小的完整 Hamming Code</strong>：小到可以手算、畫成 Venn 圖，又已經有「重疊檢查定位錯誤」的全部精神。實際系統用的是更長的版本：家族表與 Hamming Bound 見
           <a href="#/bound" className="mx-1 font-semibold text-overall-700 hover:underline">
             第 5 章
           </a>

@@ -24,7 +24,7 @@ import {
   MousePointerClick,
   ArrowRightCircle,
 } from 'lucide-react';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { MODULES, moduleIndex } from '../lib/modules';
 
 /* ------------------------------------------------------------------ */
@@ -233,12 +233,50 @@ export function Card({ children, className = '', title, icon, actions }: { child
   );
 }
 
-/** Interactive area + math side panel. Stacks on small screens. */
+/** Space kept above a pinned LabGrid column, so it clears the sticky stage bar. */
+const PIN_TOP = 56;
+
+/**
+ * Interactive area + math side panel. Stacks on small screens; side by side from xl.
+ * Side by side, the shorter column is pinned while the taller one scrolls past, so a
+ * short panel never leaves a hole (only when it fits on screen, or its bottom would hide).
+ */
 export function LabGrid({ main, aside }: { main: ReactNode; aside: ReactNode }) {
+  const mainRef = useRef<HTMLDivElement>(null);
+  const asideRef = useRef<HTMLElement>(null);
+  const [pin, setPin] = useState<'main' | 'aside' | null>(null);
+
+  useEffect(() => {
+    const a = mainRef.current;
+    const b = asideRef.current;
+    if (!a || !b || typeof ResizeObserver === 'undefined') return;
+    const wide = window.matchMedia('(min-width: 1280px)');
+    const measure = () => {
+      const ha = a.offsetHeight;
+      const hb = b.offsetHeight;
+      const short = Math.min(ha, hb);
+      const next = wide.matches && Math.abs(ha - hb) > 48 && short <= window.innerHeight - PIN_TOP - 16 ? (ha < hb ? 'main' : 'aside') : null;
+      setPin(next);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(a);
+    ro.observe(b);
+    window.addEventListener('resize', measure);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', measure);
+    };
+  }, []);
+
   return (
-    <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,400px)]">
-      <div className="min-w-0 space-y-4">{main}</div>
-      <aside className="min-w-0 space-y-4">{aside}</aside>
+    <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,400px)] xl:items-start">
+      <div ref={mainRef} className={`min-w-0 space-y-4 ${pin === 'main' ? 'xl:sticky' : ''}`} style={pin === 'main' ? { top: PIN_TOP } : undefined}>
+        {main}
+      </div>
+      <aside ref={asideRef} className={`min-w-0 space-y-4 ${pin === 'aside' ? 'xl:sticky' : ''}`} style={pin === 'aside' ? { top: PIN_TOP } : undefined}>
+        {aside}
+      </aside>
     </div>
   );
 }
@@ -261,7 +299,7 @@ export function Callout({ kind = 'info', title, children }: { kind?: CalloutKind
         <Icon className="h-4 w-4 shrink-0" />
         {title ?? c.label}
       </div>
-      <div className="space-y-1.5 [&_p]:leading-relaxed">{children}</div>
+      <div className="max-w-[52em] space-y-1.5 [&_p]:leading-relaxed">{children}</div>
     </div>
   );
 }
