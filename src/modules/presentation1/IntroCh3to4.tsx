@@ -356,7 +356,7 @@ function DminFromHSlide({ s }: { s: Stepper }) {
       ok: false,
       body: (
         <>
-          <M>{'h_j \\neq 0'}</M>（沒有全 0 的欄）
+          沒有全 0 的欄，所以 <M>{'h_j \\neq 0'}</M>
         </>
       ),
     },
@@ -366,7 +366,7 @@ function DminFromHSlide({ s }: { s: Stepper }) {
       ok: false,
       body: (
         <>
-          <M>{'h_i + h_j \\neq 0'}</M>（沒有兩欄相同）
+          沒有兩欄相同，所以 <M>{'h_i + h_j \\neq 0'}</M>
         </>
       ),
     },
@@ -386,7 +386,7 @@ function DminFromHSlide({ s }: { s: Stepper }) {
       <Reveal on={s.step >= 0}>
         <Box tone="bg-slate-50" title="最小的非零重量是多少？">
           <p className="text-slate-600">
-            <M>{'Hc^{T}'}</M> = c 裡為 1 的那些位置的欄相加；c 是 codeword ⇔ 和為 0。
+            <M>{'Hc^{T}'}</M> 就是把 c 裡「是 1 的位置」那幾欄加起來。所以<strong className="text-slate-900">有重量 w 的 codeword ⇔ H 有 w 欄加起來 = 0</strong>。
           </p>
           <div className="mt-3 space-y-2">
             {claims.map((c) => (
