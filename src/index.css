@@ -18,7 +18,7 @@
   }
   /* wide screens: keep running text near 50 characters a line instead of spanning the whole card */
   main p,
-  main li,
+  main li:not(.flex),
   main dd {
     max-width: 52em;
   }

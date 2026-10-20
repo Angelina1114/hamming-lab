@@ -32,7 +32,13 @@ const DESIGN_H = 620;
 export function Deck<C>({ slides, ctx, label, exitHref, toolbar, resetKey = 0 }: DeckProps<C>) {
   const [idx, setIdx] = useState(0);
   const [atEnd, setAtEnd] = useState(false);
-  const [full, setFull] = useState(false);
+  const [full, setFull] = useState(() => !!document.fullscreenElement);
+  // switching the example restarts the current slide from its first step
+  const [seenReset, setSeenReset] = useState(resetKey);
+  if (seenReset !== resetKey) {
+    setSeenReset(resetKey);
+    setAtEnd(false);
+  }
 
   const go = useCallback(
     (n: number, toEnd = false) => {
@@ -64,7 +70,8 @@ export function Deck<C>({ slides, ctx, label, exitHref, toolbar, resetKey = 0 }:
         <span className="font-mono text-xs text-slate-400">
           {idx + 1}/{slides.length}
         </span>
-        <div className="ml-auto flex flex-wrap items-center gap-2 text-xs">
+        {/* a picker keeps focus after a choice, which would swallow the arrow keys: hand them back to the deck */}
+        <div className="ml-auto flex flex-wrap items-center gap-2 text-xs" onChange={(e) => e.target instanceof HTMLSelectElement && e.target.blur()}>
           {toolbar}
           <button className="rounded-md p-1.5 hover:bg-white/10" onClick={toggleFull} title="全螢幕 (F)" aria-label="全螢幕">
             {full ? <Minimize className="h-4 w-4" /> : <Expand className="h-4 w-4" />}
@@ -109,8 +116,23 @@ function SlideHost<C>({
     const fit = () => {
       const base = Math.max(0.7, Math.min(1.8, el.clientWidth / DESIGN_W, el.clientHeight / DESIGN_H));
       if (total > 1) return setZoom(base);
-      const natural = box.getBoundingClientRect().height / (parseFloat(box.style.zoom) || 1);
-      setZoom(Math.max(base * 0.85, Math.min(base, el.clientHeight / natural)));
+      // on narrow screens the slide reflows with the zoom, so measure at each candidate zoom and keep
+      // the largest one that fits (falling back to the 15% floor, which then scrolls)
+      let z = base;
+      let best = base * 0.85;
+      for (let pass = 0; pass < 4; pass++) {
+        box.style.zoom = String(z);
+        const natural = box.getBoundingClientRect().height / z;
+        if (z * natural <= el.clientHeight + 1) {
+          best = Math.max(best, z);
+          break;
+        }
+        const next = Math.max(base * 0.85, Math.min(base, el.clientHeight / natural));
+        if (Math.abs(next - z) < 0.005) break;
+        z = next;
+      }
+      box.style.zoom = String(best);
+      setZoom(best);
     };
     fit();
     const ro = new ResizeObserver(fit);
@@ -129,6 +151,7 @@ function SlideHost<C>({
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return; // leave browser shortcuts (⌘F, ⌘←, …) alone
       const t = e.target as HTMLElement;
       if (t && (t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.tagName === 'TEXTAREA')) return;
       if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {

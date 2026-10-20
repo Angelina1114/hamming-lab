@@ -299,7 +299,7 @@ export function Callout({ kind = 'info', title, children }: { kind?: CalloutKind
         <Icon className="h-4 w-4 shrink-0" />
         {title ?? c.label}
       </div>
-      <div className="max-w-[52em] space-y-1.5 [&_p]:leading-relaxed">{children}</div>
+      <div className="space-y-1.5 [&:not(:has(.katex-display))]:max-w-[52em] [&_p]:leading-relaxed">{children}</div>
     </div>
   );
 }

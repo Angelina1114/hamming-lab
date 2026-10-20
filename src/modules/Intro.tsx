@@ -74,7 +74,7 @@ export default function Intro() {
                 <li>方塊狀的位元都可以點擊翻轉；藍色是資訊位元，橘色是同位位元，紫色是整體同位位元。</li>
                 <li>每個實驗都有「重設範例」按鈕，預設訊息是 <span className="mono">1011</span>。</li>
                 <li>「逐步數學推導」區塊可以按「下一步」一步一步展開，避免一次看到太多公式。</li>
-                <li>上方的流程列可以快速跳到 為什麼／定義／…／結論。</li>
+                <li>上方的流程列可以快速跳到「為什麼」「定義」…「結論」各段。</li>
               </ul>
             </Expandable>
             <Expandable title="所有計算都是真的" icon={<Layers className="h-4 w-4 text-indigo-500" />}>

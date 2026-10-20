@@ -17,6 +17,7 @@ import {
   matVec,
   minimumDistance,
   secdedDecode,
+  syndromeToPosition,
   vecAdd,
 } from '../core';
 import { useMessage } from '../lib/store';
@@ -68,7 +69,7 @@ function TitleSlide() {
           <li>→ / 空白鍵：下一步（動畫走完再換頁）</li>
           <li>←：上一步　P：播放 / 暫停　F：全螢幕</li>
           <li>每一頁的位元、按鈕都可以直接點，和網頁上一樣</li>
-          <li>右上角可切換範例訊息（第 1–3、6、7 章共用）</li>
+          <li>右上角可切換範例訊息（導論的 r = c + e 與第 1–3、6、7 章共用）</li>
         </ul>
       </div>
     </div>
@@ -248,7 +249,7 @@ function VennSlide() {
           {e.length === 0 && <>三個圓圈都是偶數個 1（綠色）：沒有錯。</>}
           {e.length > 0 && d.position > 0 && (
             <>
-              失敗的圓圈只共同包含位置 <strong>{d.position}（{LAYOUT_74[d.position - 1].label}）</strong>：把它翻回來就修好了
+              只有位置 <strong>{d.position}（{LAYOUT_74[d.position - 1].label}）</strong>落在所有失敗的圓圈裡、又不在任何通過的圓圈裡：把它翻回來就修好了
               {e.length > 1 && <span className="text-rose-700">（但其實錯了 {e.length} 個，會改錯）</span>}。
             </>
           )}
@@ -306,7 +307,7 @@ function SyndromeSlide({ s }: { s: Stepper }) {
   const d = decode74(r);
   const col = d.position - 1;
   return (
-    <div className="space-y-5 text-xl">
+    <div className="space-y-4 text-xl">
       <div className="flex flex-wrap items-center gap-4">
         <span className="text-slate-500">收到 r =</span>
         <BitRow bits={r} layout={LAYOUT_74} size="lg" states={r.map((_, i) => (e.includes(i) ? 'error' : 'normal'))} onToggle={(i) => setE(e.includes(i) ? e.filter((j) => j !== i) : [...e, i])} />
@@ -324,7 +325,7 @@ function SyndromeSlide({ s }: { s: Stepper }) {
         <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-slate-50 p-4">
           {d.position === 0 ? (
             <>
-              s = 000：沒有發現錯誤。<StatusBadge status={e.length ? 'wrong' : 'ok'} zh={e.length ? '漏掉了' : undefined} en={e.length ? 'Undetected error' : undefined} large />
+              s = 000：沒有發現錯誤。<StatusBadge status={e.length ? 'wrong' : 'ok'} zh={e.length ? '未偵測錯誤' : undefined} en={e.length ? 'Undetected error' : undefined} large />
             </>
           ) : (
             <>
@@ -337,7 +338,7 @@ function SyndromeSlide({ s }: { s: Stepper }) {
       <p className="text-lg text-slate-600">
         {s.step === 0 && '點位元注入錯誤（可以點好幾個），再按下一步計算 Syndrome。'}
         {s.step === 1 && 's = Hrᵀ = Heᵀ：codeword 的部分全部消掉，只剩錯誤。'}
-        {s.step === 2 && '只錯一個時，s 就是錯誤位置那一欄 = 位置的二進位。錯兩個以上就會改錯（第 4 章解釋原因）。'}
+        {s.step === 2 && '只錯一個時，s 就是錯誤位置那一欄 = 位置的二進位。錯兩個一定會改錯；錯三個以上可能改錯，也可能完全沒發現（第 4 章解釋原因）。'}
       </p>
     </div>
   );
@@ -438,7 +439,7 @@ function ExtendedSlide() {
 
 const SECDED_ROWS = [
   { kase: 'no-error', s: 's = 0', q: '偶', label: '沒有錯', status: 'ok' },
-  { kase: 'single-corrected', s: 's ≠ 0', q: '奇', label: '單一錯誤 → 翻轉位置 s', status: 'corrected' },
+  { kase: 'single-corrected', s: 's ≠ 0', q: '奇', label: '單一錯誤 → 翻轉 s 指向的位置', status: 'corrected' },
   { kase: 'double-detected', s: 's ≠ 0', q: '偶', label: '兩個錯誤 → 只偵測，不修正', status: 'detected' },
   { kase: 'overall-corrected', s: 's = 0', q: '奇', label: 'P0 自己錯了 → 翻轉 P0', status: 'corrected' },
 ] as const;
@@ -474,7 +475,8 @@ function SecdedSlide() {
       </div>
       <div className="flex flex-wrap gap-8 text-2xl">
         <span>
-          s = <span className="mono font-bold">{res.syndrome.join('')}</span>
+          s = <span className="mono font-bold">({res.syndrome.join(',')})ᵀ</span>
+          {res.syndrome.some(Boolean) && <span className="text-slate-500"> → 位置 {syndromeToPosition(res.syndrome)}</span>}
         </span>
         <span>
           q = {res.overallParity}（8 個位元裡 1 的個數是{res.overallParity ? '奇數' : '偶數'}）

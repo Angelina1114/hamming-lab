@@ -43,13 +43,16 @@ const PAGES: Record<string, ComponentType> = {
 
 const Presentation = lazy(() => import('./modules/lesson2/Presentation'));
 const Presentation1 = lazy(() => import('./modules/Presentation1'));
+const PresentationAlgebra = lazy(() => import('./modules/algebra/Presentation'));
+/** presentation decks: one per lesson plus the algebra chapter */
+const DECKS: Record<string, ComponentType> = { 'present-1': Presentation1, present: Presentation, 'present-a': PresentationAlgebra };
 
 function useHashRoute(): string {
   const read = () => {
     const raw = window.location.hash.replace(/^#\/?/, '').split(/[/?#]/)[0];
     // former pages that were merged: optional GF(8) page → A0, old A11 (decoder) → A10
     const id = raw === 'advanced' ? 'a-0' : raw === 'a-11' ? 'a-10' : raw;
-    return PAGES[id] || id === 'present' || id === 'present-1' ? id : 'intro';
+    return PAGES[id] || DECKS[id] ? id : 'intro';
   };
   const [route, setRoute] = useState(read);
   useEffect(() => {
@@ -113,10 +116,11 @@ function Sidebar({ route, onNavigate }: { route: string; onNavigate?: () => void
           ))}
         </ul>
         <div className="mt-4 px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-slate-500">報告模式 Presentation Mode</div>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-3 gap-2">
           {[
             ['#/present-1', '第一課'],
             ['#/present', '第二課'],
+            ['#/present-a', '代數'],
           ].map(([href, text]) => (
             <a
               key={href}
@@ -177,10 +181,11 @@ function Shell() {
     document.title = `${current ? current.title : '報告模式'} · Hamming Lab`;
   }, [current]);
 
-  if (route === 'present' || route === 'present-1') {
+  const DeckPage = DECKS[route];
+  if (DeckPage) {
     return (
       <Suspense fallback={<div className="py-20 text-center text-slate-400">載入中…</div>}>
-        {route === 'present' ? <Presentation /> : <Presentation1 />}
+        <DeckPage />
       </Suspense>
     );
   }
