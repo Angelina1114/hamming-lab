@@ -6,20 +6,25 @@ import {
   alphaPow,
   cyclicGenerator,
   cyclicIndexToStandardPosition,
+  codewords74,
   cyclicWordToStandard,
   encodeNonSystematic,
   flipBit,
   gf8Bits,
   gf8PolyTex,
   hFromGF8,
+  hammingSyndromeXors,
   inCyclicCode,
   intToBits,
   isCodeword74,
   matMul,
   matVec,
+  syndromeTable,
   transpose,
   wordAtAlpha,
+  xorNetworkGates,
 } from '../../core';
+import { cyclicShiftEscapes } from '../../core/engineering-g5';
 import { M, Tex } from '../../components/Tex';
 import { Card, LabGrid, ResetButton } from '../../components/Lesson';
 import { MatrixView, ColumnVector } from '../../components/MatrixView';
@@ -33,6 +38,11 @@ const HC = hFromGF8();
 const GC = cyclicGenerator();
 const COL_LABELS = ['α⁶', 'α⁵', 'α⁴', 'α³', 'α²', 'α', '1'];
 const powTex = (e: number) => (e === 0 ? '1' : e === 1 ? '\\alpha' : `\\alpha^{${e}}`);
+const SINGLE = syndromeTable(); // syndrome a single error at each position leaves in the divider register
+const L1_CODE = codewords74().map((x) => x.codeword);
+const L1_ESCAPES = cyclicShiftEscapes(L1_CODE); // Lesson 1 codewords that leave the code after one cyclic shift
+const HC_XORS = xorNetworkGates(HC); // three parallel XOR trees of H_cyc
+const L1_XORS = hammingSyndromeXors(3); // the same for Lesson 1's H
 
 export default function A9HMatrix() {
   const build = useStepper(8, { interval: 900 });
@@ -54,12 +64,23 @@ export default function A9HMatrix() {
       id={ID}
       convention
       lead={<p>第一課的 H 是 GF(2) 矩陣，A5–A8 的條件是 GF(8) 方程 <M>{'c(\\alpha) = 0'}</M>。這一單元把兩者接起來：把每個 <M>{'\\alpha^i'}</M> 寫成 3 位元向量，一條 GF(8) 方程就攤開成三條 GF(2) 方程——也就是一個 3×7 的 H。</p>}
+      takeaway={
+        <>
+          <M>{'c(\\alpha) = 0'}</M> 就是三條同位檢查都通過；H 的第 k 欄是第 k 個 bit 單獨翻轉時的 Syndrome。
+        </>
+      }
       why={{
         title: '兩種語言，同一個 code',
         body: (
           <Plain>
             <p>
+              先看接收端實際在做什麼。第一課的 H 有三列，每一列是一條同位檢查（parity check）：把它盯著的那幾個 bit 全部 XOR 起來，結果是 0 就代表這條檢查通過，三條檢查的輸出合起來就是 3 位元的 Syndrome。所以「H 長什麼樣子」其實就是「檢查電路怎麼接線」：第 k 欄寫的是第 k 個 bit 接到哪幾條檢查，也就是這個 bit 單獨被雜訊翻轉時得到的 Syndrome。
+            </p>
+            <p>
               到目前為止有兩套說法：線性代數說「<M>{'Hc^T = 0'}</M> 的 c 是 codeword」；有限體說「<M>{'c(\\alpha) = 0'}</M> 的 c 是 codeword」。如果它們描述的是同一個 code，就應該能從其中一個<strong>推導</strong>出另一個。這一單元做的就是這個推導，也回答了整章的問題：GF(8) 不是取代線性代數，而是用更緊湊的方式寫出同一組方程。
+            </p>
+            <p>
+              那為什麼不沿用第一課的 H 就好？第一課把第 j 欄排成 j 的二進位，好處是 Syndrome 直接讀成錯誤位置的編號，不必換算；代價是這樣排出來的 code 不是循環碼：第一課的 {L1_CODE.length} 個 codeword 裡，有 {L1_ESCAPES} 個循環位移一格後就不再是 codeword，A5、A6 的 LFSR 編碼器和除法暫存器都用不上。GF(8) 給出的排列是第 k 欄 = <M>{'\\alpha^{7-k}'}</M>，相鄰兩欄剛好差一個 α 倍，所以位移後仍是 codeword，同一組檢查就能改成幾個暫存器、一個時脈處理一個 bit（A10）。換來的代價是 Syndrome 不再直接是位置編號，要多做一次「取對數」。
             </p>
           </Plain>
         ),
@@ -72,7 +93,7 @@ export default function A9HMatrix() {
               items={[
                 { zh: '基底 α², α, 1', en: 'Basis', def: <>每個 GF(8) 元素唯一寫成 <M>{'a\\alpha^2 + b\\alpha + c'}</M>，對應向量 <M>{'(a, b, c)^T'}</M>。例如 <M>{'\\alpha^6 = \\alpha^2 + 1 \\leftrightarrow (1,0,1)^T'}</M>。</> },
                 { zh: '代入 α', en: 'Evaluation', def: <><M>{'c(\\alpha) = c_6\\alpha^6 + c_5\\alpha^5 + \\cdots + c_0'}</M>，每個 <M>{'c_i \\in \\{0,1\\}'}</M> 只決定「這一項要不要加」。</> },
-                { zh: '一條 GF(8) 方程 = 三條 GF(2) 方程', def: <>GF(8) 元素等於 0 ⇔ 三個座標都是 0。把 <M>{'c(\\alpha)'}</M> 的三個座標分開寫，就是 H 的三列。</> },
+                { zh: '一條 GF(8) 方程 = 三條 GF(2) 方程', def: <>GF(8) 元素等於 0 ⇔ 三個座標都是 0。把 <M>{'c(\\alpha)'}</M> 的三個座標分開寫，就是 H 的三列；在電路上就是三棵 XOR 樹，各輸出 Syndrome 的一個 bit。</> },
               ]}
             />
             <Card>
@@ -112,6 +133,9 @@ export default function A9HMatrix() {
                         </div>
                         <Tex block>{`${powTex(e)} = ${gf8PolyTex(alphaPow(e))} \\;\\leftrightarrow\\; (${intToBits(alphaPow(e), 3).join(',')})^T`}</Tex>
                         <ColumnVector bits={intToBits(alphaPow(e), 3)} cellClass="bg-fuchsia-100 text-fuchsia-800" />
+                        <p className="text-xs text-slate-600">
+                          只讓這個 bit 出錯時，第二課 2-4 的除法暫存器留下的餘數也是 <span className="mono font-semibold">{SINGLE[k].syndrome.join('')}</span>：這一欄就是「這個位置被翻轉時，三條檢查各自的反應」。
+                        </p>
                         <p className="text-xs text-slate-500">（α 的次方表見 A4。）</p>
                       </div>
                     );
@@ -214,6 +238,14 @@ export default function A9HMatrix() {
                 </div>
               </div>
             </Card>
+            <Plain>
+              <p>
+                回到電路上讀這個例子：<M>{'H_{\\text{cyc}}c^T'}</M> 的三個位元就是三棵 XOR 樹的輸出，合法 codeword 讓三棵樹同時輸出 0。從合法 codeword 出發只點一個 bit 製造錯誤，輸出就變成那一欄的樣式——接收端正是靠這個樣式知道哪一個 bit 被翻轉了。
+              </p>
+              <p>
+                上表也說明兩個 H 在硬體上的關係：把 7 條輸入線照「第一課位置」重新排列，再把三個輸出上下顛倒，H_cyc 的電路就變成第一課的電路。平行實作時 H_cyc 用 {HC_XORS} 個 XOR 閘，第一課的 H 也是 {L1_XORS} 個；換成 GF(8) 的排列只是重新接線，不多花任何一個閘。
+              </p>
+            </Plain>
           </>
         ),
       }}
@@ -221,9 +253,15 @@ export default function A9HMatrix() {
         title: '這就是整章問題的答案',
         body: (
           <Card>
-            <p className="text-sm leading-relaxed text-slate-700">
-              線性代數（H）與有限體（<M>{'c(\\alpha)=0'}</M>）描述的是<strong>同一個循環 Hamming Code</strong>。GF(8) 的價值在於它多出來的結構：code 是 g(x) 的倍數（可用 LFSR 編碼）、Syndrome 是一個「數」 <M>{'S_1 = r(\\alpha)'}</M>（可以取對數、解方程）、根與陪集讓我們能設計更強的 code（BCH）。H 的每一欄，也正是第二課 2-5 的 Syndrome 查表。
-            </p>
+            <div className="space-y-3 text-sm leading-relaxed text-slate-700">
+              <p>
+                線性代數（H）與有限體（<M>{'c(\\alpha)=0'}</M>）描述的是<strong>同一個循環 Hamming Code</strong>。GF(8) 的價值在於它多出來的結構：code 是 g(x) 的倍數（可用 LFSR 編碼）、Syndrome 是一個「數」 <M>{'S_1 = r(\\alpha)'}</M>（可以取對數、解方程）、根與陪集讓我們能設計更強的 code（BCH）。H 的每一欄，也正是第二課 2-5 的 Syndrome 查表。
+              </p>
+              <p>
+                落到硬體上，結論很具體：用 GF(8) 設計出來的 code，檢查電路仍然只是三條同位檢查；有限體決定的是「哪個 bit 接到哪條檢查」，而它選出的循環排列，讓同一組檢查可以改用 LFSR 一個時脈一個 bit 地完成。
+              </p>
+              <p>下一單元 A10 把這個電路放到接收端，邊收 bit 邊算出 Syndrome，並直接讀出錯誤位置。</p>
+            </div>
           </Card>
         ),
         links: [
