@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { ArrowRight } from 'lucide-react';
-import { ALGEBRA_STAGES, Card, FlowBar, Misconceptions, ModuleHeader, PrevNext, Stage } from '../Lesson';
+import { ALGEBRA_STAGES, Card, FlowBar, KeyPoint, Misconceptions, ModuleHeader, PrevNext, Stage } from '../Lesson';
 import { MODULES, moduleIndex } from '../../lib/modules';
 import { ConventionBanner } from '../l2/Common';
 
@@ -15,6 +15,8 @@ interface Section {
 interface UnitProps {
   id: string;
   lead?: ReactNode;
+  /** one sentence: what this idea does in real hardware / transmission, or why engineers need it */
+  takeaway?: ReactNode;
   /** show the MSB-first bit-order banner (units that use bit strings as polynomials) */
   convention?: boolean;
   why: Section;
@@ -30,11 +32,12 @@ interface UnitProps {
 }
 
 /** Algebra-chapter unit: WHY → WHAT → HOW → EXAMPLE → CONNECTION. */
-export function AlgebraUnit({ id, lead, convention = false, why, what, how, example, connection }: UnitProps) {
+export function AlgebraUnit({ id, lead, takeaway, convention = false, why, what, how, example, connection }: UnitProps) {
   const next = MODULES[moduleIndex(id) + 1];
   return (
     <div>
       <ModuleHeader moduleId={id}>{lead}</ModuleHeader>
+      {takeaway && <KeyPoint>{takeaway}</KeyPoint>}
       {convention && <ConventionBanner />}
       <FlowBar moduleId={id} order={ALGEBRA_STAGES} />
       <div className="space-y-12">

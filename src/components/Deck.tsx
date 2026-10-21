@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Expand, Minimize, Pause, Play, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Expand, Minimize, NotebookPen, Pause, Play, X } from 'lucide-react';
 import { useStepper, type Stepper } from './l2/Stepper';
 import { PresentingContext } from '../lib/presenting';
 
@@ -10,6 +10,10 @@ export interface DeckSlide<C> {
   sub?: string;
   steps: (c: C) => number;
   render: (s: Stepper, c: C) => ReactNode;
+  /** one-sentence key point shown beside the title */
+  takeaway?: ReactNode;
+  /** speaker notes: what to say, kept off the slide (shown only when the presenter opens them) */
+  notes?: ReactNode;
 }
 
 interface DeckProps<C> {
@@ -34,6 +38,8 @@ export function Deck<C>({ slides, ctx, label, exitHref, toolbar, resetKey = 0 }:
   const [idx, setIdx] = useState(0);
   const [atEnd, setAtEnd] = useState(false);
   const [full, setFull] = useState(() => !!document.fullscreenElement);
+  const [notesOpen, setNotesOpen] = useState(false);
+  const hasNotes = slides.some((sl) => sl.notes);
   // switching the example restarts the current slide from its first step
   const [seenReset, setSeenReset] = useState(resetKey);
   if (seenReset !== resetKey) {
@@ -74,12 +80,17 @@ export function Deck<C>({ slides, ctx, label, exitHref, toolbar, resetKey = 0 }:
         {/* a picker keeps focus after a choice, which would swallow the arrow keys: hand them back to the deck */}
         <div className="ml-auto flex flex-wrap items-center gap-2 text-xs" onChange={(e) => e.target instanceof HTMLSelectElement && e.target.blur()}>
           {toolbar}
+          {hasNotes && (
+            <button className={`flex items-center gap-1 rounded-md px-2 py-1.5 ${notesOpen ? 'bg-white/15' : 'hover:bg-white/10'}`} onClick={() => setNotesOpen((v) => !v)} aria-pressed={notesOpen} title="講者備註 (N)">
+              <NotebookPen className="h-4 w-4" /> 備註
+            </button>
+          )}
           <button className="rounded-md p-1.5 hover:bg-white/10" onClick={toggleFull} title="全螢幕 (F)" aria-label="全螢幕">
             {full ? <Minimize className="h-4 w-4" /> : <Expand className="h-4 w-4" />}
           </button>
         </div>
       </header>
-      <SlideHost key={`${idx}-${resetKey}`} slides={slides} idx={idx} ctx={ctx} startAtEnd={atEnd} go={go} toggleFull={toggleFull} />
+      <SlideHost key={`${idx}-${resetKey}`} slides={slides} idx={idx} ctx={ctx} startAtEnd={atEnd} go={go} toggleFull={toggleFull} notesOpen={hasNotes && notesOpen} toggleNotes={() => setNotesOpen((v) => !v)} />
     </div>
   );
 }
@@ -92,6 +103,8 @@ function SlideHost<C>({
   startAtEnd,
   go,
   toggleFull,
+  notesOpen,
+  toggleNotes,
 }: {
   slides: DeckSlide<C>[];
   idx: number;
@@ -99,6 +112,8 @@ function SlideHost<C>({
   startAtEnd: boolean;
   go: (n: number, toEnd?: boolean) => void;
   toggleFull: () => void;
+  notesOpen: boolean;
+  toggleNotes: () => void;
 }) {
   const slide = slides[idx];
   const total = slide.steps(ctx);
@@ -163,20 +178,31 @@ function SlideHost<C>({
         back();
       } else if (e.key === 'p' || e.key === 'P') s.toggle();
       else if (e.key === 'f' || e.key === 'F') toggleFull();
+      else if (e.key === 'n' || e.key === 'N') toggleNotes();
       else if (e.key === 'Home') go(0);
       else if (e.key === 'End') go(slides.length - 1);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [forward, back, s, toggleFull, go, slides.length]);
+  }, [forward, back, s, toggleFull, toggleNotes, go, slides.length]);
 
   return (
     <>
       <main ref={mainRef} className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
         <div ref={contentRef} style={{ zoom, maxWidth: DESIGN_W }} className="mx-auto px-4 py-4 sm:px-8">
           <motion.section initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.25 }}>
-            <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">{slide.title}</h1>
-            {slide.sub && <p className="mt-1 text-lg text-slate-500">{slide.sub}</p>}
+            <div className={slide.takeaway ? 'grid grid-cols-1 items-start gap-x-6 gap-y-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,25rem)]' : ''}>
+              <div>
+                <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">{slide.title}</h1>
+                {slide.sub && <p className="mt-1 text-lg text-slate-500">{slide.sub}</p>}
+              </div>
+              {slide.takeaway && (
+                <div className="rounded-2xl border-2 border-emerald-200 bg-emerald-50 px-4 py-2.5 text-lg leading-snug text-emerald-900 [text-wrap:pretty]">
+                  <strong className="mr-1.5">重點</strong>
+                  {slide.takeaway}
+                </div>
+              )}
+            </div>
             {/* a lesson card reused as the whole slide drops its own frame: one frame per slide */}
             <div className="mt-4 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:px-8 sm:py-6 [&>.card]:border-0 [&>.card]:p-0 [&>.card]:shadow-none [&_li]:text-pretty [&_p]:text-pretty">
               <PresentingContext.Provider value={true}>{slide.render(s, ctx)}</PresentingContext.Provider>
@@ -184,6 +210,12 @@ function SlideHost<C>({
           </motion.section>
         </div>
       </main>
+      {notesOpen && (
+        <aside aria-label="講者備註" className="z-30 max-h-[30vh] overflow-y-auto border-t border-amber-200 bg-amber-50 px-4 py-3 text-base leading-relaxed text-slate-800 sm:px-6">
+          <div className="mb-1 text-sm font-semibold text-amber-800">講者備註</div>
+          {slide.notes ?? <span className="text-slate-500">這一頁沒有備註。</span>}
+        </aside>
+      )}
       <footer className="z-30 flex flex-wrap items-center gap-2 border-t border-slate-200 bg-white/95 px-3 py-2 backdrop-blur sm:px-5">
         <button className="btn-ghost !px-4 !py-2 text-base" onClick={back} disabled={idx === 0 && s.step === 0}>
           <ChevronLeft className="h-5 w-5" /> 上一步

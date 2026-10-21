@@ -11,3 +11,4 @@ export * from './quiz';
 export * from './algebra';
 export * from './scaling';
 export * from './parityDesign';
+export * from './engineering';

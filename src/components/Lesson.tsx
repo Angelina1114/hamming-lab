@@ -304,6 +304,19 @@ export function Callout({ kind = 'info', title, children }: { kind?: CalloutKind
   );
 }
 
+/** One-sentence takeaway of a chapter: what the idea does in a real system (or why engineers need it). */
+export function KeyPoint({ children }: { children: ReactNode }) {
+  return (
+    <div className="mb-5 flex items-start gap-2.5 rounded-xl border border-emerald-200 bg-emerald-50/70 px-4 py-3 text-emerald-900">
+      <Lightbulb className="mt-1 h-4 w-4 shrink-0" />
+      <p className="leading-relaxed">
+        <strong className="mr-1.5">重點</strong>
+        {children}
+      </p>
+    </div>
+  );
+}
+
 /** Several misconception items in one collapsible box. */
 export function Misconceptions({ items }: { items: { wrong: ReactNode; right: ReactNode }[] }) {
   return (
