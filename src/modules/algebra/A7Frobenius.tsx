@@ -4,9 +4,11 @@ import {
   GF8_ELEMENTS,
   alphaPow,
   cosetOrbit,
+  cosetSizes,
   cyclotomicCosets,
   encodeNonSystematic,
   frobenius,
+  gfMultiplierNetlist,
   gf8Add,
   gf8Bits,
   gf8Mul,
@@ -14,9 +16,12 @@ import {
   gf8PowTex,
   gfPolyEval,
   intToBits,
+  maskDegree,
   msbToTex,
+  syndromeClocks,
   wordAtAlphaPower,
 } from '../../core';
+import { bchRootBudget, squarerXors, squaringMatrix } from '../../core/engineering-g4';
 import { M, Tex } from '../../components/Tex';
 import { Card, Derivation, LabGrid, ResetButton } from '../../components/Lesson';
 import { AlgebraUnit, Plain, Terms } from '../../components/alg/Unit';
@@ -26,6 +31,17 @@ import { StepControls, useStepper } from '../../components/l2/Stepper';
 const ID = 'a-7';
 const CODE = Array.from({ length: 16 }, (_, i) => ({ m: intToBits(i, 4), c: encodeNonSystematic(intToBits(i, 4)) }));
 const SUP = '⁰¹²³⁴⁵⁶';
+const P = 0b1011; // p(x) = x³ + x + 1
+const BITS = maskDegree(P); // bits per GF(8) element
+const SQ = squaringMatrix(BITS, P); // row r = output bit c_r, column i = input bit a_i
+const SQ_XORS = squarerXors(BITS, P);
+const MUL = gfMultiplierNetlist(BITS, P);
+const sqTex = (r: number) => `c_{${r}} = ${SQ[r].flatMap((b, i) => (b ? [`a_{${i}}`] : [])).join(' \\oplus ')}`;
+// BCH example: length 2^m − 1, t errors
+const BCH_M = 4;
+const BCH_T = 2;
+const BCH = bchRootBudget(BCH_M, BCH_T);
+const HAM = bchRootBudget(3, 1);
 
 export default function A7Frobenius() {
   const [start, setStart] = useState(1);
@@ -52,15 +68,22 @@ export default function A7Frobenius() {
     <AlgebraUnit
       id={ID}
       lead={<p>每個 codeword 都滿足 <M>{'c(\\alpha) = 0'}</M>。這一單元發現：只要係數在 GF(2)，就<strong>自動</strong>還有 <M>{'c(\\alpha^2) = 0'}</M>、<M>{'c(\\alpha^4) = 0'}</M>。找出這些「免費附送」的根，就是設計 g(x) 的關鍵。</p>}
+      takeaway={<>在二元碼裡，要一個根就得連它的共軛元素一起收下：陪集有幾個元素，就得付幾個同位位元。</>}
       why={{
         title: '一個根會帶出其他的根',
         body: (
           <Plain>
             <p>
+              線路上傳的是一串 bit，所以 codeword 多項式 <M>{'c(x)'}</M> 的每個係數只能是 0 或 1；<M>{'g(x)'}</M> 的係數則是 A5 那個 LFSR 的接線：最高次項以外，1 代表接一條回授線，0 代表不接。兩者都必須是 GF(2) 多項式。
+            </p>
+            <p>
               要知道 <M>{'g(x)'}</M> 應該長什麼樣子，我們需要知道「所有 codeword 共同的根」有哪些。A5 告訴我們 α 是根。但如果 α 是根而 α² 不是，那麼我們想要的 <M>{'g(x)'}</M> 就必須有係數在 GF(8) 中的因式 <M>{'(x + \\alpha)'}</M>——不是 GF(2) 多項式，無法用 0/1 位元表示。
             </p>
             <p>
-              好消息：GF(2) 係數的多項式有個特性——如果 β 是根，β² 也一定是根。這個「平方」叫 Frobenius 映射，它把根分成一組一組的「共軛元素」。
+              也可以反過來，乾脆允許 GF(8) 係數：把每 {BITS} 個 bit 當成一個「符號（symbol）」，以符號為單位編碼。Reed–Solomon Code 就是這樣做的（CD、QR code 用的就是這類碼，只是符號更大），代價是編碼器的每個暫存器都變成 {BITS} 位元寬，回授線還要經過 GF(8) 的常數乘法器。Hamming、BCH 這類二元碼（binary code）堅持「一個位置就是 1 個 bit」，電路只剩 1 位元的暫存器和 XOR 閘；這一單元要看的，是這個選擇在代數上的代價。
+            </p>
+            <p>
+              答案來自 GF(2) 係數多項式的一個特性：如果 β 是根，β² 也一定是根。這個「平方」叫 Frobenius 映射（Frobenius Map），它把根分成一組一組的「共軛元素」。Frobenius 映射與共軛元素是純代數的分類，電路裡沒有哪個元件「就是」一組共軛元素；工程師在意它們，是因為它們決定兩件實際的事：要求一個根得付多少同位位元，以及解碼器裡的「平方」能不能只用幾條 XOR 接線完成。
             </p>
           </Plain>
         ),
@@ -131,6 +154,20 @@ export default function A7Frobenius() {
                 />
               }
             />
+            <Card title="平方電路：a ↦ a² 只要 XOR 接線">
+              <div className="text-sm leading-relaxed text-slate-700">
+                <p>
+                  Frobenius 保持加法，代表「平方」是 GF(2) 上的線性運算：輸出的每個 bit 都是輸入 bit 的固定 XOR。只要知道三個基底平方後變成什麼，接線就定了。寫 <M>{'a = a_2\\alpha^2 + a_1\\alpha + a_0'}</M>（就是表中的三個 bit）：
+                </p>
+              </div>
+              <Tex block>{`1 \\mapsto 1,\\quad \\alpha \\mapsto \\alpha^2,\\quad \\alpha^2 \\mapsto \\alpha^4 = ${gf8PolyTex(alphaPow(4))}`}</Tex>
+              <Tex block>{`a^2:\\quad ${[2, 1, 0].map(sqTex).join(',\\qquad ')}`}</Tex>
+              <div className="text-sm leading-relaxed text-slate-700">
+                <p>
+                  整個平方電路只有 {SQ_XORS} 個 XOR 閘，其餘都是直接接過去的導線。如果拿 A3 的通用乘法電路算 <M>{'a \\cdot a'}</M>，要 {MUL.ands} 個 AND 閘加 {MUL.xors} 個 XOR 閘。「新生的夢」在硬體上的意思就是：在 GF(2<sup>m</sup>) 裡平方幾乎免費。
+                </p>
+              </div>
+            </Card>
           </>
         ),
       }}
@@ -223,6 +260,9 @@ export default function A7Frobenius() {
                 <p className="mt-2 text-xs text-slate-500">
                   注意：<M>{'C_0 = \\{0\\}'}</M> 是指數 0，代表元素 <M>{'\\alpha^0 = 1'}</M>，不是零元素。
                 </p>
+                <p className="mt-3 text-sm leading-relaxed text-slate-700">
+                  陪集大小依序是 {cosetSizes(3).join('、')}。在二元碼裡，要求某個根就得收下它整個陪集；<M>{'g(x)'}</M> 的次數，也就是同位位元數與 LFSR 的暫存器個數，就增加那個陪集的大小。
+                </p>
               </Card>
             }
           />
@@ -267,6 +307,11 @@ export default function A7Frobenius() {
                     })}
                   </tbody>
                 </table>
+                <div className="mt-3 space-y-2 text-sm leading-relaxed text-slate-700">
+                  <p>
+                    不管選哪個 codeword，j = 1, 2, 4 那三列一定同時是 0。對接收端來說，這代表只要檢查 <M>{'c(\\alpha) = 0'}</M> 就夠了：它是一條 GF(8) 方程，攤開成 {BITS} 條 GF(2) 方程（A9），也就是 {cosetOrbit(1).length} 個同位位元；<M>{'c(\\alpha^2) = 0'}</M>、<M>{'c(\\alpha^4) = 0'}</M> 是自動成立的結果，不會多出任何檢查，也不必多付任何位元。
+                  </p>
+                </div>
               </Card>
             }
             aside={
@@ -275,7 +320,10 @@ export default function A7Frobenius() {
                   defaultOpen
                   title="為什麼 c(α)=0 ⇒ c(α²)=0？"
                   steps={[
-                    { title: '把 c(α) 平方', body: <Tex block>{'c(\\alpha)^2 = \\Big(\\sum_i c_i\\alpha^i\\Big)^2 = \\sum_i c_i^2 \\alpha^{2i}\\quad(\\text{Frobenius 保持加法})'}</Tex> },
+                    {
+                      title: '把 c(α) 平方（Frobenius 保持加法）',
+                      body: <Tex block>{'\\begin{aligned} c(\\alpha)^2 &= \\Big(\\sum_i c_i\\alpha^i\\Big)^2 \\\\ &= \\sum_i c_i^2 \\alpha^{2i} \\end{aligned}'}</Tex>,
+                    },
                     { title: '關鍵：係數在 GF(2)', body: <Tex block>{'c_i \\in \\{0,1\\} \\Rightarrow c_i^2 = c_i'}</Tex> },
                     { title: '所以', body: <Tex block>{'c(\\alpha)^2 = \\sum_i c_i(\\alpha^2)^i = c(\\alpha^2) \\;\\Rightarrow\\; c(\\alpha^2) = 0^2 = 0'}</Tex> },
                     { title: '再做一次', body: <Tex block>{'c(\\alpha^4) = c(\\alpha^2)^2 = 0,\\quad c(\\alpha^8) = c(\\alpha) \\ (\\alpha^7 = 1)'}</Tex> },
@@ -287,6 +335,11 @@ export default function A7Frobenius() {
                   </p>
                   <Tex block>{`f(\\alpha) = ${gf8PowTex(gfPolyEval([alphaPow(1), 1], alphaPow(1)))},\\quad f(\\alpha^2) = \\alpha^2 + \\alpha = ${gf8PowTex(gfPolyEval([alphaPow(1), 1], alphaPow(2)))}`}</Tex>
                 </Card>
+                <Card title="接收端：r(α²) 不必重算">
+                  <p className="text-sm leading-relaxed text-slate-700">
+                    上面的推導只用到「係數是 0 或 1」，所以對接收字 <M>{'r(x)'}</M> 也成立：<M>{'r(\\alpha^2) = r(\\alpha)^2'}</M>。解碼器若需要 <M>{'r(\\alpha^2)'}</M>，不必另接一組代入 α² 的計算電路，也不必再花 {syndromeClocks(7)} 個時脈把整個接收字重讀一遍，把 <M>{'r(\\alpha)'}</M> 送進前面那個只有 {SQ_XORS} 個 XOR 閘的平方電路就好。可更正多個錯誤的二元 BCH 解碼器常這樣做：只直接計算奇數次方的 Syndrome，偶數次方用平方得到。
+                  </p>
+                </Card>
               </>
             }
           />
@@ -296,9 +349,15 @@ export default function A7Frobenius() {
         title: '共軛元素決定了 g(x) 的次數',
         body: (
           <Card>
-            <p className="text-sm text-slate-700">
-              任何 GF(2) 係數、以 α 為根的多項式，也必須以 α²、α⁴ 為根，所以至少有三個因式 <M>{'(x+\\alpha)(x+\\alpha^2)(x+\\alpha^4)'}</M>——次數至少 3。下一單元把這三個因式乘開，會得到……<M>{'x^3 + x + 1'}</M>。
-            </p>
+            <div className="space-y-2 text-sm leading-relaxed text-slate-700">
+              <p>
+                任何 GF(2) 係數、以 α 為根的多項式，也必須以 α²、α⁴ 為根，所以至少有三個因式 <M>{'(x+\\alpha)(x+\\alpha^2)(x+\\alpha^4)'}</M>——次數至少 {cosetOrbit(1).length}，也就是至少 {cosetOrbit(1).length} 個同位位元、{cosetOrbit(1).length} 個暫存器。
+              </p>
+              <p>
+                這也是設計更強的二元碼的方法：BCH Code 想更正 t 個錯，就要求 <M>{'\\alpha, \\alpha^2, \\dots, \\alpha^{2t}'}</M> 都是根。以長度 {2 ** BCH_M - 1}、t = {BCH_T} 為例，要 {BCH.roots} 個根；如果每個根各付一個 GF({2 ** BCH_M}) 元素的 {BCH_M} 個位元，要 {BCH.naiveBits} 個同位位元，但 α²、α⁴ 都在 α 的陪集裡，是免費附送的；真正要付的只有 α 與 α³ 兩個陪集，實際只需要 {BCH.bits} 個。Hamming Code 就是 t = 1 的情形：要 α、α² 共 {HAM.roots} 個根，α² 本來就免費，所以只付 {HAM.bits} 個，而不是 {HAM.naiveBits} 個。
+              </p>
+              <p>下一單元 A8 把這三個因式乘開，看會得到哪一個 GF(2) 多項式。</p>
+            </div>
           </Card>
         ),
         links: [
