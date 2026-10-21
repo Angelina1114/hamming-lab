@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { type Bit, G74, G_MSB, LAYOUT_74, cyclicGenerator, encode74, encodeCyclic, encodeNonSystematic, flipBit, inCyclicCode, intToBits, msbToTex, polyMulTrace, polyQuot, polyToTex, vecMat, wordAtAlpha } from '../../core';
+import { type Bit, G74, G_MSB, LAYOUT_74, cyclicGenerator, encode74, encodeCyclic, encodeNonSystematic, flipBit, hammingEncoderXors, inCyclicCode, intToBits, lfsrCost, lfsrEncoderClocks, msbToTex, polyMaskToMsb, polyMulTrace, polyQuot, polyToTex, vecMat, wordAtAlpha } from '../../core';
 import { M, Tex } from '../../components/Tex';
 import { Callout, Card, LabGrid, ResetButton } from '../../components/Lesson';
 import { MatrixView } from '../../components/MatrixView';
@@ -15,6 +15,12 @@ const ALL_MSGS = Array.from({ length: 16 }, (_, i) => intToBits(i, 4));
 const sysSet = ALL_MSGS.map((x) => encodeCyclic(x).codeword.join('')).sort().join();
 const nonSet = ALL_MSGS.map((x) => encodeNonSystematic(x).join('')).sort().join();
 const diffCount = ALL_MSGS.filter((x) => encodeCyclic(x).codeword.join('') !== encodeNonSystematic(x).join('')).length;
+// hardware cost of the two encoders (numbers pinned in engineering-g3.test.ts)
+const G127 = polyMaskToMsb(0b10001001, 7); // x⁷ + x³ + 1, the generator of Hamming(127,120) in 2-12
+const LFSR7 = lfsrCost(G_MSB);
+const LFSR127 = lfsrCost(G127);
+const CLK7 = lfsrEncoderClocks(7, 4);
+const CLK127 = lfsrEncoderClocks(127, 120);
 
 export default function A5Generator() {
   const [word, setWord] = useState<Bit[]>([0, 0, 0, 1, 0, 1, 1]);
@@ -37,18 +43,25 @@ export default function A5Generator() {
       convention
       lead={
         <p>
-          第一課用<strong>生成矩陣 G</strong>（4×7 個數字）編碼：<M>{'c = mG'}</M>。這一單元介紹它的多項式版本——<strong>生成多項式 g(x)</strong>：只要 4 個係數，編碼就是一次多項式乘法 <M>{'c(x) = m(x)g(x)'}</M>。
+          第一課用<strong>生成矩陣 G</strong>（4×7 個數字）編碼：<M>{'c = mG'}</M>。這一單元介紹它的多項式版本——<strong>生成多項式 g(x)</strong>：只要 4 個係數，編碼就是一次多項式乘法 <M>{'c(x) = m(x)g(x)'}</M>，編碼器也從一整片 XOR 網路縮成一排只有幾個暫存器的電路。
         </p>
       }
+      takeaway={<>g(x) 就是編碼器的接線圖：次數決定要幾個暫存器，係數為 1 的位置決定回授線接在哪裡。</>}
       why={{
         title: '一個多項式取代一整個矩陣',
         body: (
           <Plain>
             <p>
-              G 有 4 列，每一列都要分別儲存。但如果每一列只是<strong>同一個多項式往左移</strong>，那只需要記住那一個多項式 <M>{'g(x)'}</M>。硬體上，「乘以多項式」可以用移位暫存器實現（第二課的 LFSR），不需要矩陣乘法器。
+              傳送端每送出一個 codeword，都要先算出同位位元。第一課的做法是把 <M>{'c = mG'}</M> 直接做成電路：每個同位位元是幾個資料位元的 XOR，(7,4) 要 {hammingEncoderXors(3)} 個 XOR 閘，一個時脈就算完。問題是這片平行 XOR 網路會跟著碼長一起長大：第二課的 Hamming(127,120) 要 {hammingEncoderXors(7)} 個 XOR 閘，而且每個同位位元的接線都不一樣。
             </p>
             <p>
-              更重要的是代數意義：所有 codeword 都是 <M>{'g(x)'}</M> 的倍數。<M>{'g(x) = x^3+x+1'}</M> 的根是 α，所以每個 codeword 都滿足 <M>{'c(\\alpha) = 0'}</M>——這是把編碼理論和 GF(8) 連起來的關鍵。
+              如果 G 的每一列只是<strong>同一個多項式往左移</strong>，那只需要記住那一個多項式 <M>{'g(x)'}</M>，編碼器也跟著變成一排移位暫存器，接線完全由 <M>{'g(x)'}</M> 決定。第二課實際用的是 LFSR：它做的是除以 <M>{'g(x)'}</M>，算出本頁下方系統式編碼的同位位元。<M>{'g(x) = x^3+x+1'}</M> 只要 {LFSR7.flipFlops} 個暫存器加 {LFSR7.xors} 個 XOR 閘；換成 (127,120) 的 <M>{'g(x) = x^7+x^3+1'}</M>，也只是 {LFSR127.flipFlops} 個暫存器加 {LFSR127.xors} 個 XOR 閘。
+            </p>
+            <p>
+              代價是時間：LFSR 每個時脈只處理一個 bit，送完一個 codeword 要 {CLK7.total} 個時脈，(127,120) 要 {CLK127.total} 個。但串列傳輸的線路本來就是一個時脈送一個 bit，平行電路一次算出的整個 codeword 也得排隊送出，所以這是拿本來就要花的時間換電路面積。只有速度要求極高時（例如第二課 2-12 的高速光通訊），才會改回平行或部分平行的架構，一個時脈處理多個 bit。
+            </p>
+            <p>
+              除了硬體便宜，還有一個代數上的收穫：所有 codeword 都是 <M>{'g(x)'}</M> 的倍數。<M>{'g(x) = x^3+x+1'}</M> 的根是 α，所以每個 codeword 都滿足 <M>{'c(\\alpha) = 0'}</M>——這是把編碼理論和 GF(8) 連起來的關鍵。
             </p>
           </Plain>
         ),
@@ -60,8 +73,8 @@ export default function A5Generator() {
             <Terms
               items={[
                 { zh: '生成矩陣 G', en: 'Generator Matrix', def: <>k×n 矩陣，codeword = 訊息列向量 × G。列空間就是 code。</> },
-                { zh: '生成多項式 g(x)', en: 'Generator Polynomial', def: <>次數 n − k 的多項式，codeword = 訊息多項式 × g(x)。這裡 <M>{'g(x) = x^3 + x + 1'}</M>，n − k = 3。</> },
-                { zh: '位元 ↔ 多項式', en: 'Bit–Polynomial Correspondence', def: <>7 位元字串對應次數 ≤ 6 的多項式，<strong>最左邊是 x⁶ 的係數</strong>。例：<span className="mono">0001011</span> ↔ <M>{'x^3+x+1'}</M>。</> },
+                { zh: '生成多項式 g(x)', en: 'Generator Polynomial', def: <>次數 n − k 的多項式，codeword = 訊息多項式 × g(x)。這裡 <M>{'g(x) = x^3 + x + 1'}</M>，n − k = {LFSR7.flipFlops}，也就是編碼器 LFSR 的暫存器個數。</> },
+                { zh: '位元 ↔ 多項式', en: 'Bit–Polynomial Correspondence', def: <>7 位元字串對應次數 ≤ 6 的多項式，<strong>最左邊是 x⁶ 的係數</strong>。例：<span className="mono">0001011</span> ↔ <M>{'x^3+x+1'}</M>。在線路上，最先送出的 bit 就是最高次項的係數，「第幾個送出」直接對應「x 的幾次方」。</> },
                 { zh: '多項式乘法', en: 'Polynomial Multiplication over GF(2)', def: <>分配律展開 → 同次項合併 → 係數 mod 2。和 A3 的 GF(8) 乘法不同：這裡<strong>不</strong>除以任何多項式。</> },
               ]}
             />
@@ -77,6 +90,12 @@ export default function A5Generator() {
       how={{
         title: '真正的 GF(2) 多項式乘法：c(x) = m(x)g(x)',
         body: (
+          <>
+          <Plain>
+            <p>
+              下面每一列部分積都是「g(x) 往左移幾格」，只在訊息位元為 1 時才加進來，最後同次項相加取 mod 2。換成電路的語言：乘以 <M>x</M>（左移一格）在時間上就是晚一個時脈，也就是資料多經過一個暫存器；同次項相加就是一個 XOR 閘。整個過程沒有乘法器、也沒有進位，這正是 GF(2) 多項式運算適合做成硬體的原因。
+            </p>
+          </Plain>
           <LabGrid
             main={
               <Card
@@ -113,6 +132,7 @@ export default function A5Generator() {
               </Card>
             }
           />
+          </>
         ),
       }}
       example={{
@@ -164,7 +184,7 @@ export default function A5Generator() {
               <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 <div className="space-y-1 text-sm text-slate-700">
                   <p>
-                    <M>{'m(x)g(x)'}</M> 會把訊息打散。實務上（第二課的老師範例）常用<strong>系統式編碼</strong>：
+                    <M>{'m(x)g(x)'}</M> 會把訊息打散：接收端即使沒有收到錯誤，也要先算 <M>{'c(x) \\div g(x)'}</M> 的商才拿得回訊息。實務上（第二課的老師範例）常用<strong>系統式編碼</strong>（Systematic Encoding）：
                   </p>
                   <Tex block>{'c(x) = x^3u(x) + b(x),\\quad b(x) = x^3u(x) \\bmod g(x)'}</Tex>
                   <p>
@@ -172,6 +192,9 @@ export default function A5Generator() {
                   </p>
                   <Tex block>{`x^3u(x) = ${msbToTex(sys.shifted)} = (${polyToTex(sysQ)})(x^3+x+1) + (${msbToTex(sys.parity)})`}</Tex>
                   <Tex block>{`c = ${u.join('')}\\,\\|\\,${sys.parity.join('')} = ${sys.codeword.join('')}`}</Tex>
+                  <p>
+                    它的好處都在硬體和使用端：前 {CLK7.message} 個時脈，訊息位元一邊原樣送上線路、一邊餵進 LFSR；送完時暫存器裡剩下的正是 <M>{'b(x)'}</M>，再用 {CLK7.parityOut} 個時脈把它接在後面送出。接收端拿到的前 {CLK7.message} 位就是原始資料，沒有錯誤時直接取用即可。這張卡片的檢查也顯示兩種編碼的 codeword 集合完全相同，更正能力一模一樣，所以選系統式純粹是工程上的方便。
+                  </p>
                   <p className="text-xs text-slate-500">
                     b(x) 用長除法或 LFSR 計算，逐步過程見 <a className="text-indigo-700 underline" href="#/l2-2">2-2 LFSR</a>、<a className="text-indigo-700 underline" href="#/l2-3">2-3 長除法</a>。
                   </p>
@@ -206,12 +229,16 @@ export default function A5Generator() {
             <p className="text-sm text-slate-700">
               <M>{'m(x)g(x) = m_3\\,x^3g(x) + m_2\\,x^2g(x) + m_1\\,xg(x) + m_0\\,g(x)'}</M>——右邊每一項正是 <M>{'G_{\\text{cyc}}'}</M> 的一列乘上一個訊息位元。所以「多項式乘法」和「列向量乘矩陣」是同一個計算的兩種寫法。
             </p>
+            <p className="mt-3 text-sm text-slate-700">
+              同一個 code 因此有兩種電路可選。矩陣寫法 <M>{'c = mG'}</M> 是平行 XOR 網路，一個時脈算完，但閘數跟著碼長成長；多項式寫法是 LFSR，一個時脈處理一個 bit，硬體只看 <M>{'g(x)'}</M> 的次數和項數。選哪一種要看資料怎麼進來：一個 bit 一個 bit 抵達的串列線路適合 LFSR；像 ECC 記憶體那樣一次讀出整個字組、而且要在一個時脈內算完的系統，則用平行 XOR 網路。
+            </p>
+            <p className="mt-3 text-sm text-slate-700">下一單元 A6 換到接收端：檢查收到的字是不是 codeword，能不能也只用同樣大小的移位暫存器完成。</p>
           </Card>
         ),
         links: [
           { to: 'matrix', text: '第一課：Generator Matrix G 與 c = mG' },
           { to: 'a-6', text: '下一步：為什麼移位後仍是 codeword？循環碼' },
-          { to: 'l2-2', text: '第二課：LFSR 用三個暫存器計算 x³u(x) mod g(x)' },
+          { to: 'l2-2', text: `第二課：LFSR 用 ${LFSR7.flipFlops} 個暫存器計算 x³u(x) mod g(x)` },
           { to: 'l2-3', text: '第二課：長除法與 LFSR 的同步對照' },
         ],
         misconceptions: [
@@ -219,6 +246,14 @@ export default function A5Generator() {
           { wrong: 'm(x)g(x) 要除以 x³+x+1 取餘數。', right: '編碼時不取餘數：(x³+x+1)(x³+x+1) = x⁶+x²+1 是完整的乘積，次數 ≤ 6 剛好 7 位元。取餘數是 GF(8) 運算或 Syndrome 的事。' },
           { wrong: '1011 編碼後一定是 1011xxx。', right: '非系統式編碼 m(x)g(x) 不保留訊息在前 4 位（1011 → 1000101）。系統式編碼才會（見本頁上方「系統式編碼」卡片：1001 → 1001110）。' },
           { wrong: '系統式 codeword 和 m(x)g(x) 是同一個字，只是寫法不同。', right: '1001 → 系統式 1001110，非系統式 1010011。兩者都是合法 codeword，但不同；只有 codeword 的「集合」相同。' },
+          {
+            wrong: 'LFSR 要 n 個時脈才編完，所以一定比平行 XOR 網路差。',
+            right: (
+              <>
+                要看資料怎麼進來。串列線路本來就一個時脈送一個 bit，LFSR 用 {LFSR7.flipFlops} 個暫存器、{LFSR7.xors} 個 XOR 閘就跟得上，而平行編碼器要 {hammingEncoderXors(3)} 個 XOR 閘（n = 127 時是 {hammingEncoderXors(7)} 個，LFSR 仍只要 {LFSR127.xors} 個）。只有整個字組同時到達、而且要在一個時脈內編完時，平行電路才划算。
+              </>
+            ),
+          },
         ],
       }}
     />
