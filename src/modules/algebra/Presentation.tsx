@@ -11,12 +11,16 @@ import {
   LAYOUT_74,
   LOG,
   allMinimalPolynomials,
+  alphaMultiplierXors,
   alphaPolyTex,
   alphaPow,
+  bchRedundancy,
   bitsToField,
+  blockFailureProb,
   characteristic,
   checkFieldAxioms,
   chienSearch,
+  codewords74,
   codewordsL2,
   column,
   cosetOrbit,
@@ -39,17 +43,27 @@ import {
   gf8MulTrace,
   gf8PolyTex,
   gf8PowTex,
+  gfMultiplierNetlist,
   gfPolyEval,
   gfPolyTex,
   hFromGF8,
+  hammingEncoderXors,
+  hammingK,
+  hammingN,
   inCyclicCode,
   intToBits,
+  irreduciblePolys,
   isCodeword74,
   isIrreducible,
+  lfsrCost,
+  lfsrEncoderClocks,
+  maskDegree,
   matVec,
   minimalPolynomial,
+  msbToMask,
   msbToTex,
   mulModXn1,
+  orderOfX,
   polyMulTrace,
   polyQuot,
   polyToMsb,
@@ -57,14 +71,21 @@ import {
   polysOfDegree,
   quotientRing,
   rotateLeft,
+  syndromeClocks,
   syndromeL2,
+  syndromeTableEntries,
   vecAdd,
   vecMat,
   wordAtAlpha,
   wordAtAlphaPower,
   xn1,
+  xorNetworkGates,
   zmod,
 } from '../../core';
+import { gfAdderXors, nonInvertible } from '../../core/engineering-g1';
+import { minIrreducibleWeight } from '../../core/engineering-g2';
+import { bchRootBudget, cyclicCodeMenu, maskMul, squarerXors } from '../../core/engineering-g4';
+import { G127_MSB, cyclicShiftEscapes, doubleErrorStats, hornerCost, logTableEntries, sciParts } from '../../core/engineering-g5';
 import { M, Tex } from '../../components/Tex';
 import { BitCell, BitRow, MessageInput } from '../../components/Bits';
 import { MatrixView, ColumnVector } from '../../components/MatrixView';
@@ -84,6 +105,48 @@ const powLabel = (e: number) => (e === 0 ? '1' : e === 1 ? 'α' : `α${SUP[e]}`)
 /** non-systematic codewords c(x) = m(x)g(x), index = int(m) */
 const CODE = Array.from({ length: 16 }, (_, i) => encodeNonSystematic(intToBits(i, 4)));
 const EXP_LABELS = ['x⁶', 'x⁵', 'x⁴', 'x³', 'x²', 'x', '1'];
+
+/* plain-text (Unicode) forms for the speaker notes, written the way the speaking script writes them */
+const SUPS: Record<string, string> = { '-': '⁻', '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴', '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹' };
+const sup = (n: number) => [...String(n)].map((ch) => SUPS[ch]).join('');
+const xMono = (e: number) => (e === 0 ? '1' : e === 1 ? 'x' : `x${sup(e)}`);
+/** MSB-first bits as "x⁶ + x⁴ + x³" */
+const polyText = (bits: readonly number[]) => bits.flatMap((b, i) => (b ? [xMono(bits.length - 1 - i)] : [])).join(' + ') || '0';
+/** integer column counts (MSB-first) as "x⁶ + 2x⁴ + 2x³ + …" */
+const countsText = (counts: readonly number[]) =>
+  counts
+    .flatMap((c, i) => {
+      const e = counts.length - 1 - i;
+      return c === 0 ? [] : [c === 1 ? xMono(e) : `${c}${e === 0 ? '' : xMono(e)}`];
+    })
+    .join(' + ');
+/** a GF(8) element as "α² + α + 1" */
+const gf8Text = (v: number) => [v & 4 ? 'α²' : '', v & 2 ? 'α' : '', v & 1 ? '1' : ''].filter(Boolean).join(' + ') || '0';
+/** a probability as "2.1×10⁻⁵" */
+const sciText = (x: number) => {
+  const { mantissa, exponent } = sciParts(x);
+  return `${mantissa}×10${sup(exponent)}`;
+};
+const num = (x: number) => x.toLocaleString('en-US');
+const hamName = (m: number) => `Hamming(${hammingN(m)},${hammingK(m)})`;
+
+/* engineering figures the slides and the notes quote (all computed, none typed in) */
+const P_MASK = 0b1011; // p(x) = x³ + x + 1, which is also g(x)
+const M3 = maskDegree(P_MASK); // bits per GF(8) element = register stages
+const CODE_N = hammingN(M3);
+const CODE_K = hammingK(M3);
+const ENC = lfsrCost(G_MSB); // encoder / divider LFSR of g(x) = x³ + x + 1
+const CLK = lfsrEncoderClocks(CODE_N, CODE_K);
+const M127 = G127_MSB.length - 1;
+const ENC127 = lfsrCost(G127_MSB); // x⁷ + x³ + 1 for Hamming(127,120)
+const GF_MUL = gfMultiplierNetlist(M3, P_MASK);
+const HORNER = hornerCost(P_MASK);
+const T_HAM = 1; // errors a Hamming Code corrects
+const P_BIT = 1e-3;
+const P_BIT_TEXT = `10${sup(Math.round(Math.log10(P_BIT)))}`;
+const BCH_A = { m: 7, t: 2 };
+const BCH_B = { m: 8, t: 3 };
+const bchName = ({ m, t }: { m: number; t: number }) => `BCH(${hammingN(m)},${hammingN(m) - bchRedundancy(m, t)})`;
 
 /** numbered lines revealed one per step */
 function StepLines({ s, lines, size = 'text-2xl' }: { s: Stepper; lines: { label: string; tex: string }[]; size?: string }) {
@@ -153,7 +216,7 @@ function TitleSlide() {
 
 function WhySlide({ s }: { s: Stepper }) {
   const cols = [
-    { tag: '第一課', name: 'GF(2) 線性代數', lines: ['c = mG', 'Hc^T = 0\\ \\ (3 \\text{ 條方程})'], tone: 'border-data-300 bg-data-50' },
+    { tag: '第一課', name: 'GF(2) 線性代數', lines: ['c = mG', `Hc^T = 0\\ \\ (${H74.length} \\text{ 條方程})`], tone: 'border-data-300 bg-data-50' },
     { tag: '代數章', name: 'GF(8) 與多項式', lines: ['c(x) = m(x)g(x)', 'c(\\alpha) = 0\\ \\ (1 \\text{ 條方程})'], tone: 'border-overall-300 bg-overall-50' },
     { tag: '第二課', name: '編碼與解碼演算法', lines: ['\\text{LFSR 編碼}', 'S_1 = r(\\alpha) \\to \\text{Chien Search}'], tone: 'border-parity-300 bg-parity-50' },
   ];
@@ -180,7 +243,7 @@ function WhySlide({ s }: { s: Stepper }) {
       {s.step >= 1 && (
         <motion.ol initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-2 text-xl">
           <li>
-            ① 更省的編碼器：4×7 的 G → 一個 <M>{'g(x) = x^3+x+1'}</M> → 三個暫存器的 LFSR。
+            ① 更省的編碼器：{GC.length}×{GC[0].length} 的 G → 一個 <M>{`g(x) = ${msbToTex(G_MSB)}`}</M> → {ENC.flipFlops} 個暫存器的 LFSR。
           </li>
           <li>
             ② 更聰明的解碼器：Syndrome 變成一個數 <M>{'S_1 = r(\\alpha) = \\alpha^i'}</M>，錯誤位置就是指數。
@@ -203,7 +266,8 @@ function GF2Slide({ s }: { s: Stepper }) {
   const intRes = op === 'mul' ? a * b : op === 'add' ? a + b : a - b;
   const gfRes = op === 'mul' ? GF2.mul(a, b) : GF2.add(a, b);
   const sym = op === 'add' ? '+' : op === 'sub' ? '-' : '\\cdot';
-  const axiomsOk = checkFieldAxioms(GF2).every((x) => x.holds);
+  const fieldAxioms = checkFieldAxioms(GF2);
+  const axiomsOk = fieldAxioms.every((x) => x.holds);
   return (
     <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_380px]">
       <div className="space-y-5">
@@ -273,7 +337,7 @@ function GF2Slide({ s }: { s: Stepper }) {
             <div>
               特徵 = {characteristic(GF2)}：<M>{'-1 = 1'}</M>，所以 <M>{'a - b = a + b'}</M>
             </div>
-            <div className="text-lg text-emerald-800">{axiomsOk ? '✓ 10 條體公理全部成立：GF(2) 是體' : '✗ 有公理不成立'}</div>
+            <div className="text-lg text-emerald-800">{axiomsOk ? `✓ ${fieldAxioms.length} 條體公理全部成立：GF(2) 是體` : '✗ 有公理不成立'}</div>
           </motion.div>
         )}
       </div>
@@ -319,8 +383,7 @@ function HcSlide({ s }: { s: Stepper }) {
             <M>{`Hr^T = (${syn.join(', ')})^T`}</M>：{ok ? '每一列都是偶數個 1，合法 codeword。' : '有一列是奇數個 1，r 不是 codeword。'}
           </div>
         )}
-        {s.step < 2 && <p className="text-lg text-slate-500">下一步：把 H 的每一列和 r 對應的位元相加。</p>}
-        {s.step >= 4 && <p className="text-lg text-slate-600">拿掉 mod 2 就會出現 2、4：「= 0」就不再代表同位檢查通過。</p>}
+        {s.step >= 4 && <p className="text-lg text-slate-600">拿掉 mod 2 就會出現 {EVEN_SUMS.join('、')}：「= 0」就不再代表同位檢查通過。</p>}
       </div>
     </div>
   );
@@ -340,7 +403,9 @@ function ColumnsSlide({ s }: { s: Stepper }) {
         </div>
         <div className="min-w-0 flex-1 text-xl">
           {s.step === 0 ? (
-            <p>GF(2) 觀點：H 有 7 個不同的非零 3 位元向量——只能相加，不能相乘。</p>
+            <p>
+              GF(2) 觀點：H 有 {H74[0].length} 個不同的非零 {H74.length} 位元向量——只能相加，不能相乘。
+            </p>
           ) : (
             <p>
               第 {col + 1} 欄由上而下 <span className="mono">({column(H74, col).join(', ')})</span> 讀成 <M>{'1, \\alpha, \\alpha^2'}</M> 的係數 = <strong><M>{gf8PolyTex(col + 1)}</M></strong>（{gf8Bits(col + 1)}）
@@ -511,7 +576,7 @@ function MulSlide({ s }: { s: Stepper }) {
         <div className="font-semibold text-slate-800">x³ ≡ x + 1：LFSR 回授規則從這裡來</div>
         <Tex block>{'\\alpha^4 = \\alpha\\cdot\\alpha^3 = \\alpha^2 + \\alpha'}</Tex>
         <Tex block>{'\\alpha^5 = \\alpha\\cdot\\alpha^4 = \\alpha^3 + \\alpha^2 = \\alpha^2 + \\alpha + 1'}</Tex>
-        <p className="text-lg text-slate-600">每次乘上 α 就是左移；溢出 α³ 時換成 α + 1——第二課的三個暫存器做的正是這件事。</p>
+        <p className="text-lg text-slate-600">每次乘上 α 就是左移；溢出 α³ 時換成 α + 1——第二課的 {ENC.flipFlops} 個暫存器做的正是這件事。</p>
       </div>
     </div>
   );
@@ -577,10 +642,10 @@ function CycleSlide({ s }: { s: Stepper }) {
         {k >= 7 && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-1 rounded-xl border-2 border-emerald-300 bg-emerald-50 p-4 text-emerald-900">
             <div>
-              <M>{'\\alpha^7 = 1'}</M>：7 步走遍全部 7 個非零元素，α 是<strong>本原元素</strong>。
+              <M>{`\\alpha^{${PERIOD}} = 1`}</M>：{PERIOD} 步走遍全部 {2 ** M3 - 1} 個非零元素，α 是<strong>本原元素</strong>。
             </div>
             <div>
-              乘法變成指數相加 <M>{'\\alpha^i \\cdot \\alpha^j = \\alpha^{i+j}'}</M>；7 個次方對上碼長 <M>{'n = 2^3 - 1 = 7'}</M> 的 7 個位置。
+              乘法變成指數相加 <M>{'\\alpha^i \\cdot \\alpha^j = \\alpha^{i+j}'}</M>；{PERIOD} 個次方對上碼長 <M>{`n = 2^{${M3}} - 1 = ${CODE_N}`}</M> 的 {CODE_N} 個位置。
             </div>
           </motion.div>
         )}
@@ -597,10 +662,17 @@ const M5: Bit[] = [1, 0, 1, 1];
 const T5 = polyMulTrace(G_MSB, M5, 7);
 const P5 = T5.partials.length;
 const GC = cyclicGenerator();
+const C5 = encodeNonSystematic(M5); // m(x)g(x) = 1000101
+/** the rows of G_cyc that m = 1011 selects (1-based): the same rows as the partial products */
+const SEL5 = M5.flatMap((b, i) => (b ? [i + 1] : []));
+/** the last row of G_cyc is g itself (0001011); its cyclic shifts */
+const G_ROW = GC[GC.length - 1];
+const ORBIT = Array.from({ length: CODE_N }, (_, j) => rotateLeft(G_ROW, j));
+const ORBIT_LEN = Array.from({ length: CODE_N }, (_, j) => j + 1).find((j) => rotateLeft(G_ROW, j % CODE_N).join('') === G_ROW.join('')) ?? CODE_N;
 
 function PolyMulSlide({ s }: { s: Stepper }) {
   const stage = s.step >= P5 + 1 ? 3 : s.step >= P5 ? 2 : s.step >= P5 - 1 ? 1 : 0;
-  const c = encodeNonSystematic(M5);
+  const sameAsMatrix = vecMat(M5, GC).join('') === C5.join('');
   return (
     <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
       <PolyMulTable t={T5} revealed={s.step + 1} aName="g(x)" bName="m(x)" large />
@@ -609,9 +681,14 @@ function PolyMulSlide({ s }: { s: Stepper }) {
           <PolyMulTex t={T5} stage={stage} />
         </div>
         {s.step >= P5 + 1 && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="rounded-xl border-2 border-emerald-300 bg-emerald-50 p-4 text-xl text-emerald-900">
-            c = <span className="mono font-bold">{c.join('')}</span>：是 g(x) 的倍數，所以 <M>{'c(\\alpha) = 0'}</M>
-            {wordAtAlpha(c) === 0 ? ' ✓' : ' ✗'}。編碼只做乘法，<strong>不取餘數</strong>。
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-1 rounded-xl border-2 border-emerald-300 bg-emerald-50 p-4 text-xl text-emerald-900">
+            <div>
+              c = <span className="mono font-bold">{C5.join('')}</span>：是 g(x) 的倍數，所以 <M>{'c(\\alpha) = 0'}</M>
+              {wordAtAlpha(C5) === 0 ? ' ✓' : ' ✗'}。編碼只做乘法，<strong>不取餘數</strong>。
+            </div>
+            <div>
+              = <M>{'G_{\\text{cyc}}'}</M> 第 {SEL5.join('、')} 列相加 {sameAsMatrix ? '✓' : '✗'}（m = {M5.join('')} 選中的列）
+            </div>
           </motion.div>
         )}
       </div>
@@ -619,37 +696,168 @@ function PolyMulSlide({ s }: { s: Stepper }) {
   );
 }
 
-function GcycSlide({ s }: { s: Stepper }) {
-  const c = vecMat(M5, GC);
+/** The encoder LFSR drawn from g's coefficients: a 1 at x^j (0 < j < deg g) is a feedback XOR, x^deg is where the message enters. */
+function EncoderWiring() {
+  const deg = G_MSB.length - 1;
+  const coef = (j: number) => G_MSB[deg - j]; // coefficient of x^j
+  const tapX = (j: number) => 30 + j * 110;
+  const regL = (j: number) => tapX(j) + 22;
+  const REG_W = 56;
+  const Y = 80;
+  const BUS = 40;
+  const R = 9;
+  const inX = tapX(deg);
+  const wire = '#475569';
+  const fb = '#7638dc';
+  const xor = (x: number, key: string) => (
+    <g key={key}>
+      <circle cx={x} cy={Y} r={R} fill="#fff" stroke={fb} strokeWidth={2} />
+      <path d={`M${x - R + 3} ${Y} H${x + R - 3} M${x} ${Y - R + 3} V${Y + R - 3}`} stroke={fb} strokeWidth={2} />
+    </g>
+  );
   return (
-    <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-      <div style={{ zoom: 1.5 }}>
-        <MatrixView
-          matrix={GC}
-          name={<M>{'G_{\\text{cyc}} ='}</M>}
-          colLabels={EXP_LABELS}
-          rowLabels={s.step >= 1 ? M5.map((b) => `${b}·`) : undefined}
-          highlightRows={s.step >= 1 ? M5.flatMap((b, i) => (b ? [i] : [])) : []}
-          dimRows={s.step >= 1 ? M5.flatMap((b, i) => (b ? [] : [i])) : []}
-        />
-      </div>
-      <div className="space-y-2 text-xl">
-        {GC.map((row, i) => (
-          <div key={i} className={s.step >= 1 && !M5[i] ? 'opacity-40' : ''}>
-            第 {i + 1} 列 <span className="mono">{row.join('')}</span> = <M>{`${['x^3g(x)', 'x^2g(x)', 'x\\cdot g(x)', 'g(x)'][i]} = ${msbToTex(row)}`}</M>
-          </div>
+    <svg viewBox={`0 0 ${inX + 40} 138`} className="mx-auto w-full max-w-[350px]" role="img" aria-label="由 g(x) 的係數接成的編碼器 LFSR">
+      <defs>
+        <marker id="deck-lfsr-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M0,0 L10,5 L0,10 z" fill={wire} />
+        </marker>
+        <marker id="deck-lfsr-fb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M0,0 L10,5 L0,10 z" fill={fb} />
+        </marker>
+      </defs>
+      {/* coefficients of g, one per tap */}
+      {Array.from({ length: deg + 1 }, (_, j) => (
+        <g key={`c${j}`}>
+          <text x={tapX(j)} y={12} textAnchor="middle" fontSize={12} fill="#64748b">
+            {`x${sup(j)}`}
+          </text>
+          <text x={tapX(j)} y={29} textAnchor="middle" fontSize={15} fontWeight={700} fontFamily="ui-monospace, monospace" fill={coef(j) ? fb : '#cbd5e1'}>
+            {coef(j)}
+          </text>
+        </g>
+      ))}
+      {/* feedback bus: from the input XOR back over the top, into the first stage */}
+      <path d={`M${inX} ${Y - R} V${BUS} H${tapX(0)} V${Y} H${regL(0)}`} fill="none" stroke={fb} strokeWidth={2} markerEnd="url(#deck-lfsr-fb)" />
+      {Array.from({ length: deg - 1 }, (_, k) => k + 1)
+        .filter((j) => coef(j))
+        .map((j) => (
+          <line key={`d${j}`} x1={tapX(j)} y1={BUS} x2={tapX(j)} y2={Y - R} stroke={fb} strokeWidth={2} markerEnd="url(#deck-lfsr-fb)" />
         ))}
-        {s.step >= 1 && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="pt-2 text-2xl">
-            <Tex>{'m = 1011:\\ m(x)g(x) = x^3g(x) + x\\,g(x) + g(x)'}</Tex>
-          </motion.div>
-        )}
-        {s.step >= 2 && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="rounded-xl border-2 border-emerald-300 bg-emerald-50 p-3 text-emerald-900">
-            <span className="mono font-bold">mG_cyc = {c.join('')}</span> = 上一頁的 m(x)g(x) {c.join('') === encodeNonSystematic(M5).join('') ? '✓' : '✗'}：矩陣和多項式是同一個計算的兩種寫法。
-          </motion.div>
-        )}
+      {/* stages and the wires between them */}
+      {Array.from({ length: deg }, (_, j) => {
+        const next = j + 1;
+        const right = regL(j) + REG_W;
+        const tapped = next < deg && coef(next) === 1;
+        return (
+          <g key={`r${j}`}>
+            <rect x={regL(j)} y={Y - 18} width={REG_W} height={36} rx={6} fill="#f8fafc" stroke="#334155" strokeWidth={1.5} />
+            <text x={regL(j) + REG_W / 2} y={Y + 5} textAnchor="middle" fontSize={14} fontWeight={700} fill="#334155">
+              {`r${'₀₁₂₃₄₅₆₇'[j]}`}
+            </text>
+            {next === deg ? (
+              <line x1={right} y1={Y} x2={inX - R} y2={Y} stroke={wire} strokeWidth={2} markerEnd="url(#deck-lfsr-arr)" />
+            ) : tapped ? (
+              <>
+                <line x1={right} y1={Y} x2={tapX(next) - R} y2={Y} stroke={wire} strokeWidth={2} markerEnd="url(#deck-lfsr-arr)" />
+                <line x1={tapX(next) + R} y1={Y} x2={regL(next)} y2={Y} stroke={wire} strokeWidth={2} markerEnd="url(#deck-lfsr-arr)" />
+              </>
+            ) : (
+              <line x1={right} y1={Y} x2={regL(next)} y2={Y} stroke={wire} strokeWidth={2} markerEnd="url(#deck-lfsr-arr)" />
+            )}
+          </g>
+        );
+      })}
+      {Array.from({ length: deg - 1 }, (_, k) => k + 1)
+        .filter((j) => coef(j))
+        .map((j) => xor(tapX(j), `x${j}`))}
+      {xor(inX, 'in')}
+      {/* the message enters at the top tap */}
+      <line x1={inX} y1={134} x2={inX} y2={Y + R} stroke={wire} strokeWidth={2} markerEnd="url(#deck-lfsr-arr)" />
+      <text x={inX - 8} y={128} textAnchor="end" fontSize={12} fill="#64748b">
+        訊息位元
+      </text>
+    </svg>
+  );
+}
+
+function GcycSlide({ s }: { s: Stepper }) {
+  // step ≥ 1: mark where g's coefficients sit in each row — every row is the same four numbers, shifted
+  const band = (i: number, j: number, v: Bit) => (s.step >= 1 && j >= i && j < i + G_MSB.length ? (v ? 'bg-overall-100 text-overall-700' : 'bg-overall-50 text-overall-300') : undefined);
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+        <div className="space-y-3">
+          <div style={{ zoom: 1.3 }}>
+            <MatrixView matrix={GC} name={<M>{'G_{\\text{cyc}} ='}</M>} colLabels={EXP_LABELS} cellClass={band} />
+          </div>
+          {s.step >= 1 && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="rounded-xl border-2 border-overall-300 bg-overall-50 px-3 py-2 text-lg text-overall-700">
+              {GC.length}×{GC[0].length} = {GC.length * GC[0].length} 個數字 → 只要 g 的 {G_MSB.length} 個係數 <span className="mono font-bold">{G_MSB.join('')}</span>
+            </motion.div>
+          )}
+        </div>
+        <div className="space-y-1 text-lg">
+          <div className="pb-1 text-2xl">
+            <M>{`g(x) = ${msbToTex(G_MSB)}`}</M> <span className="mono text-xl text-slate-500">[{G_MSB.join('')}]</span>
+            <span className="ml-2 text-lg text-slate-600">次數 = n − k = {CODE_N - CODE_K}</span>
+          </div>
+          {GC.map((row, i) => (
+            <div key={i}>
+              第 {i + 1} 列 <span className="mono">{row.join('')}</span> = <M>{`${['x^3g(x)', 'x^2g(x)', 'x\\cdot g(x)', 'g(x)'][i]} = ${msbToTex(row)}`}</M>
+            </div>
+          ))}
+          {s.step >= 2 && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="!mt-3 rounded-xl border-2 border-emerald-300 bg-emerald-50 px-3 py-2 text-emerald-900">
+              <div className="text-base">都是 g 的倍數：循環位移後還是 codeword，位移 {ORBIT_LEN} 次回到原點</div>
+              <div className="font-mono text-lg">
+                {ORBIT.slice(0, 3).map((w, j) => (
+                  <span key={j}>
+                    {j > 0 && ' → '}
+                    {w.join('')}
+                    <span className="text-emerald-600">{inCyclicCode(w) ? '✓' : '✗'}</span>
+                  </span>
+                ))}{' '}
+                → …
+              </div>
+            </motion.div>
+          )}
+        </div>
       </div>
+      {s.step >= 3 && (
+        <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-1 items-center gap-6 rounded-2xl border-2 border-slate-200 px-4 py-2 lg:grid-cols-[350px_minmax(0,1fr)]">
+          <EncoderWiring />
+          <div className="space-y-1">
+            <table className="w-full whitespace-nowrap text-lg">
+              <thead>
+                <tr className="text-base text-slate-500">
+                  <th className="pr-3 text-left font-semibold" />
+                  <th className="pr-3 text-left font-semibold">矩陣編碼器</th>
+                  <th className="text-left font-semibold">LFSR</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="border-t border-slate-100">
+                  <td className="py-1 pr-3 text-base text-slate-600">{hamName(M3)}</td>
+                  <td className="pr-3">{hammingEncoderXors(M3)} 個 XOR 閘</td>
+                  <td>
+                    {ENC.flipFlops} 個暫存器 + {ENC.xors} 個 XOR 閘
+                  </td>
+                </tr>
+                <tr className="border-t border-slate-100">
+                  <td className="py-1 pr-3 text-base text-slate-600">{hamName(M127)}</td>
+                  <td className="pr-3 font-semibold text-rose-700">{hammingEncoderXors(M127)} 個 XOR 閘</td>
+                  <td className="font-semibold text-emerald-700">
+                    {ENC127.flipFlops} 個暫存器 + {ENC127.xors} 個 XOR 閘
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <div className="text-lg text-slate-700">
+              一個時脈一個位元：{CLK.message} + {CLK.parityOut} = {CLK.total} 個時脈
+            </div>
+          </div>
+        </motion.div>
+      )}
     </div>
   );
 }
@@ -731,7 +939,7 @@ function ShiftSlide({ s }: { s: Stepper }) {
             <span className={inCyclicCode(w) ? 'text-emerald-600' : 'text-rose-600'}>{inCyclicCode(w) ? '✓' : '✗'}</span>
           </div>
         ))}
-        {k >= 7 && <p className="pt-1 text-lg text-slate-600">位移 7 次回到起點。</p>}
+        {k >= 7 && <p className="pt-1 text-lg text-slate-600">位移 {ORBIT_LEN} 次回到起點。</p>}
       </div>
     </div>
   );
@@ -991,7 +1199,7 @@ function MinPolySlide({ s }: { s: Stepper }) {
             items={[
               { label: '所有係數都在 GF(2)', pass: MP.binary !== null },
               { label: '每個共軛元素都是根', pass: MP.rootsOk },
-              { label: `次數 = 陪集大小 = ${MP.coset.length}，k = 7 − 3 = 4`, pass: MP.poly.length - 1 === MP.coset.length },
+              { label: `次數 = 陪集大小 = ${MP.coset.length}，k = ${CODE_N} − ${MP.coset.length} = ${CODE_N - MP.coset.length}`, pass: MP.poly.length - 1 === MP.coset.length },
             ]}
           />
         )}
@@ -1037,7 +1245,7 @@ function BuildHSlide({ s }: { s: Stepper }) {
   return (
     <div className="space-y-5">
       <div className="text-xl">
-        <Tex block>{'c(\\alpha) = \\sum_{i=0}^{6} c_i\\,\\alpha^i = \\underbrace{\\big[\\,\\alpha^6\\ \\alpha^5\\ \\alpha^4\\ \\alpha^3\\ \\alpha^2\\ \\alpha\\ 1\\,\\big]}_{\\text{每一項寫成 3 位元直行}}\\begin{bmatrix}c_6\\\\ \\vdots\\\\ c_0\\end{bmatrix} = H_{\\text{cyc}}\\,c^T'}</Tex>
+        <Tex block>{`c(\\alpha) = \\sum_{i=0}^{6} c_i\\,\\alpha^i = \\underbrace{\\big[\\,\\alpha^6\\ \\alpha^5\\ \\alpha^4\\ \\alpha^3\\ \\alpha^2\\ \\alpha\\ 1\\,\\big]}_{\\text{每一項寫成 ${HC.length} 位元直行}}\\begin{bmatrix}c_6\\\\ \\vdots\\\\ c_0\\end{bmatrix} = H_{\\text{cyc}}\\,c^T`}</Tex>
       </div>
       <div className="grid grid-cols-1 items-center gap-8 lg:grid-cols-[minmax(0,1fr)_380px]">
         <div style={{ zoom: 1.6 }}>
@@ -1052,7 +1260,7 @@ function BuildHSlide({ s }: { s: Stepper }) {
         </div>
         <div className="space-y-3 text-xl">
           {built === 0 ? (
-            <p>從最左欄（x⁶ 的位置，對應 α⁶）開始：每一欄就是 αⁱ 的 3 位元座標。</p>
+            <p>從最左欄（x⁶ 的位置，對應 α⁶）開始：每一欄就是 αⁱ 的 {HC.length} 位元座標。</p>
           ) : (
             <>
               <div>
@@ -1119,7 +1327,7 @@ function CompareSlide({ s }: { s: Stepper }) {
       {s.step >= 2 && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="rounded-2xl border-2 border-overall-300 bg-overall-50 p-3 text-lg text-overall-900">
           和第一課對照：循環碼位置 x⁶…1 對到第一課的 #{COL_LABELS.map((_, k) => cyclicIndexToStandardPosition(k)).join(' #')}。 c = {w.join('')} 換成第一課座標是 {std.join('')}，
-          {isCodeword74(std) === inCyclicCode(w) ? ' 兩邊判斷一致 ✓' : ' 判斷不一致 ✗'}：同一組 7 個非零欄，只差排列 → 等價碼 [7,4,3]。
+          {isCodeword74(std) === inCyclicCode(w) ? ' 兩邊判斷一致 ✓' : ' 判斷不一致 ✗'}：同一組 {HC[0].length} 個非零欄，只差排列 → 等價碼 [{CODE_N},{OPT_HAM.k},{OPT_HAM.dmin}]。
         </motion.div>
       )}
     </div>
@@ -1152,10 +1360,17 @@ function DeriveSlide({ s }: { s: Stepper }) {
 }
 
 const L2_CODE = codewordsL2();
+/** the example the slide opens with (and the notes describe): u = 1001 → c = 1001110, the bit at x⁵ flipped */
+const EX_C = L2_CODE[9].c;
+const EX_POS = 2;
+const EX_R = vecAdd(EX_C, errorVector([EX_POS]));
+const EX_S1 = wordAtAlpha(EX_R);
+const EX_I = LOG[EX_S1];
+const DOUBLE = doubleErrorStats();
 
 function SyndromeExampleSlide({ s }: { s: Stepper }) {
-  const [pos, setPos] = useState(2); // x⁵
-  const c = L2_CODE[9].c; // u = 1001 → 1001110
+  const [pos, setPos] = useState(EX_POS); // x⁵
+  const c = EX_C;
   const e = errorVector(pos ? [pos] : []);
   const r = vecAdd(c, e);
   const S1 = wordAtAlpha(r);
@@ -1204,9 +1419,16 @@ function SyndromeExampleSlide({ s }: { s: Stepper }) {
 /* Summary: one message through the whole chapter                     */
 /* ------------------------------------------------------------------ */
 
+/** the default run of the summary slide, for the notes */
+const J_POS = 2;
+const J_C = encodeCyclic(DEFAULT_U).codeword;
+const J_R = vecAdd(J_C, errorVector([J_POS]));
+const J_S1 = wordAtAlpha(J_R);
+const J_ROOT = chienSearch(errorLocator(J_S1)).find((x) => x.isRoot);
+
 function JourneySlide({ s }: { s: Stepper }) {
   const [u, setU] = useState<Bit[]>([...DEFAULT_U]);
-  const pos = 2;
+  const pos = J_POS;
   const c = encodeCyclic(u).codeword;
   const r = vecAdd(c, errorVector([pos]));
   const S1 = wordAtAlpha(r);
@@ -1241,32 +1463,793 @@ function JourneySlide({ s }: { s: Stepper }) {
 }
 
 /* ------------------------------------------------------------------ */
+/* Speaker notes: the speaking script, slide by slide                  */
+/* ------------------------------------------------------------------ */
+
+const UL = 'list-disc space-y-1 pl-5';
+const SUB = 'mt-0.5 list-[circle] space-y-0.5 pl-5';
+
+/** data bits under parity P₁ (D₁, D₂, D₄) and how many bits their integer sum needs */
+const P1_DATA = H74[0].filter((b, j) => b === 1 && ((j + 1) & j) !== 0).length;
+const P1_SUM_BITS = Math.ceil(Math.log2(P1_DATA + 1));
+const ROW1_W = H74[0].filter((b) => b === 1).length;
+/** the non-zero integer sums a row of H can give on a codeword (an even count of 1s) when mod 2 is dropped */
+const EVEN_SUMS = Array.from({ length: Math.floor(ROW1_W / 2) }, (_, i) => 2 * (i + 1));
+/** bits one GF(2) value takes on a wire */
+const GF2_BITS = Math.log2(GF2.elements.length);
+/** A4: the multiply-by-α register walking through GF(8) */
+const PERIOD = orderOfX(P_MASK);
+const WALK = Array.from({ length: PERIOD }, (_, i) => gf8Bits(alphaPow(i)));
+const FIRST_WRAP = WALK.findIndex((_, i) => i > 0 && (alphaPow(i - 1) & 4) !== 0);
+const P16 = 0b11111; // x⁴ + x³ + x² + x + 1: irreducible but not primitive
+/** A7 */
+const ORBIT1 = cosetOrbit(1);
+const BUD7 = bchRootBudget(M3, T_HAM);
+const BUD_B = bchRootBudget(BCH_B.m, BCH_B.t);
+/** A8: the three minimal polynomials as masks, and the cyclic codes of length 7 built from them */
+const MP_MASKS = ALL_MP.map((m) => msbToMask(toMsb(m.binary!)));
+const MP_MIRROR = ALL_MP.find((m) => m.coset.includes(3))!;
+const MIRROR = lfsrCost(toMsb(MP_MIRROR.binary!));
+const MENU = cyclicCodeMenu(CODE_N);
+const menuOf = (g: number) => MENU.find((o) => o.g === g)!;
+const OPT_PARITY = menuOf(MP_MASKS[0]);
+const OPT_HAM = menuOf(MP_MASKS[1]);
+const OPT_ODD = menuOf(maskMul(MP_MASKS[0], MP_MASKS[1]));
+const OPT_REP = menuOf(maskMul(MP_MASKS[1], MP_MASKS[2]));
+/** A9: Lesson 1's codewords are not closed under cyclic shift */
+const L1_CODE = codewords74().map((x) => x.codeword);
+const L1_ESCAPES = cyclicShiftEscapes(L1_CODE);
+
+/* ------------------------------------------------------------------ */
 /* Deck                                                               */
 /* ------------------------------------------------------------------ */
 
 const SLIDES: DeckSlide<Ctx>[] = [
-  { title: '代數章 — 用多項式與 GF(8) 看 Hamming Code', sub: '代數章報告：A0–A10', steps: () => 1, render: () => <TitleSlide /> },
-  { title: 'A0 為什麼需要抽象代數？', sub: '不是另一種 code，是同一個 Hamming Code 的另一種看法', steps: () => 3, render: (s) => <WhySlide s={s} /> },
-  { title: 'A1 GF(2)：1 + 1 = 0', sub: '加法 = XOR、乘法 = AND、特徵 = 2', steps: () => 4, render: (s) => <GF2Slide s={s} /> },
-  { title: 'A1 Hcᵀ = 0 就是 GF(2) 線性代數', sub: '每一列：整數相加，再取 mod 2', steps: () => 5, render: (s) => <HcSlide s={s} /> },
-  { title: 'A2 H 的 7 個欄 = GF(8) 的 7 個非零元素', sub: '把 3 位元向量當成可以相乘、相除的數', steps: () => 8, render: (s) => <ColumnsSlide s={s} /> },
-  { title: 'A2 GF(8) 不是整數 mod 8', sub: 'ℤ/8 有零因子：2 · 4 = 0', steps: () => 2, render: (s) => <Z8Slide s={s} /> },
-  { title: 'A3 建構 GF(8)：不可約多項式', sub: 'GF(2)[x]/(p(x))：只留下除以 p(x) 的餘數', steps: () => 3, render: (s) => <QuotientSlide s={s} /> },
-  { title: 'A3 GF(8) 乘法：遇到 α³ 就換成 α + 1', sub: '(α² + α)(α + 1) = 1', steps: () => MUL_LINES.length, render: (s) => <MulSlide s={s} /> },
-  { title: 'A4 α 的循環：α⁷ = 1', sub: '每次乘上 α，走遍 7 個非零元素再回到 1', steps: () => 8, render: (s) => <CycleSlide s={s} /> },
-  { title: 'A5 生成多項式：c(x) = m(x)g(x)', sub: 'm = 1011，g = 1011：分配律 → 同類項 → mod 2', steps: () => P5 + 2, render: (s) => <PolyMulSlide s={s} /> },
-  { title: 'A5 G_cyc 的四列 = x³g, x²g, xg, g', sub: 'mG_cyc 和 m(x)g(x) 是同一個計算', steps: () => 3, render: (s) => <GcycSlide s={s} /> },
-  { title: 'A6 循環位移 = 乘以 x', sub: '在 R₇ = GF(2)[x]/(x⁷ − 1) 中 x⁷ ≡ 1，最左邊繞回最右邊', steps: () => 8, render: (s) => <ShiftSlide s={s} /> },
-  { title: 'A6 理想：C 吸收 R₇ 的乘法', sub: '任意 a(x) × codeword 仍是 codeword ⇒ C = ⟨g(x)⟩', steps: () => 3, render: (s) => <IdealSlide s={s} /> },
-  { title: 'A7 Frobenius：(a + b)² = a² + b²', sub: '特徵 2 的「新生的夢」：φ(a) = a² 是 GF(8) 的自同構', steps: () => 3, render: (s) => <FrobSlide s={s} /> },
-  { title: 'A7 Cyclotomic Cosets：一個根帶出共軛根', sub: 'i → 2i mod 7；c(α) = 0 ⇒ c(α²) = c(α⁴) = 0', steps: () => cosetOrbit(1).length + 1, render: (s) => <CosetSlide s={s} /> },
-  { title: 'A8 最小多項式：把共軛根乘起來', sub: '(x + α)(x + α²)(x + α⁴) = x³ + x + 1', steps: () => 4, render: (s) => <MinPolySlide s={s} /> },
-  { title: 'A8 x⁷ − 1 = (x + 1)(x³ + x + 1)(x³ + x² + 1)', sub: '三個陪集 → 三個最小多項式', steps: () => 3, render: (s) => <FactorSlide s={s} /> },
-  { title: 'A9 用 GF(8) 推導 H 矩陣', sub: '一條 GF(8) 方程 = 三條 GF(2) 方程', steps: () => 8, render: (s) => <BuildHSlide s={s} /> },
-  { title: 'A9 c(α) = 0 ⇔ H_cyc cᵀ = 0', sub: '換任何 c，兩種算法都一致', steps: () => 3, render: (s) => <CompareSlide s={s} /> },
-  { title: 'A10 Syndrome 的 GF(8) 觀點', sub: 'S₁ = r(α) = e(α) = αⁱ', steps: () => DERIVE_LINES.length, render: (s) => <DeriveSlide s={s} /> },
-  { title: 'A10 例子：c = 1001110 錯一個位元', sub: 'S₁ = r(α) = αⁱ ⇒ 錯在從左數第 7 − i 個 bit', steps: () => 3, render: (s) => <SyndromeExampleSlide s={s} /> },
-  { title: '總結：一個訊息走完整章', sub: 'u → c → r → S₁ → σ(z) → 更正', steps: () => 8, render: (s) => <JourneySlide s={s} /> },
+  {
+    title: '代數章 — 用多項式與 GF(8) 看 Hamming Code',
+    sub: '代數章報告：A0–A10',
+    steps: () => 1,
+    render: () => <TitleSlide />,
+    takeaway: <>硬體裡只有位元：代數讓編碼器變小，解碼器直接算出位置</>,
+    notes: (
+      <ul className={UL}>
+        <li>第一課：用矩陣做出 {hamName(M3)}</li>
+        <li>這章的問題：同一個 code，為什麼還要用多項式和 GF(8)？</li>
+        <li>
+          答案：硬體裡只有位元
+          <ul className={SUB}>
+            <li>編碼器 → 幾個暫存器就夠</li>
+            <li>解碼器 → 直接「算出」錯誤位置，不用查表</li>
+          </ul>
+        </li>
+        <li>右邊三行 = 整章地圖：編碼 = 多項式乘法、檢查 = c(α) = 0、解碼 = 找根</li>
+        <li>左邊是路線：A1 的 GF(2) → A10 的 Syndrome</li>
+      </ul>
+    ),
+  },
+  {
+    title: 'A0 為什麼需要抽象代數？',
+    sub: '不是另一種 code，是同一個 Hamming Code 的另一種看法',
+    steps: () => 3,
+    render: (s) => <WhySlide s={s} />,
+    takeaway: <>碼一長，矩陣和查表就撐不住；代數讓電路不跟著碼長膨脹</>,
+    notes: (
+      <ul className={UL}>
+        <li>
+          畫面三個階段
+          <ul className={SUB}>
+            <li>第一課：GF(2) 線性代數，c = mG、三條 Hcᵀ = 0</li>
+            <li>代數章：c(x) = m(x)g(x)，只剩一條 c(α) = 0</li>
+            <li>第二課：LFSR 編碼、Chien Search 解碼</li>
+          </ul>
+        </li>
+        <li>不是另一種 code：和第一課只差座標排列（A9 證明）</li>
+        <li>
+          碼一長，第一課的做法就撐不住
+          <ul className={SUB}>
+            <li>
+              p = {P_BIT_TEXT} 時一個區塊錯 {T_HAM + 1} 個以上：{hamName(M3)} 約 {sciText(blockFailureProb(CODE_N, T_HAM, P_BIT))} → {hamName(M127)} 約 {sciText(blockFailureProb(hammingN(M127), T_HAM, P_BIT))}
+            </li>
+            <li>
+              查表解碼要存 2ⁿ⁻ᵏ 筆：{hamName(M3)} {num(syndromeTableEntries(CODE_N, CODE_K))} 筆 → {bchName(BCH_A)} {num(syndromeTableEntries(hammingN(BCH_A.m), hammingN(BCH_A.m) - bchRedundancy(BCH_A.m, BCH_A.t)))} 筆 → {bchName(BCH_B)}{' '}
+              {num(syndromeTableEntries(hammingN(BCH_B.m), hammingN(BCH_B.m) - bchRedundancy(BCH_B.m, BCH_B.t)))} 筆
+            </li>
+          </ul>
+        </li>
+        <li>
+          → 代數的好處 ①②
+          <ul className={SUB}>
+            <li>
+              ① 編碼器省：{GC.length}×{GC[0].length} 的 G 換成一個 g(x) = {polyText(G_MSB)}，硬體是 {ENC.flipFlops} 個暫存器的 LFSR
+            </li>
+            <li>② 解碼器聰明：S₁ = r(α) = αⁱ，位置就是指數，用算的</li>
+          </ul>
+        </li>
+        <li>
+          → 好處 ③ 可以推廣：多選幾組根 = BCH Code，一次修好幾個錯
+          <ul className={SUB}>
+            <li>CRC、快閃記憶體的 BCH、CD 和 QR code 的 Reed–Solomon 都靠這套代數</li>
+          </ul>
+        </li>
+      </ul>
+    ),
+  },
+  {
+    title: 'A1 GF(2)：1 + 1 = 0',
+    sub: '加法 = XOR、乘法 = AND、特徵 = 2',
+    steps: () => 4,
+    render: (s) => <GF2Slide s={s} />,
+    takeaway: <>GF(2) 的加法就是 XOR 閘：不進位，每個位元各自算</>,
+    notes: (
+      <ul className={UL}>
+        <li>GF(2) = {'{0, 1}'}：剛好是一條線上的一個位元</li>
+        <li>加法 = XOR 閘（相同得 0、不同得 1）；乘法 = AND 閘；減法 = 加法（−1 = 1）</li>
+        <li>雜訊翻一個位元 = 加 1；再翻一次，1 + 1 = 0 → 抵銷</li>
+        <li>→ 一直加 1：1 + 1 = 0，兩步回到 0 → 特徵（characteristic）= {characteristic(GF2)}</li>
+        <li>→ 再加一次回到 1，之後 0、1 輪流</li>
+        <li>
+          → {checkFieldAxioms(GF2).length} 條體公理全部成立 → GF(2) 是體
+          <ul className={SUB}>
+            <li>
+              換成整數就會進位：D₁ + D₂ + D₄ = 0～{P1_DATA}，要 {P1_SUM_BITS} 個位元＋進位線
+            </li>
+            <li>GF(2)：P₁ = D₁ ⊕ D₂ ⊕ D₄ 永遠 {GF2_BITS} 個位元，各位置獨立 → 三個同位位元同時算出</li>
+          </ul>
+        </li>
+      </ul>
+    ),
+  },
+  {
+    title: 'A1 Hcᵀ = 0 就是 GF(2) 線性代數',
+    sub: '每一列：整數相加，再取 mod 2',
+    steps: () => 5,
+    render: (s) => <HcSlide s={s} />,
+    takeaway: <>H 的每一列是一棵 XOR 樹，整個檢查器只要 {xorNetworkGates(H74)} 個 XOR 閘</>,
+    notes: (
+      <ul className={UL}>
+        <li>第一課的檢查 Hcᵀ = 0，其實就是 GF(2) 線性代數；右邊是編好的 codeword</li>
+        <li>→ H 的每一列 = 一個同位檢查器，盯 {ROW1_W} 個位置</li>
+        <li>
+          → 第一列：整數相加再 mod 2 = 一個 {ROW1_W} 輸入的 XOR 樹（{xorNetworkGates([H74[0]])} 個 XOR 閘）
+        </li>
+        <li>→ 第二列，同樣做法</li>
+        <li>
+          → 第三列 → 結果是零向量：每列偶數個 1，合法 codeword
+          <ul className={SUB}>
+            <li>
+              整個檢查電路 {xorNetworkGates(H74)} 個 XOR 閘；編碼器也是 XOR 網路，{hammingEncoderXors(M3)} 個
+            </li>
+            <li>拿掉 mod 2 會算出 {EVEN_SUMS.join('、')} →「= 0」不再代表通過 → 一定要在 GF(2) 裡算</li>
+          </ul>
+        </li>
+      </ul>
+    ),
+  },
+  {
+    title: 'A2 H 的 7 個欄 = GF(8) 的 7 個非零元素',
+    sub: '把 3 位元向量當成可以相乘、相除的數',
+    steps: () => 8,
+    render: (s) => <ColumnsSlide s={s} />,
+    takeaway: <>{M3} 條線上的位元讀成 GF(8) 的數，錯誤位置才能用算的</>,
+    notes: (
+      <ul className={UL}>
+        <li>
+          第一課的 H 有 {H74[0].length} 欄 = {H74[0].length} 個不同的非零 {H74.length} 位元向量；在 GF(2) 裡它們只能相加
+        </li>
+        <li>想「算出」錯誤位置，就要能對位置做乘除（錯不只一個時要解方程）</li>
+        <li>
+          {M3} 個位元 = {M3} 條線 = {M3} 個暫存器 → 讀成 1、α、α² 的係數，就是 GF(8) 的一個元素
+        </li>
+        <li>
+          → 按 {H74[0].length} 次，一欄一欄亮：第 j 欄 = j 的二進位
+          <ul className={SUB}>
+            <li>{[1, 2, 3, 4].map((j) => `第 ${j} 欄 = ${gf8Text(j)}`).join('、')}</li>
+            <li>{[5, 6, 7].map((j) => `第 ${j} 欄 = ${gf8Text(j)}`).join('、')}</li>
+          </ul>
+        </li>
+        <li>
+          最後一步的結論
+          <ul className={SUB}>
+            <li>
+              {CODE_N} 個錯誤位置 ↔ GF(8) 的 {GF8_ELEMENTS.length - 1} 個非零元素
+            </li>
+            <li>三條 Hcᵀ = 0 → 濃縮成一條 c(α) = 0（A9）</li>
+            <li>加法還是 XOR，硬體不用改</li>
+          </ul>
+        </li>
+      </ul>
+    ),
+  },
+  {
+    title: 'A2 GF(8) 不是整數 mod 8',
+    sub: 'ℤ/8 有零因子：2 · 4 = 0',
+    steps: () => 2,
+    render: (s) => <Z8Slide s={s} />,
+    takeaway: <>ℤ/8 有零因子又要進位；GF(8) 能除，加法只是 XOR</>,
+    notes: (
+      <ul className={UL}>
+        <li>為什麼不直接用整數 mod 8？看 ℤ/8 的乘法表</li>
+        <li>
+          紅色 = 零因子：兩個非零數相乘得 0，例 2 · 4 = 0
+          <ul className={SUB}>
+            <li>{nonInvertible(zmod(8)).join('、')} 沒有反元素 → 不能除 → 解不出錯誤位置</li>
+            <li>mod 8 的加法還要進位：最高位要等進位從最低位傳上來</li>
+          </ul>
+        </li>
+        <li>
+          → 換成 GF(8)：每個非零元素都有反元素（綠色 = 乘積為 1），體公理全部成立
+          <ul className={SUB}>
+            <li>加法 = {gfAdderXors(M3)} 個 XOR 閘，沒有進位</li>
+            <li>
+              乘法電路 = {GF_MUL.ands} 個 AND 閘 + {GF_MUL.xors} 個 XOR 閘
+            </li>
+            <li>101 不是數字 5，是 α² + 1；乘法規則來自 A3 的 α³ = α + 1</li>
+          </ul>
+        </li>
+      </ul>
+    ),
+  },
+  {
+    title: 'A3 建構 GF(8)：不可約多項式',
+    sub: 'GF(2)[x]/(p(x))：只留下除以 p(x) 的餘數',
+    steps: () => 3,
+    render: (s) => <QuotientSlide s={s} />,
+    takeaway: <>不可約才能除；α³ = α + 1 就是暫存器的回授接線</>,
+    notes: (
+      <ul className={UL}>
+        <li>
+          做法：多項式只留「除以 p(x) 的餘數」，次數 ≤ {M3 - 1} → 剛好 {2 ** M3} 個 = {M3} 個位元
+        </li>
+        <li>
+          先試 p(x) = x³ + 1：p(1) = 0，有根 → = (x + 1)(x² + x + 1)
+          <ul className={SUB}>
+            <li>乘法表出現紅色零因子 → 不是體，不能除</li>
+          </ul>
+        </li>
+        <li>
+          → 換 p(x) = x³ + x + 1：p(0) = p(1) = 1，沒有根 → 不可約 → 商環是體
+          <ul className={SUB}>
+            <li>
+              {M3} 次不可約多項式只有 {irreduciblePolys(M3).length} 個，都只有 {minIrreducibleWeight(M3)} 項（最少）
+            </li>
+            <li>項數少 = 電路少：乘以 α 只要 {alphaMultiplierXors(P_MASK)} 個 XOR 閘</li>
+          </ul>
+        </li>
+        <li>→ p(α) = 0 ⇒ α³ = α + 1：這條化簡規則就是移位暫存器的回授接線</li>
+      </ul>
+    ),
+  },
+  {
+    title: 'A3 GF(8) 乘法：遇到 α³ 就換成 α + 1',
+    sub: '(α² + α)(α + 1) = 1',
+    steps: () => MUL_LINES.length,
+    render: (s) => <MulSlide s={s} />,
+    takeaway: <>乘以 α = 暫存器左移一格，溢出的 α³ 回授成 α + 1</>,
+    notes: (
+      <ul className={UL}>
+        <li>
+          例子：({gf8Text(MUL_A)})({gf8Text(MUL_B)})，就是 {gf8Bits(MUL_A)} 乘 {gf8Bits(MUL_B)}
+        </li>
+        <li>→ 分配律展開：α + α² + α² + α³</li>
+        <li>→ 同類項合併，係數 mod 2：兩個 α² 抵銷 → α³ + α</li>
+        <li>→ 化簡 α³：換成 α + 1 → (α + 1) + α = 1</li>
+        <li>
+          → 結果 = {gf8Text(MUL.result)}（{gf8Bits(MUL.result)}）：兩者互為反元素，除法做得到
+        </li>
+        <li>
+          電路上
+          <ul className={SUB}>
+            <li>乘以 α = 左移一格；溢出 α³ 就回授成 α + 1</li>
+            <li>第二課的 {ENC.flipFlops} 個暫存器做的就是這件事</li>
+          </ul>
+        </li>
+      </ul>
+    ),
+  },
+  {
+    title: 'A4 α 的循環：α⁷ = 1',
+    sub: '每次乘上 α，走遍 7 個非零元素再回到 1',
+    steps: () => 8,
+    render: (s) => <CycleSlide s={s} />,
+    takeaway: (
+      <>
+        LFSR 每個時脈乘一次 α，{PERIOD} 個狀態剛好標記 {CODE_N} 個位置
+      </>
+    ),
+    notes: (
+      <ul className={UL}>
+        <li>從 1（{WALK[0]}）出發，每次乘上 α：左移，溢出就用 α³ = α + 1 回授</li>
+        <li>硬體上每乘一次 α = LFSR 走一個時脈</li>
+        <li>
+          → 按 {PERIOD - 1} 次走完：{WALK.join(' → ')}
+          <ul className={SUB}>
+            <li>
+              → 第 {FIRST_WRAP} 步第一次溢出：α³ 換成 α + 1（{WALK[FIRST_WRAP]}）
+            </li>
+          </ul>
+        </li>
+        <li>
+          → 第 {PERIOD} 步回到 {WALK[0]}：α⁷ = 1
+          <ul className={SUB}>
+            <li>
+              {PERIOD} 步走遍全部 {2 ** M3 - 1} 個非零狀態 → α 是本原元素（primitive element）
+            </li>
+            <li>乘法變成指數相加：αⁱ · αʲ = αⁱ⁺ʲ</li>
+          </ul>
+        </li>
+        <li>
+          每個位置都有地址
+          <ul className={SUB}>
+            <li>第 i 個位置 ↔ αⁱ：「位置」變成可以運算的數</li>
+            <li>
+              {PERIOD} 個次方剛好對上碼長 n = 2³ − 1 = {CODE_N} 的 {CODE_N} 個位置
+            </li>
+          </ul>
+        </li>
+        <li>
+          只是不可約還不夠，要「本原」
+          <ul className={SUB}>
+            <li>
+              x⁴ + x³ + x² + x + 1 不可約，但 LFSR 只繞 {orderOfX(P16)} 個狀態就回頭（共 {2 ** maskDegree(P16) - 1} 個）
+            </li>
+            <li>→ 只能標記 {orderOfX(P16)} 個位置，其他位置沒有地址</li>
+          </ul>
+        </li>
+      </ul>
+    ),
+  },
+  {
+    title: 'A5 生成多項式 g(x)：一個多項式取代整個 G',
+    sub: 'G_cyc 的四列 = x³g, x²g, xg, g',
+    steps: () => 4,
+    render: (s) => <GcycSlide s={s} />,
+    takeaway: (
+      <>
+        g 的係數就是接線：{ENC.flipFlops} 個暫存器 + {ENC.xors} 個 XOR 閘取代整個 G
+      </>
+    ),
+    notes: (
+      <ul className={UL}>
+        <li>
+          問題：第一課的 G 是 {GC.length}×{GC[0].length} 個數字，編碼器是一片 XOR 網路
+        </li>
+        <li>
+          g(x) = {polyText(G_MSB)}（{G_MSB.join('')}），次數 = n − k = {CODE_N - CODE_K}
+        </li>
+        <li>
+          G_cyc 的四列 = x³g、x²g、xg、g：同一個多項式往左移
+          <ul className={SUB}>
+            <li>→ 只要記住 g 的 {G_MSB.length} 個係數，就等於記住整個 G</li>
+          </ul>
+        </li>
+        <li>
+          → 循環的概念
+          <ul className={SUB}>
+            <li>每個 codeword 都是 g(x) 的倍數</li>
+            <li>
+              把 codeword 循環位移，還是 codeword：{ORBIT.slice(0, 3).map((w) => w.join('')).join(' → ')} → …，{ORBIT_LEN} 次回到原點（A6 證明）
+            </li>
+          </ul>
+        </li>
+        <li>
+          → g 的係數就是編碼器的接線圖
+          <ul className={SUB}>
+            <li>
+              次數 {G_MSB.length - 1} → {ENC.flipFlops} 個暫存器；係數為 1 的位置 → 回授 XOR，共 {ENC.xors} 個 XOR 閘
+            </li>
+            <li>
+              一個時脈處理一個位元：訊息 {CLK.message} 個時脈、把同位位元移出 {CLK.parityOut} 個，共 {CLK.total} 個時脈
+            </li>
+            <li>
+              拉長就看得出差別：{hamName(M127)} 的矩陣編碼器要 {hammingEncoderXors(M127)} 個 XOR 閘，LFSR 只要 {ENC127.flipFlops} 個暫存器 + {ENC127.xors} 個 XOR 閘
+            </li>
+            <li>用時間換面積；串列傳輸和儲存本來就是一個位元一個位元送</li>
+          </ul>
+        </li>
+      </ul>
+    ),
+  },
+  {
+    title: 'A5 怎麼乘：c(x) = m(x)g(x)',
+    sub: 'm = 1011，g = 1011：分配律 → 同類項 → mod 2',
+    steps: () => P5 + 2,
+    render: (s) => <PolyMulSlide s={s} />,
+    takeaway: <>編碼 = 乘上 g：每個送出的 codeword 都通過 c(α) = 0</>,
+    notes: (
+      <ul className={UL}>
+        <li>
+          訊息 m = {M5.join('')} → m(x) = {polyText(M5)}，乘上 g(x)
+        </li>
+        <li>
+          第一列部分積：{xMono(T5.partials[0].shift)} · g(x) = {polyText(T5.partials[0].bits)}（m 的每個 1 產生一列 = g 往左移）
+        </li>
+        <li>
+          → 第二列：{xMono(T5.partials[1].shift)} · g(x) = {polyText(T5.partials[1].bits)}
+        </li>
+        <li>
+          → 第三列：{xMono(T5.partials[2].shift)} · g(x) = {polyText(T5.partials[2].bits)}
+        </li>
+        <li>→ 同類項合併：{countsText(T5.counts)}</li>
+        <li>
+          → 係數 mod 2：{polyText(C5)} = {C5.join('')}
+          <ul className={SUB}>
+            <li>c(α) = 0 ✓：g 的根也是 c 的根</li>
+            <li>編碼只做乘法，不取餘數</li>
+            <li>
+              和矩陣是同一件事：{C5.join('')} = G_cyc 第 {SEL5.join('、')} 列相加（m = {M5.join('')} 選中的列）
+            </li>
+            <li>實務常用系統式：訊息原封不動放前面，沒錯時不用解碼就能讀資料</li>
+          </ul>
+        </li>
+      </ul>
+    ),
+  },
+  {
+    title: 'A6 循環位移 = 乘以 x',
+    sub: '在 R₇ = GF(2)[x]/(x⁷ − 1) 中 x⁷ ≡ 1，最左邊繞回最右邊',
+    steps: () => 8,
+    render: (s) => <ShiftSlide s={s} />,
+    takeaway: <>位移後仍是 codeword：同一個小電路一個時脈處理一個位元</>,
+    notes: (
+      <ul className={UL}>
+        <li>循環位移 = 乘以 x：每個位元往左一格（次方 +1）</li>
+        <li>在 R₇ 裡 x⁷ ≡ 1：最左邊溢出的位元繞回最右邊（橘框）</li>
+        <li>從 {START.join('')}（= g(x)）出發</li>
+        <li>
+          {[1, 2, 3].map((k) => `→ ${rotateLeft(START, k).join('')}`).join('、')}：直接左移
+        </li>
+        <li>→ {rotateLeft(START, 4).join('')}：第一次繞回（x⁷ → 1）</li>
+        <li>
+          {[5, 6, 7].map((k) => `→ ${rotateLeft(START, k % CODE_N).join('')}`).join('、')}：{ORBIT_LEN} 次回到起點，每一個都是 codeword
+        </li>
+        <li>線性 + 循環 ⇒ C 是 R₇ 的理想 ⟨g(x)⟩（下一頁）</li>
+        <li>
+          電路上
+          <ul className={SUB}>
+            <li>位移不變 → 同一個小電路就能服務每一個位置</li>
+            <li>
+              接收端檢查 = 除以 g(x)：一個時脈讀一個位元，{syndromeClocks(CODE_N)} 個時脈讀完看餘數
+            </li>
+            <li>CRC（例如乙太網路）用的是同一種除法，只是拿來偵測錯誤</li>
+          </ul>
+        </li>
+      </ul>
+    ),
+  },
+  {
+    title: 'A6 理想：C 吸收 R₇ 的乘法',
+    sub: '任意 a(x) × codeword 仍是 codeword ⇒ C = ⟨g(x)⟩',
+    steps: () => 3,
+    render: (s) => <IdealSlide s={s} />,
+    takeaway: <>C 就是 g 的倍數：檢查只要一次除法看餘數，不用查表</>,
+    notes: (
+      <ul className={UL}>
+        <li>理想 I 的兩個條件：① 相加還在 I（線性）② 乘上 R₇ 的任何元素還在 I（吸收乘法）</li>
+        <li>例：任意 a(x) 乘上一個 codeword c(x)</li>
+        <li>→ 先照常乘開 a(x)c(x)</li>
+        <li>
+          → 超過 x⁶ 的項用 x⁷ ≡ 1 繞回 → 結果還是 codeword ✓；兩個 codeword 相加也是 ✓
+          <ul className={SUB}>
+            <li>關鍵：g(x) 整除 x⁷ − 1，繞回時才不會離開 g 的倍數</li>
+          </ul>
+        </li>
+        <li>
+          C = ⟨g(x)⟩ = 所有 g 的倍數
+          <ul className={SUB}>
+            <li>「是不是 codeword」只要做一次除法、看餘數是不是 0，不用查表</li>
+          </ul>
+        </li>
+      </ul>
+    ),
+  },
+  {
+    title: 'A7 Frobenius：(a + b)² = a² + b²',
+    sub: '特徵 2 的「新生的夢」：φ(a) = a² 是 GF(8) 的自同構',
+    steps: () => 3,
+    render: (s) => <FrobSlide s={s} />,
+    takeaway: <>平方是線性的：平方器只要 {squarerXors(M3, P_MASK)} 個 XOR 閘，不用乘法器</>,
+    notes: (
+      <ul className={UL}>
+        <li>這頁是純代數；工程上用得到的是平方的性質</li>
+        <li>(a + b)² 照常展開 = a² + 2ab + b²</li>
+        <li>→ 特徵 {characteristic(GF8_FIELD)}：2ab = ab + ab = 0</li>
+        <li>
+          → 「新生的夢」(a + b)² = a² + b²
+          <ul className={SUB}>
+            <li>平方保持加法和乘法，窮舉 {GF8_ELEMENTS.length ** 2} 組驗證：是 GF(8) 的自同構</li>
+          </ul>
+        </li>
+        <li>
+          平方是線性運算
+          <ul className={SUB}>
+            <li>平方器只要 XOR 接線，不用乘法器</li>
+            <li>
+              GF(8) 平方器 {squarerXors(M3, P_MASK)} 個 XOR 閘；一般乘法器 {GF_MUL.ands} 個 AND + {GF_MUL.xors} 個 XOR 閘
+            </li>
+          </ul>
+        </li>
+      </ul>
+    ),
+  },
+  {
+    title: 'A7 Cyclotomic Cosets：一個根帶出共軛根',
+    sub: 'i → 2i mod 7；c(α) = 0 ⇒ c(α²) = c(α⁴) = 0',
+    steps: () => cosetOrbit(1).length + 1,
+    render: (s) => <CosetSlide s={s} />,
+    takeaway: <>一個根帶出整個陪集：檢查位元按陪集大小算，不按根數算</>,
+    notes: (
+      <ul className={UL}>
+        <li>
+          c(x) = {COSET_C.join('')} = {polyText(COSET_C)}，代入 α 的各次方；指數從 {ORBIT1[0]} 出發，每次 ×2 mod {CODE_N}
+        </li>
+        <li>
+          → {ORBIT1[0]} → {ORBIT1[1]}：c 的係數在 GF(2)，c(α)² = c(α²) → α 是根 ⇒ α² 也是根
+        </li>
+        <li>
+          → {ORBIT1[1]} → {ORBIT1[2]}：α⁴ 也是根
+        </li>
+        <li>
+          → {ORBIT1[2]} → {ORBIT1[0]} 回到起點：陪集 {`{${ORBIT1.join(', ')}}`}
+          <ul className={SUB}>
+            <li>全部陪集：{cyclotomicCosets().map((cs) => `{${cs.join(', ')}}`).join('、')}</li>
+            <li>
+              g(x) 至少要包含 (x + α)(x + α²)(x + α⁴)，次數 ≥ {ORBIT1.length}（A8 乘開）
+            </li>
+          </ul>
+        </li>
+        <li>
+          要一個根，整個陪集都會跟著來 → 檢查位元按陪集大小算
+          <ul className={SUB}>
+            <li>
+              n = {CODE_N} 要 α、α² 兩個根：直覺 {BUD7.roots} × {M3} = {BUD7.naiveBits} 個位元，實際只要 {BUD7.bits}
+            </li>
+            <li>
+              設計 BCH 就是挑陪集：{bchName(BCH_B)} 要 {BUD_B.roots} 個根，直覺 {BUD_B.naiveBits} 個位元，實際 {BUD_B.bits} 個
+            </li>
+          </ul>
+        </li>
+      </ul>
+    ),
+  },
+  {
+    title: 'A8 最小多項式：把共軛根乘起來',
+    sub: '(x + α)(x + α²)(x + α⁴) = x³ + x + 1',
+    steps: () => 4,
+    render: (s) => <MinPolySlide s={s} />,
+    takeaway: <>最小多項式就是 g(x)：次數 = 暫存器數，係數 = 回授位置</>,
+    notes: (
+      <ul className={UL}>
+        <li>目標：係數全在 GF(2)、以 α 為根的最小次數多項式</li>
+        <li>共軛根必須一起出現：(x + α)(x + α²)(x + α⁴)</li>
+        <li>→ 先乘前兩個</li>
+        <li>
+          → 再乘第三個：每個係數都化簡成 0 或 1 → m_α(x) = {polyText(toMsb(MP.binary!))} = g(x)
+        </li>
+        <li>
+          → 對照表：三個共軛元素都是根 ✓；次數 = 陪集大小 = {MP.coset.length} → k = {CODE_N} − {MP.coset.length} = {CODE_N - MP.coset.length}
+        </li>
+        <li>
+          最小多項式就是 g(x)，也就是編碼器的接線
+          <ul className={SUB}>
+            <li>
+              次數 = 暫存器數 = 檢查位元數 = {ENC.flipFlops}；係數 = 回授位置 → {ENC.xors} 個 XOR 閘
+            </li>
+            <li>
+              另一個陪集 {`{${MP_MIRROR.coset.join(', ')}}`} 的最小多項式 {polyText(toMsb(MP_MIRROR.binary!))}：鏡像接線，一樣 {MIRROR.flipFlops} 個暫存器 + {MIRROR.xors} 個 XOR 閘
+            </li>
+          </ul>
+        </li>
+      </ul>
+    ),
+  },
+  {
+    title: 'A8 x⁷ − 1 = (x + 1)(x³ + x + 1)(x³ + x² + 1)',
+    sub: '三個陪集 → 三個最小多項式',
+    steps: () => 3,
+    render: (s) => <FactorSlide s={s} />,
+    takeaway: (
+      <>
+        挑幾個因式當 g(x)：多幾個暫存器，換更大的 <M>{'d_{\\min}'}</M>
+      </>
+    ),
+    notes: (
+      <ul className={UL}>
+        <li>三個陪集 → 三個最小多項式，乘起來剛好是 x⁷ − 1</li>
+        <li>→ 先乘 (x + 1)(x³ + x + 1)</li>
+        <li>
+          → 再乘 (x³ + x² + 1) = x⁷ + 1 = x⁷ − 1（GF(2) 中 −1 = +1）
+          <ul className={SUB}>
+            <li>g(x) 整除 x⁷ − 1：正是 A6 需要的條件</li>
+          </ul>
+        </li>
+        <li>
+          從這三個因式挑幾個相乘當 g(x)，就是長度 {CODE_N} 的所有循環碼選單
+          <ul className={SUB}>
+            <li>
+              x + 1 → 單一同位檢查：{OPT_PARITY.checkBits} 個檢查位元，d_min = {OPT_PARITY.dmin}
+            </li>
+            <li>
+              x³ + x + 1 → {hamName(M3)}：{OPT_HAM.flipFlops} 個暫存器 + {OPT_HAM.xors} 個 XOR 閘，d_min = {OPT_HAM.dmin}
+            </li>
+            <li>
+              (x + 1)(x³ + x + 1) → [{CODE_N},{OPT_ODD.k},{OPT_ODD.dmin}]：{OPT_ODD.flipFlops} 個暫存器 + {OPT_ODD.xors} 個 XOR 閘，d_min = {OPT_ODD.dmin}
+            </li>
+            <li>
+              兩個三次式相乘 → 重複碼：{OPT_REP.flipFlops} 個暫存器，d_min = {OPT_REP.dmin}
+            </li>
+            <li>多一個因式 = 多幾個暫存器、少幾個資料位元，換更大的 d_min</li>
+          </ul>
+        </li>
+      </ul>
+    ),
+  },
+  {
+    title: 'A9 用 GF(8) 推導 H 矩陣',
+    sub: '一條 GF(8) 方程 = 三條 GF(2) 方程',
+    steps: () => 8,
+    render: (s) => <BuildHSlide s={s} />,
+    takeaway: <>第 k 欄 = 那個位置出錯時，Syndrome 暫存器留下的圖樣</>,
+    notes: (
+      <ul className={UL}>
+        <li>c(α) = Σ cᵢαⁱ：每個 αⁱ 寫成 {HC.length} 位元直行，排起來就是 H_cyc</li>
+        <li>
+          → 按 {HC[0].length} 次，從最左欄（x⁶ ↔ α⁶）開始一欄一欄建
+          <ul className={SUB}>
+            <li>{[6, 5, 4, 3, 2, 1, 0].map((e) => `${powLabel(e)} = ${gf8Bits(alphaPow(e))}`).join('、')}</li>
+          </ul>
+        </li>
+        <li>最後：一條 GF(8) 方程 c(α) = 0 ⇔ 三個座標都是 0 ⇔ 三條 GF(2) 方程</li>
+        <li>
+          電路上
+          <ul className={SUB}>
+            <li>第 k 欄 = 這個位置出錯時，在 Syndrome 暫存器留下的 {HC.length} 位元圖樣</li>
+            <li>三條方程 = 三個 XOR 樹，共 {xorNetworkGates(HC)} 個 XOR 閘，和第一課的 H 一樣</li>
+          </ul>
+        </li>
+      </ul>
+    ),
+  },
+  {
+    title: 'A9 c(α) = 0 ⇔ H_cyc cᵀ = 0',
+    sub: '換任何 c，兩種算法都一致',
+    steps: () => 3,
+    render: (s) => <CompareSlide s={s} />,
+    takeaway: <>和第一課只差接線順序；換成循環排列，LFSR 才用得上</>,
+    notes: (
+      <ul className={UL}>
+        <li>GF(8) 觀點：直接算 c(α)</li>
+        <li>→ GF(2) 觀點：H_cyc cᵀ = 把 c 是 1 的那幾欄相加 → 和 c(α) 的三個座標一模一樣</li>
+        <li>
+          → 和第一課對照：循環碼位置 x⁶…1 對到第一課的 {COL_LABELS.map((_, k) => `#${cyclicIndexToStandardPosition(k)}`).join(' ')}
+          <ul className={SUB}>
+            <li>
+              同一組 {HC[0].length} 個非零欄，只差排列 → 等價碼 [{CODE_N},{OPT_HAM.k},{OPT_HAM.dmin}]
+            </li>
+            <li>硬體上只是重新接線，不用多任何閘</li>
+            <li>
+              要換排列：第一課 {L1_CODE.length} 個 codeword 位移一格後有 {L1_ESCAPES} 個跑出 code；換成循環排列後一個都不會，LFSR 才用得上
+            </li>
+          </ul>
+        </li>
+      </ul>
+    ),
+  },
+  {
+    title: 'A10 Syndrome 的 GF(8) 觀點',
+    sub: 'S₁ = r(α) = e(α) = αⁱ',
+    steps: () => DERIVE_LINES.length,
+    render: (s) => <DeriveSlide s={s} />,
+    takeaway: (
+      <>
+        S₁ = αⁱ 直接算出位置：{HORNER.flipFlops} 個暫存器、{syndromeClocks(CODE_N)} 個時脈
+      </>
+    ),
+    notes: (
+      <ul className={UL}>
+        <li>接收字 r(x) = c(x) + e(x)</li>
+        <li>→ 代入 α：S₁ = r(α) = c(α) + e(α) = e(α)，codeword 的部分是 0</li>
+        <li>→ 只錯一個 e(x) = xⁱ ⇒ S₁ = αⁱ</li>
+        <li>→ 取對數：i = log S₁，位置 = {CODE_N} − i（α⁰…α⁶ 兩兩不同，A4）</li>
+        <li>
+          → 下一步（第二課）：σ(z) = 1 + S₁z → Chien Search 找根 → XOR 更正
+          <ul className={SUB}>
+            <li>同一個 Syndrome 三種寫法：s = Hrᵀ（第一課）、S(x) = r(x) mod g(x)（第二課）、S₁ = r(α)（這章）</li>
+          </ul>
+        </li>
+        <li>
+          硬體
+          <ul className={SUB}>
+            <li>r(α) 用 Horner 法一個時脈讀一個位元：S ← S·α ⊕ rₖ</li>
+            <li>
+              {HORNER.flipFlops} 個暫存器 + {HORNER.xors} 個 XOR 閘，和除法 LFSR 一樣大；{syndromeClocks(CODE_N)} 個時脈讀完
+            </li>
+            <li>找位置：查 {logTableEntries(CODE_N, CODE_K)} 筆的對數表，或讓 S 跟著資料每個時脈乘 α，比對到就翻轉</li>
+          </ul>
+        </li>
+      </ul>
+    ),
+  },
+  {
+    title: 'A10 例子：c = 1001110 錯一個位元',
+    sub: 'S₁ = r(α) = αⁱ ⇒ 錯在從左數第 7 − i 個 bit',
+    steps: () => 3,
+    render: (s) => <SyndromeExampleSlide s={s} />,
+    takeaway: <>接收端算出 S₁ 再取對數，就知道該翻哪一個位元</>,
+    notes: (
+      <ul className={UL}>
+        <li>
+          c = {EX_C.join('')}，雜訊翻了 {xMono(CODE_N - EX_POS)} 那一位 → r = {EX_R.join('')}
+        </li>
+        <li>
+          → 算 r(α)：把 r 裡是 1 的那幾項 αⁱ 加起來 = {powLabel(EX_I)}（{gf8Bits(EX_S1)}）
+        </li>
+        <li>
+          → 取對數 i = {EX_I} → 錯在 {xMono(EX_I)} = 從左數第 {CODE_N - EX_I} 個位元，翻回來
+          <ul className={SUB}>
+            <li>
+              {gf8Bits(EX_S1)} 不是「第 {EX_S1} 個位置」：要先取對數
+            </li>
+            <li>也等於 r(x) mod g(x) 的餘數 {bitsToField(syndromeL2(EX_R)) === EX_S1 ? '✓' : '✗'}：和第二課的除法電路是同一件事</li>
+          </ul>
+        </li>
+        <li>
+          極限
+          <ul className={SUB}>
+            <li>
+              錯 {T_HAM + 1} 個時 S₁ = αⁱ + αʲ 會是第三個位置 → 翻錯成 {DOUBLE.errorsAfter.join('、')} 個錯（誤更正）
+            </li>
+            <li>
+              要修更多錯就要多選根（BCH）：n = {hammingN(BCH_A.m)} 修 {BCH_A.t} 個錯要 {bchRedundancy(BCH_A.m, BCH_A.t)} 個檢查位元
+            </li>
+          </ul>
+        </li>
+      </ul>
+    ),
+  },
+  {
+    title: '總結：一個訊息走完整章',
+    sub: 'u → c → r → S₁ → σ(z) → 更正',
+    steps: () => 8,
+    render: (s) => <JourneySlide s={s} />,
+    takeaway: (
+      <>
+        整條鏈路都是移位暫存器 + XOR：編碼、Syndrome 各 {ENC.flipFlops} 個暫存器
+      </>
+    ),
+    notes: (
+      <ul className={UL}>
+        <li>用一個訊息把整章串起來，每按一次出現一步</li>
+        <li>GF(2)：位元運算都 mod 2，1 + 1 = 0（XOR）</li>
+        <li>→ 建構 GF(8)：不可約 p(x) = x³ + x + 1，α³ = α + 1（回授接線）</li>
+        <li>
+          → 最小多項式：(x + α)(x + α²)(x + α⁴) = {polyText(toMsb(MP.binary!))} = g(x)
+        </li>
+        <li>
+          → 系統式編碼：u = {DEFAULT_U.join('')} → c = {J_C.join('')}（{ENC.flipFlops} 個暫存器的 LFSR）
+        </li>
+        <li>→ codeword 檢查：c(α) = 0 ⇔ H_cyc cᵀ = 0</li>
+        <li>
+          → 通道錯誤：錯在 {xMono(CODE_N - J_POS)}，r = {J_R.join('')}
+        </li>
+        <li>
+          → Syndrome：S₁ = r(α) = {powLabel(LOG[J_S1])}（{gf8Bits(J_S1)}）
+        </li>
+        <li>
+          → Chien Search：σ(z) = 1 + {powLabel(LOG[J_S1])}z，根 z = {powLabel(J_ROOT?.j ?? 0)} → 錯在 {xMono(J_ROOT?.exponent ?? 0)} → 翻回來
+        </li>
+        <li>
+          收尾
+          <ul className={SUB}>
+            <li>
+              整條路線在硬體上都是移位暫存器 + XOR：編碼器和 Syndrome 都只要 {ENC.flipFlops} 個暫存器
+            </li>
+            <li>同一套代數延伸到 BCH、Reed–Solomon、CRC</li>
+            <li>第二課把每一步做成實際的電路與演算法</li>
+          </ul>
+        </li>
+      </ul>
+    ),
+  },
 ];
 
 export default function PresentationAlgebra() {
