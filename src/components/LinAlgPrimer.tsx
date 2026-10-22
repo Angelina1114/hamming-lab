@@ -1,14 +1,10 @@
 import { useState, type ReactNode } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { type Bit, type Matrix, G74, H74, allVectors, bitsToString, flipBit, formatRowOp, isZeroVector, matVec, rref, span, vecAdd } from '../core';
+import { type Bit, type Matrix, G74, H74, N7, allVectors, bitsToString, flipBit, formatRowOp, isZeroVector, matVec, rref, span, vecAdd } from '../core';
 import { M, Tex } from './Tex';
-import { BitString } from './Bits';
 import { ColumnVector, MatrixView } from './MatrixView';
 
 /* ---------- small fixed examples (all results below are computed) ---------- */
-
-const U: Bit[] = [1, 0, 1, 1];
-const V: Bit[] = [0, 1, 1, 0];
 
 const A_MV: Matrix = [
   [1, 0, 1, 1],
@@ -42,6 +38,11 @@ function combos(vecs: readonly Bit[][]) {
     v: vecs.reduce<Bit[]>((acc, v, i) => (a[i] ? vecAdd(acc, v) : acc), vecs[0].map(() => 0 as Bit)),
   }));
 }
+
+/** rank of G and H, and the dimension of ker H by Rank–Nullity */
+const RANK_G = rref(G74).rank;
+const RANK_H = rref(H74).rank;
+const NULLITY_H = N7 - RANK_H;
 
 /* ---------- the concepts ---------- */
 
@@ -122,6 +123,54 @@ function CombosTable({ vecs }: { vecs: Bit[][] }) {
   );
 }
 
+/** Span of three vectors, independent or not: the 8 coefficient choices and how many different results they give. */
+function SpanExample() {
+  const [dep, setDep] = useState(false);
+  const vecs = dep ? DEP_VECS : SPAN_VECS;
+  const size = spanSize(vecs);
+  return (
+    <div className="space-y-1.5">
+      <div className="flex flex-wrap gap-1.5" role="group" aria-label="選擇例子">
+        {[
+          { v: false, label: '三個獨立的向量' },
+          { v: true, label: '有一個是多餘的' },
+        ].map((o) => (
+          <button
+            key={o.label}
+            type="button"
+            aria-pressed={dep === o.v}
+            onClick={() => setDep(o.v)}
+            className={`rounded-full border px-2.5 py-0.5 text-xs ${dep === o.v ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 text-slate-600 hover:border-slate-400'}`}
+          >
+            {o.label}
+          </button>
+        ))}
+      </div>
+      <div className="text-xs text-slate-500">
+        v₁ = {vecs[0].join('')}、v₂ = {vecs[1].join('')}、v₃ = {vecs[2].join('')}
+        {dep && (
+          <>
+            ：因為 {vecs[0].join('')} + {vecs[1].join('')} = {vecAdd(vecs[0], vecs[1]).join('')}，v₃ 是多餘的
+          </>
+        )}
+        。係數 aᵢ = 1 代表「選 vᵢ」，{vecs.length} 個係數各選 0 或 1，共 {combos(vecs).length} 種挑法：
+      </div>
+      <CombosTable vecs={vecs} />
+      <p className="text-xs text-slate-600">
+        {dep ? (
+          <>
+            每個結果都被組出兩次（標紅）：{combos(vecs).length} 種挑法只組出 {size} 個不同向量 = <M>{`2^{${Math.log2(size)}}`}</M>，span 是 {Math.log2(size)} 維。
+          </>
+        ) : (
+          <>
+            {combos(vecs).length} 種挑法組出 {size} 個不同向量 = <M>{`2^{${Math.log2(size)}}`}</M>：三個向量線性獨立，span 是 {Math.log2(size)} 維。
+          </>
+        )}
+      </p>
+    </div>
+  );
+}
+
 function KernelExample() {
   const xs = allVectors(3);
   return (
@@ -142,7 +191,7 @@ function KernelExample() {
       <p className="text-xs text-slate-600">
         綠色的就是 ker A = {'{'}
         {xs.filter((x) => isZeroVector(matVec(A_KER, x))).map((x) => x.join('')).join(', ')}
-        {'}'}：把 8 個向量全部代進去，只有它們讓兩條方程都成立。
+        {'}'}：把 {xs.length} 個向量全部代進去，只有它們讓 {A_KER.length} 條方程都成立。
       </p>
     </div>
   );
@@ -197,7 +246,7 @@ function RankExample() {
         <p className="mt-1">
           自由變數 <M>{free.map(x).join(', ')}</M> 各自選 0 或 1，其他的就被決定：ker A = {'{'}
           {ker.map((v) => v.join('')).join(', ')}
-          {'}'}，和「核空間」那一頁逐一代入的結果一樣。
+          {'}'}，和工具箱「核空間」那一頁逐一代入的結果一樣。
         </p>
       </div>
       <div className="rounded-lg bg-white p-2">
@@ -210,49 +259,15 @@ function RankExample() {
 
 const CONCEPTS: Concept[] = [
   {
-    id: 'vector',
-    short: '向量',
-    en: 'Vector',
-    title: '向量與 𝔽₂ⁿ',
-    def: (
-      <>
-        <p>
-          <M>{'\\mathbb{F}_2'}</M>（也寫成 GF(2)）就是 <M>{'\\{0,1\\}'}</M> 配上 mod 2 的加法與乘法（導論）。<M>{'\\mathbb{F}_2^n'}</M> 是所有長度 n 的 0/1 向量，一共 <M>{'2^n'}</M> 個。
-        </p>
-        <p>
-          向量加法 = <strong>逐位 mod 2</strong>；純量只有 0 和 1，所以純量乘法只有 <M>{'0 \\cdot v = 0'}</M>、<M>{'1 \\cdot v = v'}</M> 兩種。
-        </p>
-      </>
-    ),
-    example: (
-      <div className="space-y-1 font-mono text-sm">
-        <div>
-          u = <BitString bits={U} />
-        </div>
-        <div>
-          v = <BitString bits={V} />
-        </div>
-        <div className="border-t border-slate-200 pt-1">
-          u + v = <BitString bits={vecAdd(U, V)} className="font-bold" />
-        </div>
-        <div className="text-slate-500">
-          v + v = <BitString bits={vecAdd(V, V)} />（每個向量都是自己的負元）
-        </div>
-      </div>
-    ),
-    use: (
-      <>
-        訊息 <M>{'m \\in \\mathbb{F}_2^4'}</M>、codeword 與接收字 <M>{'c, r \\in \\mathbb{F}_2^7'}</M> 都是向量；<M>{'\\mathbb{F}_2^7'}</M> 一共 <M>{'2^7 = 128'}</M> 個向量，其中只有 16 個是 codeword。
-      </>
-    ),
-  },
-  {
     id: 'matvec',
-    short: '矩陣 × 向量',
+    short: '矩陣乘向量',
     en: 'Matrix × Vector',
     title: '矩陣乘向量 = 挑欄相加',
     def: (
       <>
+        <p>
+          向量就是一串 0/1（例如 7 個位元的 codeword），兩個向量相加是<strong>逐位 mod 2</strong>（導論的 GF(2)），不進位；每個向量加自己都是 0。長度 n 的 0/1 向量一共 <M>{'2^n'}</M> 個。
+        </p>
         <p>
           <M>{'Ax^{T}'}</M> 的結果，就是<strong>把 <M>{'x_j = 1'}</M> 的那些欄加起來</strong>。反過來，列向量放左邊的 <M>{'xA'}</M> 是把 <M>{'x_i = 1'}</M> 的那些<strong>列</strong>加起來。
         </p>
@@ -264,71 +279,32 @@ const CONCEPTS: Concept[] = [
     example: <MatVecExample />,
     use: (
       <>
-        下一段會建出 G 與 H。到時候檢查 <M>{'Hc^{T}'}</M> 就是挑出 c 裡是 1 的位置、把 H 的那些欄相加；編碼 <M>{'c = mG'}</M> 就是挑出 m 裡是 1 的位置、把 G 的那些列相加。
+        上面的兩個電路都是這條規則。發送端 <M>{'c = mG'}</M>：m 裡是 1 的位置（按下的開關）各送出 G 的一列，疊加起來就是 c。接收端 <M>{'Hc^{T}'}</M>：c 裡是 1 的位置各點亮 H 的一欄，疊加起來就是 {H74.length} 盞燈。
       </>
     ),
   },
   {
     id: 'span',
-    short: '線性組合與生成',
-    en: 'Span',
-    title: '線性組合與生成空間（span）',
+    short: '生成與維度',
+    en: 'Span & Dimension',
+    title: '線性組合、生成空間與維度',
     def: (
       <>
         <p>
-          <M>{'a_1v_1 + \\cdots + a_kv_k'}</M>（每個 <M>{'a_i \\in \\{0,1\\}'}</M>）叫做線性組合：在 <M>{'\\mathbb{F}_2'}</M> 裡就是<strong>挑一些向量加起來</strong>。
+          <M>{'a_1v_1 + \\cdots + a_kv_k'}</M>（每個 <M>{'a_i \\in \\{0,1\\}'}</M>）叫做<strong>線性組合</strong>：在 <M>{'\\mathbb{F}_2'}</M> 裡就是<strong>挑一些向量加起來</strong>。所有線性組合的集合叫 <M>{'\\operatorname{span}\\{v_1,\\dots,v_k\\}'}</M>；一個矩陣所有列的 span 叫做它的<strong>列空間</strong>（row space）。
         </p>
         <p>
-          所有線性組合的集合叫 <M>{'\\operatorname{span}\\{v_1,\\dots,v_k\\}'}</M>。一個矩陣所有列的 span 叫做它的<strong>列空間</strong>（row space）。
+          如果只有「全部係數都是 0」才能組出零向量，這組向量就<strong>線性獨立</strong>；否則某個向量是其他向量的和，它是多餘的。能生成整個空間、又線性獨立的一組向量叫<strong>基底</strong>，基底的向量個數叫<strong>維度</strong> dim。
+        </p>
+        <p>
+          在 <M>{'\\mathbb{F}_2'}</M> 上，d 維空間<strong>恰有 <M>{'2^d'}</M> 個向量</strong>：每個係數 2 種選法，而且不同係數給不同向量。
         </p>
       </>
     ),
-    example: (
-      <div className="space-y-1">
-        <div className="text-xs text-slate-500">
-          v₁ = {SPAN_VECS[0].join('')}、v₂ = {SPAN_VECS[1].join('')}、v₃ = {SPAN_VECS[2].join('')}。係數 aᵢ = 1 代表「選 vᵢ」，0 代表不選；3 個係數各選 0 或 1，共 8 種挑法。把選到的向量加起來（mod 2）：
-        </div>
-        <CombosTable vecs={SPAN_VECS} />
-        <p className="text-xs text-slate-600">
-          右欄這 {combos(SPAN_VECS).length} 個結果合起來就是 span{'{'}v₁, v₂, v₃{'}'}，而且 {spanSize(SPAN_VECS)} 個都不一樣——下一頁會說明這代表什麼。
-        </p>
-      </div>
-    ),
+    example: <SpanExample />,
     use: (
       <>
-        下一段的 G 有 4 列。編碼器能產生的全部 codeword <M>{'\\{mG\\}'}</M>，就是這 4 列的所有線性組合，也就是 <strong>G 的列空間</strong>。
-      </>
-    ),
-  },
-  {
-    id: 'basis',
-    short: '基底與維度',
-    en: 'Basis & Dimension',
-    title: '線性獨立、基底與維度',
-    def: (
-      <>
-        <p>
-          如果只有「全部係數都是 0」才能組出零向量，這組向量就<strong>線性獨立</strong>；否則某個向量是其他向量的和，它是多餘的。
-        </p>
-        <p>
-          能生成整個空間、又線性獨立的一組向量叫<strong>基底</strong>；基底的向量個數叫<strong>維度</strong> dim。在 <M>{'\\mathbb{F}_2'}</M> 上，d 維空間<strong>恰有 <M>{'2^d'}</M> 個向量</strong>（每個係數 2 種選法，而且不同係數給不同向量）。
-        </p>
-      </>
-    ),
-    example: (
-      <div className="space-y-1">
-        <div className="text-xs text-slate-500">
-          {DEP_VECS[0].join('')}、{DEP_VECS[1].join('')}、{DEP_VECS[2].join('')}：因為 {DEP_VECS[0].join('')} + {DEP_VECS[1].join('')} = {vecAdd(DEP_VECS[0], DEP_VECS[1]).join('')}，第三個是多餘的
-        </div>
-        <CombosTable vecs={DEP_VECS} />
-        <p className="text-xs text-slate-600">
-          每個向量都恰好被組出兩次（全部標紅）：8 種係數只組出 {spanSize(DEP_VECS)} 個不同向量 = <M>{'2^2'}</M>，所以 span 是 2 維。上一頁的 3 個向量是獨立的，8 種係數組出 {spanSize(SPAN_VECS)} 個不同向量 = <M>{'2^3'}</M>。
-        </p>
-      </div>
-    ),
-    use: (
-      <>
-        下一段會看到 G 的 D1–D4 那 4 欄剛好是單位矩陣，所以 G 的 4 列線性獨立（rank G = {rref(G74).rank}）。它們的 span 是 4 維，恰有 <M>{'2^4 = 16'}</M> 個向量：16 種訊息各對應一個不同的 codeword。
+        發送端造得出的全部 codeword <M>{'\\{mG\\}'}</M>，就是 G 的 {G74.length} 列的所有線性組合，也就是 <strong>G 的列空間</strong>。G 的 D1–D4 那 {G74.length} 欄剛好是單位矩陣，所以 G 的 {G74.length} 列線性獨立（rank G = {RANK_G}）：列空間是 {RANK_G} 維，恰有 <M>{`2^{${RANK_G}} = ${2 ** RANK_G}`}</M> 個向量，{2 ** RANK_G} 種訊息各對應一個不同的 codeword。
       </>
     ),
   },
@@ -340,25 +316,27 @@ const CONCEPTS: Concept[] = [
     def: (
       <>
         <p>
-          <M>{'\\ker A = \\{\\, x : Ax^{T} = 0 \\,\\}'}</M>：讓 A 乘出零向量的所有 x，也就是<strong>齊次方程組 <M>{'Ax^{T} = 0'}</M> 的全部解</strong>。A 的每一列就是一條方程。
+          <M>{'\\ker A = \\{\\, x : Ax^{T} = 0 \\,\\}'}</M>：讓 A 乘出零向量的所有 x，也就是<strong>齊次方程組 <M>{'Ax^{T} = 0'}</M> 的全部解</strong>。A 的每一列就是一條方程。它一定包含 0，而且兩個解相加還是解，所以 ker A 是一個子空間。
         </p>
-        <p>它一定包含 0，而且兩個解相加還是解，所以 ker A 是一個子空間。</p>
+        <p>
+          <strong>Rank–Nullity Theorem</strong> 一句話：<M>{'\\operatorname{rank} A + \\dim \\ker A = n'}</M>（n = 欄數）。rank A 是互相獨立的方程有幾條，每多一條，解的維度就少 1。
+        </p>
       </>
     ),
     example: <KernelExample />,
     use: (
       <>
-        把第 1 章的三個檢查寫成 H 之後，「通過全部檢查」的向量就是 <strong>ker H</strong>。第 1 章編出來的 16 個 codeword 都在裡面；它們是不是 ker H 的全部，第 4 段會用維度證明。
+        讓 {H74.length} 盞燈全暗的 {N7} 位元字串，就是 <strong>ker H</strong>。H 的 P1、P2、P4 那 {H74.length} 欄是單位矩陣，{H74.length} 條方程互相獨立（rank H = {RANK_H}），所以 <M>{`\\dim \\ker H = ${N7} - ${RANK_H} = ${NULLITY_H}`}</M>，ker H 恰有 <M>{`2^{${NULLITY_H}} = ${2 ** NULLITY_H}`}</M> 個向量：全部 <M>{`2^{${N7}} = ${2 ** N7}`}</M> 個 {N7} 位元字串裡，只有這些讓燈全暗。發送端造的 codeword 都在裡面（HGᵀ = 0），而且兩邊一樣多，所以兩者相等。
       </>
     ),
   },
-  {
-    id: 'rank',
-    short: '秩與零度',
-    en: 'Rank & Nullity',
-    title: '秩與零度',
-    def: (
-      <>
+];
+
+/** Rank and nullity for the 「進階」 block: the vocabulary of Gaussian elimination, the theorem, and a worked example. */
+export function RankNullityPrimer() {
+  return (
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <div className="min-w-0 space-y-2 text-sm leading-relaxed text-slate-700">
         <dl className="grid grid-cols-[minmax(0,7.5rem)_1fr] gap-x-3 gap-y-2">
           {[
             ['高斯消去', 'Gaussian elimination', <>用「交換兩列」「把一列加到另一列」化簡矩陣，解不會改變。</>],
@@ -381,16 +359,18 @@ const CONCEPTS: Concept[] = [
           <strong>Rank–Nullity Theorem</strong>：每一欄要嘛有樞紐、要嘛對應一個自由變數，所以
         </p>
         <Tex block>{'\\operatorname{rank} A + \\operatorname{nullity} A = n \\quad (n = \\text{欄數})'}</Tex>
-      </>
-    ),
-    example: <RankExample />,
-    use: (
-      <>
-        H 本身就是 RREF：樞紐在 P1、P2、P4，自由變數是 D1–D4。所以 rank H = {rref(H74).rank}、nullity H = {7 - rref(H74).rank}，ker H 有 <M>{`2^{${7 - rref(H74).rank}} = ${2 ** (7 - rref(H74).rank)}`}</M> 個向量。資訊位元自由選、同位位元被決定——正是編碼。
-      </>
-    ),
-  },
-];
+        <p className="rounded-lg border border-sky-200 bg-sky-50/60 p-2">
+          <span className="mr-1 font-semibold text-sky-800">在 Hamming(7,4) 裡：</span>H 本身就是 RREF：樞紐在 P1、P2、P4，自由變數是 D1–D4。所以 rank H = {RANK_H}、nullity H = {NULLITY_H}，ker H 有{' '}
+          <M>{`2^{${NULLITY_H}} = ${2 ** NULLITY_H}`}</M> 個向量。資訊位元自由選、同位位元被決定：這正是編碼。
+        </p>
+      </div>
+      <div className="min-w-0 rounded-xl border border-slate-200 bg-slate-50/60 p-3">
+        <div className="mb-2 text-xs font-semibold text-slate-500">小例子（即時計算）</div>
+        <RankExample />
+      </div>
+    </div>
+  );
+}
 
 /** One card, a tab menu on top: pick which linear-algebra concept to read. */
 export function LinAlgPrimer({ tab, onTab }: { tab?: number; onTab?: (i: number) => void } = {}) {

@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 import {
   type Bit,
-  G74,
   H74,
   LAYOUT_74,
   codewords74,
@@ -11,7 +10,6 @@ import {
   decode74,
   encode74,
   encode84,
-  matVec,
   minimumDistance,
   secdedDecode,
   syndromeToPosition,
@@ -37,44 +35,6 @@ const LAYOUT_84 = [...LAYOUT_74.map((p) => p.label), 'P0'];
 /* ------------------------------------------------------------------ */
 /* Slides                                                             */
 /* ------------------------------------------------------------------ */
-
-function MatrixSlide({ s }: { s: Stepper }) {
-  const { message, toggleBit } = useMessage();
-  const c = encode74(message);
-  const rows = message.flatMap((b, i) => (b ? [i] : []));
-  const Hc = matVec(H74, c);
-  return (
-    <div className="space-y-5 text-xl">
-      <div className="flex flex-wrap items-center gap-4">
-        <MessageInput message={message} onToggle={toggleBit} size="md" />
-        <span>
-          <M>{`m = ${message.join('')}`}</M>，<M>{`c = mG = ${c.join('')}`}</M>
-        </span>
-      </div>
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <div>
-          <div className="mb-1 text-base font-semibold text-slate-700">生成矩陣 G：把 m 裡是 1 的列加起來</div>
-          <MatrixView matrix={G74} name="G =" colLabels={LAYOUT_74.map((p) => p.label)} rowLabels={['D1', 'D2', 'D3', 'D4']} highlightRows={rows} dimRows={[0, 1, 2, 3].filter((i) => !rows.includes(i))} />
-        </div>
-        {s.step >= 1 && (
-          <div>
-            <div className="mb-1 text-base font-semibold text-slate-700">同位檢查矩陣 H：每一列是一個檢查</div>
-            <div className="flex flex-wrap items-center gap-3">
-              <MatrixView matrix={H74} name="H =" colLabels={LAYOUT_74.map((p) => p.position)} rowLabels={['P1', 'P2', 'P4']} />
-              <span className="text-2xl">·</span>
-              <ColumnVector bits={c} label={<M>{'c^T ='}</M>} size="sm" />
-              <span className="text-2xl">=</span>
-              <ColumnVector bits={Hc} size="sm" cellClass="bg-emerald-50 text-emerald-700" />
-            </div>
-          </div>
-        )}
-      </div>
-      <p className="text-lg text-slate-600">
-        {s.step === 0 ? '編碼就是矩陣乘法 c = mG：把 m 裡是 1 的那幾列加起來。' : '合法 codeword 一定滿足 Hcᵀ = 0：三個檢查全部通過。第 j 欄正好是 j 的二進位（由下往上讀）。'}
-      </p>
-    </div>
-  );
-}
 
 function SyndromeSlide({ s }: { s: Stepper }) {
   const { message } = useMessage();
@@ -308,7 +268,6 @@ const SLIDES: DeckSlide<Ctx>[] = [
   ...CH0_SLIDES,
   ...CH1_SLIDES,
   ...CH2_SLIDES,
-  { title: '第 2 章：實例：c = mG、Hcᵀ = 0', sub: 'G 負責編碼，H 負責檢查', steps: () => 2, render: (s) => <MatrixSlide s={s} /> },
   ...INTRO_CH3_SLIDES,
   { title: '第 3 章：實例：Syndrome 解碼', sub: 's = Hrᵀ = Heᵀ', steps: () => 3, render: (s) => <SyndromeSlide s={s} /> },
   ...INTRO_CH4_SLIDES,
