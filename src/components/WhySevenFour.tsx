@@ -243,8 +243,8 @@ export function CodeSizeTable() {
         </p>
         <p>
           (7,4) 是最常用來入門的 Hamming Code，因為它是除了重複碼之外<strong>最小的完整 Hamming Code</strong>：小到可以手算、畫成 Venn 圖，又已經有「重疊檢查定位錯誤」的全部精神。實際系統用的是更長的版本：家族表與 Hamming Bound 見
-          <a href="#/bound" className="mx-1 font-semibold text-overall-700 hover:underline">
-            第 5 章
+          <a href="#/distance" className="mx-1 font-semibold text-overall-700 hover:underline">
+            第 4 章
           </a>
           ，訊息更長時怎麼切、長度對不上怎麼辦見
           <a href="#/l2-12" className="mx-1 font-semibold text-overall-700 hover:underline">

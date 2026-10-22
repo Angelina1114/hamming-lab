@@ -7,7 +7,7 @@ import { Tex, M } from '../components/Tex';
 import { BitCell, BitRow, MessageInput, RoleLegend } from '../components/Bits';
 import { Venn } from '../components/Venn';
 import { CodeSizeTable, MessageSizeLab } from '../components/WhySevenFour';
-import { Callout, Card, Derivation, Expandable, FlowBar, LabGrid, Misconceptions, ModuleHeader, PrevNext, ResetButton, Stage, StatusBadge } from '../components/Lesson';
+import { Callout, Card, Derivation, Expandable, FlowBar, KeyPoint, LabGrid, Misconceptions, ModuleHeader, PrevNext, ResetButton, Stage, StatusBadge } from '../components/Lesson';
 
 const ID = 'encode';
 const BUILD_STEPS = ['放入資訊位元', '計算 P1', '計算 P2', '計算 P4', '完成 codeword'];
@@ -44,6 +44,7 @@ export default function M1Encoding() {
       <ModuleHeader moduleId={ID}>
         <p>把 4 個資訊位元 <M>{'D_1D_2D_3D_4'}</M> 變成 7 個位元的 codeword。關鍵是：3 個同位位元各自檢查一組<strong>互相重疊</strong>的位置。</p>
       </ModuleHeader>
+      <KeyPoint>發送端只用 XOR 算出 3 個同位位元：3 組檢查互相重疊，讓每個位置都被一組獨一無二的檢查盯著，錯在哪裡，失敗的組合就不同。</KeyPoint>
       <FlowBar moduleId={ID} />
 
       <div className="space-y-12">
@@ -68,6 +69,13 @@ export default function M1Encoding() {
                 <li>位置 3, 5, 6, 7 依序放資訊位元（Information bits）。</li>
                 <li>偶同位（Even parity）：每個檢查涵蓋的位元（含同位位元本身）總和 mod 2 為 0，也就是有偶數個 1。</li>
               </ul>
+              <p className="mt-2 text-sm text-slate-500">
+                同位位元放在 1、2、4 的理由，
+                <a href="#/matrix" className="mx-1 font-semibold text-overall-700 hover:underline">
+                  第 2 章
+                </a>
+                會從 H 的設計說明。
+              </p>
               <div className="mt-3">
                 <RoleLegend />
               </div>
@@ -287,7 +295,11 @@ export default function M1Encoding() {
                   items={[
                     { wrong: '同位位元只檢查資訊位元，自己不算在內。', right: '偶同位的條件是「整個圓圈（含同位位元本身）有偶數個 1」，所以 P1 = D1⊕D2⊕D4。' },
                     { wrong: '⊕ 就是一般加法，1⊕1 = 2。', right: '這裡的加法是 mod 2：1 + 1 = 2 ≡ 0，不進位，只在乎奇偶。' },
-                    { wrong: '同位位元一定放在資料後面。', right: '第一課採用「位置 1, 2, 4 放同位位元」的標準排列；第二課改用系統形式 [D | P]（c = u‖p），這也是更常見的寫法。兩者只差座標的排列，是等價的 code。' },
+                    {
+                      wrong: '同位位元一定放在資料後面。',
+                      right:
+                        '不一定。第一課把同位位元放在位置 1, 2, 4，資訊位元原封不動地放在 3, 5, 6, 7：G 的第 3, 5, 6, 7 欄正好組成單位矩陣 I₄，所以它本來就是系統碼（systematic code），接收端拿掉同位位元就是原訊息。第二課的 [D | P]（c = u‖p）只是把資訊位元排在一起，兩者只差座標的排列，是等價的 code。',
+                    },
                   ]}
                 />
                 <Expandable title="為什麼每個位置都被不同的檢查組合覆蓋？">

@@ -12,8 +12,6 @@ import {
   encode74,
   encode84,
   matVec,
-  PARITY_CHECKS,
-  encode74ByParity,
   minimumDistance,
   secdedDecode,
   syndromeToPosition,
@@ -25,12 +23,10 @@ import { MatrixView, ColumnVector } from '../components/MatrixView';
 import { StatusBadge } from '../components/Lesson';
 import { BallDiagram, CubeBall, PackingDiagram } from '../components/BoundFigures';
 import { DistanceLine } from '../components/DistanceLine';
-import { Venn } from '../components/Venn';
-import { MessageSizeLab } from '../components/WhySevenFour';
 import { Deck, type DeckSlide } from '../components/Deck';
 import type { Stepper } from '../components/l2/Stepper';
 import { CH0_SLIDES } from './presentation1/Ch0Intro';
-import { INTRO_CH1_SLIDES } from './presentation1/IntroCh0to1';
+import { CH1_SLIDES } from './presentation1/Ch1Encode';
 import { CH2_SLIDES } from './presentation1/Ch2Matrices';
 import { INTRO_CH3_SLIDES, INTRO_CH4_SLIDES } from './presentation1/IntroCh3to4';
 import { INTRO_CH5_SLIDES, INTRO_CH6_SLIDES, INTRO_CH7_SLIDES } from './presentation1/IntroCh5to7';
@@ -41,121 +37,6 @@ const LAYOUT_84 = [...LAYOUT_74.map((p) => p.label), 'P0'];
 /* ------------------------------------------------------------------ */
 /* Slides                                                             */
 /* ------------------------------------------------------------------ */
-
-function CoverageSlide() {
-  return (
-    <div className="space-y-5 text-xl">
-      <p>
-        把位置 1–7 寫成二進位。檢查 <M>{'P_b'}</M> 負責「二進位含有 b」的位置（b = 1, 2, 4），同位位元放在位置 1、2、4：
-      </p>
-      <div className="overflow-x-auto">
-        <table className="w-full text-center text-xl">
-          <thead>
-            <tr className="text-base text-slate-500">
-              <th className="py-1 text-left">位置</th>
-              {LAYOUT_74.map((p) => (
-                <th key={p.index} className={p.role === 'parity' ? 'text-parity-600' : 'text-data-600'}>
-                  {p.position}
-                  <div className="text-sm font-normal">{p.label}</div>
-                </th>
-              ))}
-            </tr>
-            <tr className="font-mono text-base text-slate-400">
-              <th className="text-left font-sans font-normal">二進位</th>
-              {LAYOUT_74.map((p) => (
-                <th key={p.index} className="font-normal">
-                  {p.position.toString(2).padStart(3, '0')}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {PARITY_CHECKS.map((pc) => (
-              <tr key={pc.name} className="border-t border-slate-100">
-                <td className="py-2 text-left font-semibold text-parity-700">{pc.name}</td>
-                {LAYOUT_74.map((p) => (
-                  <td key={p.index}>{pc.covered.includes(p.index) ? <span className="inline-block h-4 w-4 rounded-full bg-parity-500" /> : <span className="text-slate-200">·</span>}</td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <p className="text-lg text-slate-600">每個位置被一組不同的檢查管到：錯在哪裡，「哪些檢查失敗」就不一樣。3 個檢查有 2³ − 1 = 7 種組合，剛好給 7 個位置。</p>
-    </div>
-  );
-}
-
-function EncodeSlide({ s }: { s: Stepper }) {
-  const { message, toggleBit } = useMessage();
-  const enc = encode74ByParity(message);
-  const shown = (i: number) => LAYOUT_74[i].role === 'data' || PARITY_CHECKS.findIndex((pc) => pc.parityIndex === i) < s.step;
-  const eq = (k: number) => {
-    const p = enc.parities[k];
-    return `${p.name.replace(/(\d)/, '_$1')} = ${p.terms.map((t) => t.label.replace(/(\d)/, '_$1')).join(' \\oplus ')} = ${p.terms.map((t) => t.value).join(' \\oplus ')} = ${p.value}`;
-  };
-  return (
-    <div className="space-y-5 text-xl">
-      <div className="flex flex-wrap items-end gap-6">
-        <MessageInput message={message} onToggle={toggleBit} />
-        <span className="text-3xl text-slate-300">→</span>
-        <div className="flex gap-1.5">
-          {enc.codeword.map((b, i) => (
-            <div key={i} className={`flex w-12 flex-col items-center rounded-lg border-2 py-1 ${LAYOUT_74[i].role === 'parity' ? 'border-parity-300 bg-parity-50' : 'border-data-300 bg-data-50'}`}>
-              <span className={`text-xs font-semibold ${LAYOUT_74[i].role === 'parity' ? 'text-parity-700' : 'text-data-700'}`}>{LAYOUT_74[i].label}</span>
-              <span className="font-mono text-2xl font-bold">{shown(i) ? b : '?'}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-      <div className="space-y-2">
-        {[0, 1, 2].map((k) =>
-          k < s.step ? (
-            <div key={k} className="rounded-xl bg-parity-50 px-4 py-2">
-              <Tex>{eq(k)}</Tex>
-            </div>
-          ) : null,
-        )}
-      </div>
-      <p className="text-lg text-slate-600">
-        {s.step === 0 && '先把 4 個資訊位元放進位置 3、5、6、7，再逐一算出 P1、P2、P4：每個檢查管到的位元要有偶數個 1。'}
-        {s.step > 0 && s.step < 4 && `算出 ${PARITY_CHECKS[s.step - 1].name}：讓它管的 4 個位置有偶數個 1。`}
-        {s.step === 4 && (
-          <>
-            完成！訊息 {message.join('')} 編成 codeword <strong className="mono">{enc.codeword.join('')}</strong>。
-          </>
-        )}
-      </p>
-    </div>
-  );
-}
-
-function VennSlide() {
-  const { message } = useMessage();
-  const c = encode74(message);
-  const [e, setE] = useState<number[]>([]);
-  const r = c.map((b, i) => (e.includes(i) ? ((b ^ 1) as Bit) : b));
-  const d = decode74(r);
-  return (
-    <div className="grid grid-cols-1 items-center gap-6 lg:grid-cols-2">
-      <Venn word={r} errorIdx={e} onToggle={(i) => setE(e.includes(i) ? e.filter((j) => j !== i) : [...e, i])} />
-      <div className="space-y-4 text-xl">
-        <p>每個圓圈是一個檢查：圈裡必須有偶數個 1。</p>
-        <div className="rounded-2xl bg-slate-50 p-4">
-          {e.length === 0 && <>三個圓圈都是偶數個 1（綠色）：沒有錯。</>}
-          {e.length > 0 && d.position > 0 && (
-            <>
-              只有位置 <strong>{d.position}（{LAYOUT_74[d.position - 1].label}）</strong>落在所有失敗的圓圈裡、又不在任何通過的圓圈裡：把它翻回來就修好了
-              {e.length > 1 && <span className="text-rose-700">（但其實錯了 {e.length} 個，會改錯）</span>}。
-            </>
-          )}
-          {e.length > 0 && d.position === 0 && <>三個圓圈又都變回偶數：錯誤剛好互相抵銷，看不出來。</>}
-        </div>
-        <p className="text-lg text-slate-600">紅色圓圈 = 奇數個 1（檢查失敗）。哪幾個圈失敗，就像座標一樣指出錯在哪裡。</p>
-      </div>
-    </div>
-  );
-}
 
 function MatrixSlide({ s }: { s: Stepper }) {
   const { message, toggleBit } = useMessage();
@@ -425,11 +306,7 @@ function SummarySlide() {
 // each chapter opens with its explanation slides (presentation1/*), then the live examples
 const SLIDES: DeckSlide<Ctx>[] = [
   ...CH0_SLIDES,
-  ...INTRO_CH1_SLIDES,
-  { title: '第 1 章：三個互相重疊的檢查', sub: 'P_b 管「二進位含有 b」的位置', steps: () => 1, render: () => <CoverageSlide /> },
-  { title: '第 1 章：一步一步編碼', sub: '每個檢查管到的位元要有偶數個 1', steps: () => 5, render: (s) => <EncodeSlide s={s} /> },
-  { title: '第 1 章：Venn 圖', sub: '每個圓圈都要有偶數個 1', steps: () => 1, render: () => <VennSlide /> },
-  { title: '第 1 章：為什麼訊息是 4 個位元？', sub: 'k + r ≤ 2ʳ − 1：r = 3 時 k 最多 4', steps: () => 1, render: () => <MessageSizeLab /> },
+  ...CH1_SLIDES,
   ...CH2_SLIDES,
   { title: '第 2 章：實例：c = mG、Hcᵀ = 0', sub: 'G 負責編碼，H 負責檢查', steps: () => 2, render: (s) => <MatrixSlide s={s} /> },
   ...INTRO_CH3_SLIDES,
