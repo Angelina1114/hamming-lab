@@ -4,35 +4,33 @@ import {
   G74,
   H74,
   LAYOUT_74,
-  PARITY_CHECKS,
   codewords74,
   codewords84,
   column,
   correctionCapability,
   decode74,
   encode74,
-  encode74ByParity,
   encode84,
-  flipBit,
   matVec,
+  PARITY_CHECKS,
+  encode74ByParity,
   minimumDistance,
   secdedDecode,
   syndromeToPosition,
-  vecAdd,
 } from '../core';
 import { useMessage } from '../lib/store';
 import { M, Tex } from '../components/Tex';
 import { BitRow, MessageInput } from '../components/Bits';
 import { MatrixView, ColumnVector } from '../components/MatrixView';
 import { StatusBadge } from '../components/Lesson';
-import { Venn } from '../components/Venn';
-import { ParityLab } from '../components/ParityLab';
-import { MessageSizeLab } from '../components/WhySevenFour';
 import { BallDiagram, CubeBall, PackingDiagram } from '../components/BoundFigures';
 import { DistanceLine } from '../components/DistanceLine';
+import { Venn } from '../components/Venn';
+import { MessageSizeLab } from '../components/WhySevenFour';
 import { Deck, type DeckSlide } from '../components/Deck';
 import type { Stepper } from '../components/l2/Stepper';
-import { INTRO_CH0_PARITY_SLIDES, INTRO_CH0_SLIDES, INTRO_CH1_SLIDES } from './presentation1/IntroCh0to1';
+import { CH0_SLIDES } from './presentation1/Ch0Intro';
+import { INTRO_CH1_SLIDES } from './presentation1/IntroCh0to1';
 import { CH2_SLIDES } from './presentation1/Ch2Matrices';
 import { INTRO_CH3_SLIDES, INTRO_CH4_SLIDES } from './presentation1/IntroCh3to4';
 import { INTRO_CH5_SLIDES, INTRO_CH6_SLIDES, INTRO_CH7_SLIDES } from './presentation1/IntroCh5to7';
@@ -43,111 +41,6 @@ const LAYOUT_84 = [...LAYOUT_74.map((p) => p.label), 'P0'];
 /* ------------------------------------------------------------------ */
 /* Slides                                                             */
 /* ------------------------------------------------------------------ */
-
-function TitleSlide() {
-  const parts: [string, string][] = [
-    ['導論', '雜訊會翻轉位元；同位位元能發現錯，卻找不到錯'],
-    ['第 1 章', '三個互相重疊的檢查：Hamming(7,4) 編碼'],
-    ['第 2 章', '寫成矩陣：c = mG、Hcᵀ = 0'],
-    ['第 3 章', 'Syndrome：錯誤自己說出位置'],
-    ['第 4 章', 'Hamming 距離：d_min = 3，所以 t = 1'],
-    ['第 5 章', 'Hamming Bound：16 顆球剛好鋪滿 128 個字串'],
-    ['第 6、7 章', '多一個位元：SECDED 修 1 個、偵測 2 個'],
-  ];
-  return (
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.4fr_1fr]">
-      <ol className="space-y-2 text-xl">
-        {parts.map(([tag, text], i) => (
-          <li key={tag} className="flex gap-3">
-            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-slate-900 text-base font-bold text-white">{i + 1}</span>
-            <span>
-              <strong className="mr-2">{tag}</strong>
-              <span className="text-slate-600">{text}</span>
-            </span>
-          </li>
-        ))}
-      </ol>
-      <div className="space-y-4">
-        <div className="rounded-2xl bg-data-50 p-5 text-xl leading-relaxed text-data-700">
-          4 個資訊位元 + 3 個同位位元 = 7 個位元：接收端<strong>不必知道原本送了什麼</strong>，就能自己找出並修正任何 1 個錯誤。
-        </div>
-        <div className="rounded-2xl bg-overall-50 p-5 text-xl leading-relaxed text-overall-700">
-          再多 1 個整體同位位元（SECDED）：修正 1 個錯誤，同時偵測 2 個錯誤。
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function NoiseSlide() {
-  const [bits, setBits] = useState<Bit[]>([1, 0, 1, 1]);
-  const [flips, setFlips] = useState<number[]>([]);
-  return (
-    <div className="space-y-5 text-xl">
-      <p>
-        傳送訊息 <span className="mono font-bold">1011</span>。雜訊可能把其中任何一個位元翻轉：
-      </p>
-      <BitRow
-        bits={bits}
-        plain
-        size="lg"
-        states={bits.map((_, i) => (flips.includes(i) ? 'error' : 'normal'))}
-        onToggle={(i) => {
-          setBits(flipBit(bits, i));
-          setFlips(flips.includes(i) ? flips.filter((j) => j !== i) : [...flips, i]);
-        }}
-      />
-      <div className={`rounded-2xl p-4 ${flips.length ? 'bg-rose-50 text-rose-900' : 'bg-slate-50 text-slate-700'}`}>
-        {flips.length === 0 ? (
-          <>接收端收到 {bits.join('')}，看起來一切正常。</>
-        ) : (
-          <>
-            接收端收到 <strong className="mono">{bits.join('')}</strong>：這也是一個合法的 4 位元訊息，<strong>接收端完全沒辦法知道它被改過。</strong>
-          </>
-        )}
-      </div>
-      <p className="text-lg text-slate-600">每一個 4 位元字串都合法，錯誤只會把一個合法訊息變成另一個。要發現錯誤，就必須多送一些「冗餘」，讓合法的字串變稀少。</p>
-    </div>
-  );
-}
-
-function FlipSumSlide() {
-  const { message } = useMessage();
-  const [e, setE] = useState<Bit[]>([0, 1, 0, 0]);
-  const r = vecAdd(message, e);
-  return (
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-      <div className="space-y-4 text-xl">
-        <p>雜訊只會「翻轉」位元。把翻轉寫成「加 1」、不動寫成「加 0」：</p>
-        <table className="font-mono text-2xl">
-          <tbody>
-            <tr>
-              <th className="border-b border-r border-slate-300 px-4 py-1">+</th>
-              <th className="border-b border-slate-300 px-4 py-1">0</th>
-              <th className="border-b border-slate-300 px-4 py-1">1</th>
-            </tr>
-            {[0, 1].map((a) => (
-              <tr key={a}>
-                <th className="border-r border-slate-300 px-4 py-1">{a}</th>
-                <td className="px-4 py-1 text-center">{a}</td>
-                <td className="bg-rose-50 px-4 py-1 text-center font-bold text-rose-600">{1 - a}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <p>
-          這就是 <strong>mod 2 的加法</strong>（XOR）：<M>{'1 + 1 = 0'}</M>，不進位，每一位各自算。這套算術記作 GF(2)。
-        </p>
-      </div>
-      <div className="space-y-4 text-xl">
-        <p>錯誤向量 e：是 1 的位置就是被翻轉的位元。</p>
-        <BitRow bits={e} plain size="lg" states={e.map((b) => (b ? 'error' : 'normal'))} onToggle={(i) => setE(flipBit(e, i))} />
-        <Tex block>{`\\underbrace{${message.join('')}}_{c\\ (\\text{送出})} + \\underbrace{${e.join('')}}_{e\\ (\\text{錯誤})} = \\underbrace{${r.join('')}}_{r\\ (\\text{收到})}`}</Tex>
-        <p className="text-lg text-slate-600">接收端只看得到 r。整門課的任務：只靠 r，找出 e。</p>
-      </div>
-    </div>
-  );
-}
 
 function CoverageSlide() {
   return (
@@ -531,12 +424,7 @@ function SummarySlide() {
 
 // each chapter opens with its explanation slides (presentation1/*), then the live examples
 const SLIDES: DeckSlide<Ctx>[] = [
-  { title: 'Lesson 1 — Hamming(7,4)：從同位位元到 SECDED', sub: '第一課報告：導論與第 1–7 章', steps: () => 1, render: () => <TitleSlide /> },
-  ...INTRO_CH0_SLIDES,
-  { title: '導論：雜訊會翻轉位元', sub: '沒有保護時，錯了也看不出來', steps: () => 1, render: () => <NoiseSlide /> },
-  { title: '導論：翻轉 = 加 1（mod 2）', sub: 'r = c + e', steps: () => 1, render: () => <FlipSumSlide /> },
-  ...INTRO_CH0_PARITY_SLIDES,
-  { title: '導論：要幾個同位位元，才找得到錯？', sub: '1 個只能偵測；3 個重疊的檢查才能定位', steps: () => 1, render: () => <ParityLab /> },
+  ...CH0_SLIDES,
   ...INTRO_CH1_SLIDES,
   { title: '第 1 章：三個互相重疊的檢查', sub: 'P_b 管「二進位含有 b」的位置', steps: () => 1, render: () => <CoverageSlide /> },
   { title: '第 1 章：一步一步編碼', sub: '每個檢查管到的位元要有偶數個 1', steps: () => 5, render: (s) => <EncodeSlide s={s} /> },

@@ -3,7 +3,7 @@ import { Radio, MousePointerClick, Layers, ListChecks } from 'lucide-react';
 import { type Bit, flipBit } from '../core';
 import { Tex, M } from '../components/Tex';
 import { BitRow } from '../components/Bits';
-import { Callout, Card, Expandable, FlowBar, LabGrid, Misconceptions, ModuleHeader, PrevNext, ResetButton, Stage } from '../components/Lesson';
+import { Callout, Card, Expandable, FlowBar, KeyPoint, LabGrid, Misconceptions, ModuleHeader, PrevNext, ResetButton, Stage } from '../components/Lesson';
 import { MODULES, type ModuleMeta } from '../lib/modules';
 import { RelatedLinks } from '../components/alg/Links';
 import { ParityLab } from '../components/ParityLab';
@@ -11,7 +11,7 @@ import { ParityLab } from '../components/ParityLab';
 const ID = 'intro';
 
 const PARTS = [
-  { to: 'encode', tag: '第一課', title: 'Hamming Code 是什麼', desc: '編碼、矩陣 H 與 G、Syndrome、距離、Hamming Bound、SECDED', filter: (m: ModuleMeta) => !m.group && !m.lesson && m.id !== 'intro' },
+  { to: 'encode', tag: '第一課', title: 'Hamming Code 是什麼', desc: '編碼、H 與 G、Syndrome 解碼、能力與極限、SECDED', filter: (m: ModuleMeta) => !m.group && !m.lesson && m.id !== 'intro' },
   { to: 'a-0', tag: '代數基礎與循環碼', title: '為什麼需要 GF(8) 與 g(x)', desc: 'GF(2)、GF(8)、商環、本原元素、生成多項式、循環碼、最小多項式', filter: (m: ModuleMeta) => m.group === 'algebra' },
   { to: 'l2-1', tag: '第二課', title: '編碼與解碼演算法', desc: 'LFSR、長除法、Syndrome、Chien Search、誤更正、SECDED 實作', filter: (m: ModuleMeta) => m.lesson === 2 },
 ];
@@ -47,6 +47,7 @@ export default function Intro() {
           每一章都依照 <strong>為什麼 → 定義 → 計算 → 視覺化 → 實驗 → 結論</strong> 的順序展開：先遇到問題，再動手操作，最後才用數學把觀察整理成定理。
         </p>
       </ModuleHeader>
+      <KeyPoint>雜訊會偷偷翻轉位元：發送端多送幾個有規律的冗餘位元，接收端才能發現錯誤，甚至自己修好它。</KeyPoint>
       <FlowBar moduleId={ID} />
 
       <div className="space-y-12">
@@ -185,7 +186,7 @@ export default function Intro() {
               </div>
               <div>
                 <dt className="font-semibold">Codeword</dt>
-                <dd className="text-slate-600"><M>C</M> 的元素。傳送端只會送出 codeword。</dd>
+                <dd className="text-slate-600"><M>C</M> 的元素。發送端只會送出 codeword。</dd>
               </div>
               <div>
                 <dt className="font-semibold">
