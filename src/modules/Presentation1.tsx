@@ -1,14 +1,10 @@
 import { useMemo, useState } from 'react';
 import {
   type Bit,
-  H74,
   LAYOUT_74,
   codewords74,
   codewords84,
-  column,
   correctionCapability,
-  decode74,
-  encode74,
   encode84,
   minimumDistance,
   secdedDecode,
@@ -16,17 +12,16 @@ import {
 } from '../core';
 import { useMessage } from '../lib/store';
 import { M, Tex } from '../components/Tex';
-import { BitRow, MessageInput } from '../components/Bits';
-import { MatrixView, ColumnVector } from '../components/MatrixView';
+import { MessageInput } from '../components/Bits';
 import { StatusBadge } from '../components/Lesson';
 import { BallDiagram, CubeBall, PackingDiagram } from '../components/BoundFigures';
 import { DistanceLine } from '../components/DistanceLine';
 import { Deck, type DeckSlide } from '../components/Deck';
-import type { Stepper } from '../components/l2/Stepper';
 import { CH0_SLIDES } from './presentation1/Ch0Intro';
 import { CH1_SLIDES } from './presentation1/Ch1Encode';
 import { CH2_SLIDES } from './presentation1/Ch2Matrices';
-import { INTRO_CH3_SLIDES, INTRO_CH4_SLIDES } from './presentation1/IntroCh3to4';
+import { CH3_SLIDES } from './presentation1/Ch3Syndrome';
+import { INTRO_CH4_SLIDES } from './presentation1/IntroCh3to4';
 import { INTRO_CH5_SLIDES, INTRO_CH6_SLIDES, INTRO_CH7_SLIDES } from './presentation1/IntroCh5to7';
 
 type Ctx = null;
@@ -35,51 +30,6 @@ const LAYOUT_84 = [...LAYOUT_74.map((p) => p.label), 'P0'];
 /* ------------------------------------------------------------------ */
 /* Slides                                                             */
 /* ------------------------------------------------------------------ */
-
-function SyndromeSlide({ s }: { s: Stepper }) {
-  const { message } = useMessage();
-  const c = encode74(message);
-  const [e, setE] = useState<number[]>([4]);
-  const r = c.map((b, i) => (e.includes(i) ? ((b ^ 1) as Bit) : b));
-  const d = decode74(r);
-  const col = d.position - 1;
-  return (
-    <div className="space-y-4 text-xl">
-      <div className="flex flex-wrap items-center gap-4">
-        <span className="text-slate-500">收到 r =</span>
-        <BitRow bits={r} layout={LAYOUT_74} size="lg" states={r.map((_, i) => (e.includes(i) ? 'error' : 'normal'))} onToggle={(i) => setE(e.includes(i) ? e.filter((j) => j !== i) : [...e, i])} />
-      </div>
-      {s.step >= 1 && (
-        <div className="flex flex-wrap items-center gap-4">
-          <MatrixView matrix={H74} name="H" colLabels={LAYOUT_74.map((p) => p.position)} highlightCols={col >= 0 && s.step >= 2 ? [col] : []} />
-          <span className="text-2xl">·</span>
-          <ColumnVector bits={r} label={<M>{'r^T ='}</M>} size="sm" />
-          <span className="text-2xl">=</span>
-          <ColumnVector bits={d.syndrome} label={<M>{'s'}</M>} size="sm" cellClass="bg-amber-50 text-amber-800" />
-        </div>
-      )}
-      {s.step >= 2 && (
-        <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-slate-50 p-4">
-          {d.position === 0 ? (
-            <>
-              s = 000：沒有發現錯誤。<StatusBadge status={e.length ? 'wrong' : 'ok'} zh={e.length ? '未偵測錯誤' : undefined} en={e.length ? 'Undetected error' : undefined} large />
-            </>
-          ) : (
-            <>
-              s 等於 H 的第 {d.position} 欄 <span className="mono">({column(H74, col).join(',')})ᵀ</span> → 翻轉位置 {d.position}（{LAYOUT_74[col].label}），得到 <strong className="mono">{d.corrected.join('')}</strong>
-              {e.length === 1 ? <StatusBadge status="corrected" large /> : <StatusBadge status="wrong" zh="誤更正" en="Miscorrection" large />}
-            </>
-          )}
-        </div>
-      )}
-      <p className="text-lg text-slate-600">
-        {s.step === 0 && (e.length ? `紅色是被翻轉的 ${e.length} 個位元。接收端看不到紅色，只能用 r 計算 Syndrome。` : '這次沒有錯誤。接收端不知道這件事，只能用 r 計算 Syndrome。')}
-        {s.step === 1 && 's = Hrᵀ = Heᵀ：codeword 的部分全部消掉，只剩錯誤。'}
-        {s.step === 2 && '只錯一個時，s 就是錯誤位置那一欄 = 位置的二進位。錯兩個一定會改錯；錯三個以上可能改錯，也可能完全沒發現（第 4 章解釋原因）。'}
-      </p>
-    </div>
-  );
-}
 
 function DistanceSlide() {
   const [d, setD] = useState(3);
@@ -268,8 +218,7 @@ const SLIDES: DeckSlide<Ctx>[] = [
   ...CH0_SLIDES,
   ...CH1_SLIDES,
   ...CH2_SLIDES,
-  ...INTRO_CH3_SLIDES,
-  { title: '第 3 章：實例：Syndrome 解碼', sub: 's = Hrᵀ = Heᵀ', steps: () => 3, render: (s) => <SyndromeSlide s={s} /> },
+  ...CH3_SLIDES,
   ...INTRO_CH4_SLIDES,
   { title: '第 4 章：d_min 決定更正與偵測能力', sub: 'd_min 越大，每個 codeword 的地盤越大', steps: () => 1, render: () => <DistanceSlide /> },
   INTRO_CH5_SLIDES[0],

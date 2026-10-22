@@ -1,43 +1,309 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, Search } from 'lucide-react';
+import { ArrowRight, Cpu, Search } from 'lucide-react';
 import {
   type Bit,
   H74,
+  K4,
   LAYOUT_74,
+  N7,
+  PARITY_CHECKS,
   allVectors,
+  codewords74,
   column,
+  correctionCapability,
   encode74,
   flipBit,
+  hammingSyndromeXors,
+  isCodeword74,
+  isZeroVector,
+  matVec,
   matchingColumn,
+  minimumDistance,
   simulate74,
+  syndromeTableEntries,
+  syndromeToPosition,
+  unitVector,
+  vecAdd,
+  vecEquals,
   weight,
   zeroVector,
   matrixToTex,
 } from '../core';
 import { useMessage } from '../lib/store';
 import { Tex, M } from '../components/Tex';
-import { BitRow, MessageInput, RoleLegend } from '../components/Bits';
+import { BitRow, BitString, MessageInput, RoleLegend } from '../components/Bits';
 import { MatrixView, ColumnVector } from '../components/MatrixView';
 import { Venn } from '../components/Venn';
 import { RelatedLinks } from '../components/alg/Links';
-import { Callout, Card, Derivation, Expandable, FlowBar, LabGrid, Misconceptions, ModuleHeader, PrevNext, ResetButton, Stage, StatusBadge, type DecodeStatus } from '../components/Lesson';
+import { Callout, Card, Derivation, FlowBar, KeyPoint, LabGrid, Misconceptions, ModuleHeader, PrevNext, ResetButton, Stage, StatusBadge, type DecodeStatus } from '../components/Lesson';
 
 const ID = 'syndrome';
 
-const PRESETS: { label: string; idx: number[] }[] = [
-  { label: '無錯誤', idx: [] },
-  { label: '單一錯誤（位置 5）', idx: [4] },
-  { label: '兩個錯誤（位置 2, 5）', idx: [1, 4] },
-  { label: '三個錯誤（位置 1, 2, 3）', idx: [0, 1, 2] },
-];
+/* ------------------------------------------------------------------ */
+/* Numbers on this page (computed from the core, never typed)          */
+/* ------------------------------------------------------------------ */
 
-const errorFrom = (idx: number[]): Bit[] => idx.reduce((e, i) => flipBit(e, i), zeroVector(7));
+/** 7 positions, 4 data bits, 3 checkers = 3 lamps */
+const N = N7;
+const K = K4;
+const R = H74.length;
+/** 3 lamps: 2³ states (all dark = nothing to flip) = the outputs of the 3-to-8 decoder */
+const STATES = 2 ** R;
+const PATTERNS = STATES - 1;
+/** the syndrome circuit: one XOR tree per lamp */
+const SYNDROME_XORS = hammingSyndromeXors(R);
+/** a general H needs a lamp pattern → position table with one row per lamp state */
+const TABLE_ROWS = syndromeTableEntries(N, K);
+/** the flip stage: one XOR gate per position */
+const FLIP_XORS = N;
+const ALL_ERRORS = 2 ** N;
+
+const CODE = codewords74();
+const WORDS = CODE.map((x) => x.codeword);
+const D_MIN = minimumDistance(WORDS).dmin;
+/** the guaranteed correction capability ⌊(d_min − 1)/2⌋ */
+const T = correctionCapability(D_MIN);
+
+const LAMP = PARITY_CHECKS.map((pc) => pc.name);
+const POSITIONS = LAYOUT_74.map((p) => p.position);
+/** reading the lamps as a binary number: P4 P2 P1, the most significant first */
+const READ = [...LAMP.keys()].reverse();
+/** a lamp state as bits in H's row order (P1 first) from its binary value */
+const lampBits = (v: number): Bit[] => Array.from({ length: R }, (_, i) => ((v >> i) & 1) as Bit);
+const lampText = (bits: readonly Bit[]) => (isZeroVector(bits) ? '全暗' : `${LAMP.filter((_, i) => bits[i]).join('、')} 亮`);
+const colTex = (v: readonly Bit[]) => matrixToTex(v.map((b) => [b]));
+const binText = (bits: readonly Bit[]) => `${READ.map((i) => bits[i]).join('')}₂`;
+
+/** the running example of the chapter: noise flips position 5 */
+const EXAMPLE_POS = 5;
+/** a lightest non-zero codeword used as an error pattern: positions 1, 2, 3 flipped leave the lamps dark */
+const TRIPLE = [1, 2, 3];
+const TRIPLE_WORD = TRIPLE.map((j) => unitVector(N, j - 1)).reduce((a, b) => vecAdd(a, b));
+const TRIPLE_IS_CODEWORD = isCodeword74(TRIPLE_WORD);
+
+const errorFrom = (idx: number[]): Bit[] => idx.reduce((e, i) => flipBit(e, i), zeroVector(N));
+const presetLabel = (idx: number[]) => (idx.length === 0 ? '無錯誤' : `${['', '單一錯誤', '兩個錯誤', '三個錯誤'][idx.length]}（位置 ${idx.map((i) => i + 1).join(', ')}）`);
+const PRESETS = [[], [EXAMPLE_POS - 1], [1, EXAMPLE_POS - 1], TRIPLE.map((j) => j - 1)].map((idx) => ({ label: presetLabel(idx), idx }));
+
+/* ------------------------------------------------------------------ */
+/* Small pictures                                                      */
+/* ------------------------------------------------------------------ */
+
+/** The receiver's warning lamps, in H's row order (P1, P2, P4): lit = that check failed. */
+function Lamps({ bits, size = 'md' }: { bits: readonly Bit[]; size?: 'sm' | 'md' }) {
+  const d = size === 'sm' ? 'h-4 w-4' : 'h-6 w-6';
+  return (
+    <span className="inline-flex items-end gap-1.5 align-middle" role="img" aria-label={`警示燈${lampText(bits)}`}>
+      {bits.map((b, i) => (
+        <span key={LAMP[i]} className="inline-flex flex-col items-center gap-0.5">
+          <span className={`${d} rounded-full border-2 ${b ? 'border-rose-500 bg-rose-400 shadow-[0_0_8px_2px_rgba(244,63,94,0.45)]' : 'border-slate-300 bg-slate-200'}`} />
+          <span className="text-[10px] font-semibold leading-none text-slate-500">{LAMP[i]}</span>
+        </span>
+      ))}
+    </span>
+  );
+}
+
+/** points down while the circuit is stacked (phones), right once it runs across */
+const Arrow = () => (
+  <span className="text-lg leading-none text-slate-400" aria-hidden>
+    <span className="sm:hidden">↓</span>
+    <span className="hidden sm:inline">→</span>
+  </span>
+);
+
+/** a stage of the decoding circuit: a box with its name and what it is made of */
+function Machine({ title, note, tone = 'border-slate-300 bg-white text-slate-800' }: { title: ReactNode; note: ReactNode; tone?: string }) {
+  return (
+    <span className={`rounded-xl border-2 px-3 py-1.5 text-center ${tone}`}>
+      <span className="block text-sm font-bold">{title}</span>
+      <span className="block text-xs">{note}</span>
+    </span>
+  );
+}
+
+function Stop({ label, children }: { label: ReactNode; children: ReactNode }) {
+  return (
+    <span className="flex flex-col items-center gap-1">
+      <span className="text-[11px] text-slate-500">{label}</span>
+      {children}
+    </span>
+  );
+}
+
+/** What the receiver can and cannot see: c and e stay hidden, only r and the lamps reach it. */
+function ReceiverView({ c, e, r, s }: { c: readonly Bit[]; e: readonly Bit[]; r: readonly Bit[]; s: readonly Bit[] }) {
+  return (
+    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+      <div className="rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 p-3 text-sm text-slate-600">
+        <div className="mb-2 font-bold text-slate-500">接收端看不到</div>
+        <div className="space-y-1.5">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="w-36 shrink-0 text-xs">發送端送出的 c</span>
+            <BitString bits={c} className="text-base font-bold text-slate-400" />
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="w-36 shrink-0 text-xs">雜訊翻了哪幾位 e</span>
+            <BitString bits={e} className="text-base font-bold text-slate-400" highlight={(i) => (e[i] ? 'text-rose-500' : undefined)} />
+          </div>
+        </div>
+      </div>
+      <div className="rounded-xl border-2 border-parity-300 bg-parity-50/60 p-3 text-sm text-slate-700">
+        <div className="mb-2 font-bold text-parity-700">接收端看得到</div>
+        <div className="space-y-1.5">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="w-36 shrink-0 text-xs">收到的 r = c + e</span>
+            <BitString bits={r} className="text-base font-bold" />
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="w-36 shrink-0 text-xs">
+              {R} 個檢查器 → {R} 盞燈
+            </span>
+            <Lamps bits={s} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Pick the flipped position: Hrᵀ = Hcᵀ + Heⱼᵀ = 0 + hⱼ, checked live on the shared message. */
+function SingleFlipCheck({ c }: { c: readonly Bit[] }) {
+  const [pos, setPos] = useState(EXAMPLE_POS);
+  const e = unitVector(N, pos - 1);
+  const r = vecAdd(c, e);
+  const Hc = matVec(H74, c);
+  const hj = column(H74, pos - 1);
+  const s = matVec(H74, r);
+  const sameLamps = WORDS.filter((w) => vecEquals(matVec(H74, vecAdd(w, e)), s)).length;
+  const fixed = vecAdd(r, e);
+  return (
+    <Card title="即時驗證：雜訊只翻位置 j">
+      <div className="mb-3 flex flex-wrap items-center gap-1.5">
+        <span className="text-xs text-slate-500">j =</span>
+        {POSITIONS.map((p) => (
+          <button
+            key={p}
+            type="button"
+            aria-pressed={pos === p}
+            onClick={() => setPos(p)}
+            className={`rounded-md border px-2 py-0.5 text-xs ${pos === p ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 text-slate-600 hover:border-slate-400'}`}
+          >
+            {p}
+          </button>
+        ))}
+      </div>
+      <table className="w-full text-sm">
+        <tbody className="font-mono">
+          <tr>
+            <td className="py-0.5 pr-2 font-sans text-xs text-slate-500">送出 c（codeword）</td>
+            <td className="text-right">
+              <BitString bits={c} />
+            </td>
+          </tr>
+          <tr>
+            <td className="py-0.5 pr-2 font-sans text-xs text-slate-500">
+              雜訊 <M>{`e_${pos}`}</M>
+            </td>
+            <td className="text-right">
+              <BitString bits={e} highlight={(i) => (e[i] ? 'font-bold text-rose-600' : 'text-slate-400')} />
+            </td>
+          </tr>
+          <tr className="border-t border-slate-300">
+            <td className="py-0.5 pr-2 font-sans text-xs font-semibold text-slate-700">收到 r</td>
+            <td className="text-right font-bold">
+              <BitString bits={r} />
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <Tex block>{`Hr^{T} = Hc^{T} + He_${pos}^{T} = ${colTex(Hc)} + ${colTex(hj)} = ${colTex(s)}`}</Tex>
+      <ul className="space-y-1.5 text-sm text-slate-700">
+        <li className="flex flex-wrap items-center gap-2">
+          <Lamps bits={s} size="sm" />
+          <span>
+            {vecEquals(s, hj) ? '✓' : '✗'} 亮的燈 = H 的第 {pos} 欄
+          </span>
+        </li>
+        <li>
+          {syndromeToPosition(s) === pos ? '✓' : '✗'} 讀成二進位（{READ.map((i) => LAMP[i]).join(' ')}）：<span className="mono font-semibold">{binText(s)}</span> = {syndromeToPosition(s)}
+        </li>
+        <li>
+          {sameLamps === WORDS.length ? '✓' : '✗'} 換成其他 codeword 送出、同樣翻位置 {pos}：{sameLamps}/{WORDS.length} 次燈號都一樣
+        </li>
+        <li>
+          {vecEquals(fixed, c) ? '✓' : '✗'} 翻回位置 {pos}：<M>{`r + e_${pos} = ${fixed.join('')} = c`}</M>
+        </li>
+      </ul>
+    </Card>
+  );
+}
+
+/** 3 lamps → read as binary → 3-to-8 decoder → output line j flips bit j. */
+function DecoderCircuit({ r, s, corrected }: { r: readonly Bit[]; s: readonly Bit[]; corrected: readonly Bit[] }) {
+  const value = syndromeToPosition(s);
+  return (
+    <Card title="Hamming 的 H：燈號直接接上解碼器" icon={<Cpu className="h-4 w-4 text-emerald-600" />}>
+      <p className="mb-3 text-sm leading-relaxed text-slate-700">
+        第 2 章 H 的設計 ④ 讓第 j 欄就是 j 的二進位，所以那張「燈號 → 位置」的對照表變成「燈號 j → 位置 j」，根本不用存：{R} 盞燈讀成二進位，直接接上一個 {R}-to-{STATES} 解碼器（Decoder），第 j 條輸出線去翻轉第 j 位。
+      </p>
+      <div className="flex flex-col items-center justify-center gap-x-2.5 gap-y-2 rounded-xl bg-slate-50 p-3 sm:flex-row sm:flex-wrap">
+        <Stop label="收到 r">
+          <BitString bits={r} className="text-sm font-bold" />
+        </Stop>
+        <Arrow />
+        <Machine title={`${R} 個檢查器`} note={`${R} 棵 XOR 樹，共 ${SYNDROME_XORS} 個 XOR 閘`} tone="border-parity-300 bg-parity-50 text-parity-700" />
+        <Arrow />
+        <Stop label={`${R} 盞燈`}>
+          <Lamps bits={s} size="sm" />
+        </Stop>
+        <Arrow />
+        <Machine title={`${R}-to-${STATES} 解碼器`} note={<>讀成 {binText(s)} = {value}：第 {value} 條線是 1</>} tone="border-sky-300 bg-sky-50 text-sky-800" />
+        <Arrow />
+        <Machine title="翻轉" note={`每個位置一個 XOR 閘，共 ${FLIP_XORS} 個`} tone="border-emerald-300 bg-emerald-50 text-emerald-800" />
+        <Arrow />
+        <Stop label="輸出 ĉ">
+          <BitString bits={corrected} className="text-sm font-bold" highlight={(i) => (value && i === value - 1 ? 'text-emerald-600' : undefined)} />
+        </Stop>
+      </div>
+      <div className="mt-3 grid grid-cols-1 items-start gap-4 md:grid-cols-2">
+        <div className="min-w-0">
+          <div className="mb-1 text-xs font-semibold text-slate-500">
+            {STATES} 條輸出線各接到哪裡
+          </div>
+          <ol className="grid grid-cols-2 gap-1 text-xs sm:grid-cols-4">
+            {Array.from({ length: STATES }, (_, j) => {
+              const target = matchingColumn(lampBits(j)) + 1; // the position whose column of H reads j
+              return (
+                <li key={j} className={`rounded-md border px-1.5 py-1 ${j === value ? 'border-rose-400 bg-rose-50 font-semibold text-rose-800' : 'border-slate-200 text-slate-500'}`}>
+                  <span className="font-mono">{j}</span>：{target === 0 ? '沒出錯，不接' : `翻轉位置 ${target}`}
+                </li>
+              );
+            })}
+          </ol>
+        </div>
+        <div className="min-w-0 space-y-2 text-sm leading-relaxed text-slate-700">
+          <p>
+            翻轉用的也是 XOR：第 j 個 XOR 閘的兩個輸入是 <M>{'r_j'}</M> 和第 j 條輸出線。那條線是 1，<M>{'r_j \\oplus 1'}</M> 就把那一位翻過來；其餘的線都是 0，位元原樣通過。燈全暗時只有第 0 條線是 1，它不接任何位置，r 整個原樣送出。
+          </p>
+          <p className="text-slate-600">
+            整個解碼器是組合邏輯：{SYNDROME_XORS} 個 XOR 閘算燈號、一個 {R}-to-{STATES} 解碼器、{FLIP_XORS} 個 XOR 閘翻轉。r 一進來，一次就算完，不用存表，也不用逐欄比對。
+          </p>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* The page                                                            */
+/* ------------------------------------------------------------------ */
 
 export default function M3Syndrome() {
   const { message, toggleBit, resetMessage } = useMessage();
   const c = useMemo(() => encode74(message), [message]);
-  const [e, setE] = useState<Bit[]>(errorFrom([4]));
+  const [e, setE] = useState<Bit[]>(errorFrom([EXAMPLE_POS - 1]));
   const out = useMemo(() => simulate74(c, e), [c, e]);
   const s = out.decoded.syndrome;
   const match = matchingColumn(s);
@@ -66,8 +332,8 @@ export default function M3Syndrome() {
   const scanDone = match >= 0 && scan >= match;
 
   const stats = useMemo(() => {
-    const rows = Array.from({ length: 8 }, (_, w) => ({ w, total: 0, ok: 0, mis: 0, undetected: 0 }));
-    allVectors(7).forEach((err) => {
+    const rows = Array.from({ length: N + 1 }, (_, w) => ({ w, total: 0, ok: 0, mis: 0, undetected: 0 }));
+    allVectors(N).forEach((err) => {
       const o = simulate74(c, err);
       const row = rows[o.errorWeight];
       row.total++;
@@ -84,22 +350,36 @@ export default function M3Syndrome() {
     if (e[i] && i !== decoderIdx) return 'error' as const;
     return 'normal' as const;
   });
+  const errorsAfter = weight(vecAdd(out.decoded.corrected, c));
 
   return (
     <div>
       <ModuleHeader moduleId={ID}>
-        <p>接收端只看得到 <M>r</M>，不知道原本的 <M>c</M>。Syndrome 的神奇之處在於：它只取決於錯誤 <M>e</M>，完全不需要知道送出的 codeword。</p>
+        <p>
+          雜訊翻轉了某一位，接收端卻看不到雜訊，也不知道發送端送了哪個 codeword。它手上只有收到的 {N} 個位元 r，和第 2 章的 {R} 個檢查器點亮的 {R} 盞警示燈。這一章回答：燈亮了，接收端能從燈號知道什麼？又要怎麼把錯的那一位翻回來？
+        </p>
       </ModuleHeader>
+      <KeyPoint>亮的燈 = H 的第 j 欄 = 出錯的位置 j：接收端不必知道送了什麼，看燈就知道該翻哪一位。</KeyPoint>
       <FlowBar moduleId={ID} />
 
       <div className="space-y-12">
-        <Stage kind="why" moduleId={ID} title="接收端要如何找出錯誤？">
-          <div className="prose-lab">
-            <p>
-              傳送端送出合法 codeword <M>c</M>，通道加上錯誤 <M>e</M>，接收端得到 <M>{'r = c + e'}</M>。接收端手上只有 <M>r</M>。
-              如果能從 <M>r</M> 算出某個「只與 <M>e</M> 有關」的量，就可以推測錯誤在哪裡——這個量就是 <strong>症狀值（Syndrome）</strong>。
-            </p>
-          </div>
+        <Stage kind="why" moduleId={ID} title={`接收端只有 r 和 ${R} 盞燈`}>
+          <Card title="接收端的處境">
+            <ReceiverView c={c} e={e} r={out.received} s={s} />
+            <div className="mt-3 space-y-2 text-sm leading-relaxed text-slate-700">
+              <p>
+                燈號是接收端唯一的線索（目前的例子：{lampText(s)}）。它要靠這 {R} 盞燈決定「不動」還是「翻轉某一位」，而且最好做成一個電路，收到就立刻決定。要做到這件事，得先回答三個問題：
+              </p>
+              <ol className="list-decimal space-y-1 pl-5">
+                <li>燈號會不會因為送的 codeword 不同而不同？如果會，接收端不知道 c，就讀不懂燈號。</li>
+                <li>雜訊翻了位置 j 時，亮的是哪幾盞燈？</li>
+                <li>從燈號到「該翻哪一位」，電路要怎麼接？</li>
+              </ol>
+              <p className="text-slate-600">
+                前兩個問題在「計算」一節用一條等式回答，第三個在「視覺化」一節做成電路。{R} 盞燈合起來，就是第 2 章的 <strong>Syndrome（徵狀）</strong>。
+              </p>
+            </div>
+          </Card>
         </Stage>
 
         <Stage kind="definition" moduleId={ID} title="錯誤向量與 Syndrome">
@@ -107,33 +387,84 @@ export default function M3Syndrome() {
             <Card title="錯誤向量（Error vector）">
               <Tex block>{'r = c + e'}</Tex>
               <p className="text-sm text-slate-600">
-                <M>e</M> 的第 <M>i</M> 位是 1，表示第 <M>i</M> 個位元被翻轉。錯誤個數 = <M>{'\\mathrm{wt}(e)'}</M>。
+                <M>e</M> 記錄雜訊翻了哪幾位：第 <M>i</M> 位是 1，表示第 <M>i</M> 個位元被翻轉。錯誤個數 = <M>{'\\mathrm{wt}(e)'}</M>。
               </p>
             </Card>
-            <Card title="Syndrome">
-              <Tex block>{'s = Hr^{T} \\in \\mathbb{F}_2^{3}'}</Tex>
-              <p className="text-sm text-slate-600">3 個同位檢查各自的結果：<M>{'s_i = 1'}</M> 代表第 <M>i</M> 個檢查失敗。</p>
+            <Card title="Syndrome（徵狀）">
+              <Tex block>{`s = Hr^{T} \\in \\mathbb{F}_2^{${R}}`}</Tex>
+              <p className="text-sm text-slate-600">
+                {R} 個檢查器的輸出，也就是 {R} 盞燈：<M>{'s_i = 1'}</M> ⇔ 第 <M>i</M> 盞燈亮（第 <M>i</M> 個檢查失敗）。接收端只用 r 就算得出來。
+              </p>
             </Card>
-            <Card title="關鍵等式">
-              <Tex block>{'s = H(c+e)^{T} = \\underbrace{Hc^{T}}_{=0} + He^{T} = He^{T}'}</Tex>
-              <p className="text-sm text-slate-600">Syndrome 與送出哪個 codeword 無關。</p>
+            <Card title="記號：eⱼ 與 hⱼ">
+              <p className="text-sm text-slate-600">
+                <M>{'e_j'}</M>：只有第 <M>j</M> 位是 1 的錯誤向量，代表雜訊只翻了位置 <M>j</M>。
+              </p>
+              <p className="mt-2 text-sm text-slate-600">
+                <M>{'h_j'}</M>：H 的第 <M>j</M> 欄，也就是「位置 <M>j</M> 被哪幾盞燈盯著」（第 2 章）。
+              </p>
             </Card>
           </div>
         </Stage>
 
-        <Stage kind="calculation" moduleId={ID} title="單一錯誤時，Syndrome 就是 H 的某一欄">
-          <div className="prose-lab">
-            <p>
-              若只有第 <M>j</M> 個位元出錯，<M>{'e = e_j'}</M>（單位向量），則 <M>{'s = He_j^{T}'}</M> = <strong>H 的第 j 欄</strong>。
-              因為 H 的第 j 欄就是 j 的二進位，<M>{'s_1 + 2s_2 + 4s_3 = j'}</M> 直接給出錯誤位置。H 的 7 個欄兩兩不同且非零，所以 7 種單一錯誤可以完全區分。
-            </p>
-          </div>
-        </Stage>
-
-        <Stage kind="visualization" moduleId={ID} title="找出與 Syndrome 相同的那一欄">
+        <Stage kind="calculation" moduleId={ID} title="位置 j 出錯時，亮的燈就是 H 的第 j 欄">
           <LabGrid
             main={
-              <Card title="H 的欄掃描（Column matching）" icon={<Search className="h-4 w-4 text-fuchsia-600" />}>
+              <Card title="兩個前提，一條等式">
+                <div className="space-y-4 text-sm leading-relaxed text-slate-700">
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                    <div className="rounded-xl border border-data-300 bg-data-50/60 p-3">
+                      <div className="mb-1 font-bold text-data-700">前提 ①：送出的是 codeword</div>
+                      發送端用 G 造出 c，第 2 章的 <M>{'HG^{T} = 0'}</M> 保證 <M>{'Hc^{T} = 0'}</M>：沒有雜訊時燈全暗。燈本來是暗的，亮起來的每一盞都是雜訊造成的。
+                    </div>
+                    <div className="rounded-xl border border-rose-300 bg-rose-50/60 p-3">
+                      <div className="mb-1 font-bold text-rose-700">前提 ②：恰好翻了一位</div>
+                      雜訊只翻了位置 j，其餘 {N - 1} 位都沒動：<M>{'e = e_j'}</M>。這是 Hamming({N},{K}) 的保證範圍；不成立時會怎樣，見下面的實驗。
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="font-semibold text-slate-900">第一步：燈只對雜訊起反應（只用前提 ①）</div>
+                    <Tex block>{'s = Hr^{T} = H(c+e)^{T} = \\underbrace{Hc^{T}}_{=\\,0} + He^{T} = He^{T}'}</Tex>
+                    <p>
+                      檢查器只做 XOR，可以疊加，所以 r 拆成 c 和 e 之後，兩部分各算各的。c 的部分是 0，剩下的只有雜訊：<strong>燈號只取決於雜訊 e，與送了哪個 codeword 無關</strong>。不管發送端送的是 {WORDS.length} 個 codeword 中的哪一個，同樣的雜訊點亮同樣的燈，所以接收端不需要知道 c。
+                    </p>
+                  </div>
+
+                  <div>
+                    <div className="font-semibold text-slate-900">第二步：只翻一位，亮的燈就是第 j 欄（再加上前提 ②）</div>
+                    <Tex block>{'Hr^{T} = Hc^{T} + He_j^{T} = 0 + h_j = H \\text{ 的第 } j \\text{ 欄}'}</Tex>
+                    <p>
+                      <M>{'e_j'}</M> 只有第 j 位是 1，H 乘上它只挑出第 j 欄。用燈來說：<strong>位置 j 出錯時亮起來的燈，剛好就是 H 的第 j 欄</strong>。第 2 章「第 j 欄 = 位置 j 被哪幾盞燈盯著」在這裡得到證明。
+                    </p>
+                  </div>
+
+                  <div>
+                    <div className="font-semibold text-slate-900">第三步：看燈就知道翻哪一位</div>
+                    <p>
+                      第 2 章 H 的設計 ①② 讓 {N} 欄都不是 0、又互不相同，所以 {N} 種單一錯誤點亮 {N} 種不同的燈號，沒有一種是全暗：接收端看燈就分得出是哪一位。設計 ④ 讓第 j 欄就是 j 的二進位，燈號直接讀成數字：
+                    </p>
+                    <Tex block>{'s_1 + 2s_2 + 4s_3 = j'}</Tex>
+                    <p>把位置 j 翻回來，雜訊就被抵消（1 + 1 = 0）：</p>
+                    <Tex block>{'\\hat c = r + e_j = c + e_j + e_j = c'}</Tex>
+                    <p className="text-slate-600">
+                      兩個前提少一個，結論就不成立：沒有前提 ①，燈號混進了 c；沒有前提 ②，燈號是好幾欄的和（實驗一節）。
+                    </p>
+                  </div>
+                </div>
+              </Card>
+            }
+            aside={<SingleFlipCheck c={c} />}
+          />
+        </Stage>
+
+        <Stage kind="visualization" moduleId={ID} title="從燈號到該翻的那一位">
+          <LabGrid
+            main={
+              <Card title="一般的 H：找出與 Syndrome 相同的那一欄" icon={<Search className="h-4 w-4 text-fuchsia-600" />}>
+                <p className="mb-3 text-sm leading-relaxed text-slate-700">
+                  只知道「亮的燈 = 第 j 欄」，接收端還得找出是哪一欄。如果 H 的欄沒有照順序排，就只能拿燈號和 H 的 {N} 欄逐一比對，或存一張 {TABLE_ROWS} 格的「燈號 → 位置」對照表：這是一次查表。
+                </p>
                 <div className="flex flex-wrap items-center gap-5">
                   <ColumnVector bits={s} label="s =" cellClass={match >= 0 ? 'bg-fuchsia-100 text-fuchsia-800' : 'bg-emerald-50 text-emerald-700'} />
                   <ArrowRight className="h-5 w-5 text-slate-300" />
@@ -147,11 +478,11 @@ export default function M3Syndrome() {
                 <motion.div key={sKey + String(scanDone)} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className="mt-4 rounded-xl bg-slate-50 p-3 text-sm">
                   {match < 0 ? (
                     <span>
-                      <M>{'s = 0'}</M>：所有同位檢查都通過，解碼器判定「沒有錯誤」。
+                      <M>{'s = 0'}</M>：燈全暗，所有檢查都通過，不用比對，解碼器判定「沒有錯誤」。
                     </span>
                   ) : scanDone ? (
                     <span>
-                      <M>{`s = (${s.join(',')})^T`}</M> 等於 H 的第 <strong>{match + 1}</strong> 欄 ⇒ <M>{`${s[0]} + 2\\cdot${s[1]} + 4\\cdot${s[2]} = ${match + 1}`}</M>，解碼器翻轉位置 {match + 1}（{LAYOUT_74[match].label}）。
+                      <M>{`s = (${s.join(',')})^T`}</M> 等於 H 的第 <strong>{match + 1}</strong> 欄：比了 {match + 1} 欄才找到，該翻位置 {match + 1}（{LAYOUT_74[match].label}）。Hamming 的 H 不用比：燈號讀成二進位 {binText(s)} 就是 {syndromeToPosition(s)}（下方電路）。
                     </span>
                   ) : (
                     <span className="text-slate-500">比對第 {scan + 1} 欄…</span>
@@ -160,26 +491,27 @@ export default function M3Syndrome() {
               </Card>
             }
             aside={
-              <Card title="Venn 圖：失敗的圓圈 = Syndrome 中的 1">
+              <Card title="Venn 圖：變奇數的圓圈 = 亮的燈">
                 <Venn word={out.received} errorIdx={errIdx} onToggle={(i) => setE((x) => flipBit(x, i))} />
                 <p className="text-center text-xs text-slate-500">
-                  紅色虛線圓圈為奇數（檢查失敗）。<M>{`s = (${s.join(', ')})`}</M> 依序對應 P1、P2、P4。
+                  紅色虛線圓圈為奇數（檢查失敗、燈亮）。<M>{`s = (${s.join(', ')})`}</M> 依序對應 {LAMP.join('、')}。
                 </p>
               </Card>
             }
           />
+          <DecoderCircuit r={out.received} s={s} corrected={out.decoded.corrected} />
         </Stage>
 
         <Stage kind="experiment" moduleId={ID} title="錯誤注入實驗">
           <LabGrid
             main={
               <Card
-                title="點擊「接收字」的任意位元製造傳輸錯誤（0–7 個）"
+                title={`點擊「接收字」的任意位元製造傳輸錯誤（0–${N} 個）`}
                 actions={
                   <ResetButton
                     onClick={() => {
                       resetMessage();
-                      setE(errorFrom([4]));
+                      setE(errorFrom([EXAMPLE_POS - 1]));
                     }}
                   />
                 }
@@ -204,6 +536,9 @@ export default function M3Syndrome() {
                   <Row label="接收字 r = c + e（可點擊）">
                     <BitRow bits={out.received} layout={LAYOUT_74} states={receivedStates} onToggle={(i) => setE((x) => flipBit(x, i))} />
                   </Row>
+                  <Row label={`${R} 盞燈 s = Hrᵀ`}>
+                    <Lamps bits={s} />
+                  </Row>
                   <Row label="解碼器輸出（修正後）">
                     <BitRow bits={out.decoded.corrected} layout={LAYOUT_74} states={correctedStates} size="sm" />
                   </Row>
@@ -218,14 +553,14 @@ export default function M3Syndrome() {
                 <Card title="解碼器的判斷（Decoder decision）">
                   <div className="space-y-2 text-sm">
                     <div>
-                      Syndrome <M>{`s = Hr^T = (${s.join(',')})^T`}</M>
+                      Syndrome <M>{`s = Hr^T = (${s.join(',')})^T`}</M>：{lampText(s)}
                     </div>
                     <div>
                       {out.decoded.position === 0 ? (
-                        <>s = 0 → 判定沒有錯誤，不做修改。</>
+                        <>燈全暗 → 判定沒有錯誤，不做修改。</>
                       ) : (
                         <>
-                          s ≠ 0 → 判定錯誤在位置 <strong>{out.decoded.position}</strong>（{LAYOUT_74[decoderIdx].label}），將其翻轉。
+                          燈號讀成 {binText(s)} = {out.decoded.position} → 判定錯誤在位置 <strong>{out.decoded.position}</strong>（{LAYOUT_74[decoderIdx].label}），將其翻轉。
                         </>
                       )}
                     </div>
@@ -243,19 +578,37 @@ export default function M3Syndrome() {
                   </div>
                   {out.errorWeight >= 2 && (
                     <div className="mt-3">
-                      <Callout kind="warning" title={`${out.errorWeight} 個錯誤：超出 Hamming(7,4) 的保證範圍`}>
+                      <Callout kind="warning" title={`${out.errorWeight} 個錯誤：前提 ②「恰好翻了一位」不成立`}>
                         {out.undetected ? (
-                          <p>錯誤向量 e 本身是一個合法 codeword，所以 <M>{'He^T = 0'}</M>：r 仍然是合法 codeword，解碼器完全沒有察覺。</p>
-                        ) : out.miscorrection ? (
                           <p>
-                            Syndrome 剛好等於 H 的第 {out.decoded.position} 欄（= 錯誤位置所對應欄的和），解碼器以為只有一個錯誤，
-                            {e[decoderIdx] ? <>翻轉了位置 {out.decoded.position}（這一位確實是錯的，但其餘錯誤仍在）</> : <strong>翻轉了原本正確的位元</strong>}
-                            ，結果錯誤變成 {weight(out.decoded.corrected.map((b, i) => (b ^ c[i]) as Bit))} 個。
+                            這次的錯誤向量 <span className="mono">{e.join('')}</span> 本身就是一個 codeword，所以 <M>{'He^T = 0'}</M>：燈全暗，r 看起來是合法的 codeword，解碼器完全沒有察覺。
                           </p>
                         ) : (
-                          <p>這次恰好解回正確 codeword，但這是巧合，不是保證。</p>
+                          <p>
+                            燈號是 {errIdx.length} 欄之和，剛好等於 H 的第 {out.decoded.position} 欄。解碼器以為只錯一位，
+                            {e[decoderIdx] ? <>翻轉了位置 {out.decoded.position}（這一位確實錯了，但其餘錯誤還在）</> : <strong>翻轉了原本正確的位置 {out.decoded.position}</strong>}
+                            ，結果錯誤變成 {errorsAfter} 個。
+                          </p>
                         )}
-                        <p className="font-semibold">普通 Hamming(7,4) 不保證能正確修正兩個以上的錯誤。</p>
+                        <ul className="list-disc space-y-1 pl-5">
+                          <li className={out.miscorrection && out.errorWeight === 2 ? 'font-semibold' : undefined}>
+                            錯兩位：燈號是 <M>{'h_i + h_j'}</M>。兩欄不同，和不是 0；H 又用上了全部 {PATTERNS} 種非零亮法，所以這個和一定是 H 的某一欄。它也不會是 <M>{'h_i'}</M> 或 <M>{'h_j'}</M>（那樣另一欄就是 0），所以是<strong>第三欄</strong>：解碼器去翻原本正確的那一位 → 誤更正。
+                          </li>
+                          <li className={out.undetected ? 'font-semibold' : undefined}>
+                            錯三位：如果錯誤本身就是一個 codeword（例如 <span className="mono">{TRIPLE_WORD.join('')}</span>{TRIPLE_IS_CODEWORD ? '' : '✗'}），燈全暗 → 未偵測錯誤；其他的三位錯誤也會被誤更正。
+                          </li>
+                        </ul>
+                        <p>
+                          保證只到 {T} 個錯的原因在
+                          <a href="#/distance" className="mx-1 font-semibold text-overall-700 hover:underline">
+                            第 4 章
+                          </a>
+                          （<M>{`d_{\\min} = ${D_MIN}`}</M>），補救方法在
+                          <a href="#/secded" className="mx-1 font-semibold text-overall-700 hover:underline">
+                            第 5 章 SECDED
+                          </a>
+                          。
+                        </p>
                       </Callout>
                     </div>
                   )}
@@ -264,14 +617,14 @@ export default function M3Syndrome() {
                   resetKey={e.join('') + message.join('')}
                   steps={[
                     { title: '接收字', body: <Tex block>{`r = c + e = ${c.join('')} + ${e.join('')} = ${out.received.join('')}`}</Tex> },
-                    { title: '計算 Syndrome', body: <Tex block>{`s = Hr^T = ${matrixToTex(H74)}${matrixToTex(out.received.map((b) => [b]))} = ${matrixToTex(s.map((b) => [b]))}`}</Tex> },
+                    { title: '計算 Syndrome', body: <Tex block>{`s = Hr^T = ${matrixToTex(H74)}${matrixToTex(out.received.map((b) => [b]))} = ${colTex(s)}`}</Tex> },
                     {
                       title: '等於 He^T（被翻轉位置的欄相加）',
                       body:
                         errIdx.length === 0 ? (
                           <Tex block>{'He^T = 0'}</Tex>
                         ) : (
-                          <Tex block>{`He^T = ${errIdx.map((j) => matrixToTex(column(H74, j).map((b) => [b]))).join(' + ')} = ${matrixToTex(s.map((b) => [b]))}`}</Tex>
+                          <Tex block>{`He^T = ${errIdx.map((j) => colTex(column(H74, j))).join(' + ')} = ${colTex(s)}`}</Tex>
                         ),
                     },
                     {
@@ -290,24 +643,25 @@ export default function M3Syndrome() {
           />
           <Card title="0 ~ 3 個錯誤時，這個解碼器表現如何？">
             <p className="text-sm text-slate-700">
-              對 codeword <span className="mono">{c.join('')}</span> 窮舉全部 128 種錯誤樣式（即時計算）：1 個錯誤 <strong>{stats[1].ok}/{stats[1].total}</strong> 全部修好；2 個錯誤 <strong>{stats[2].mis}/{stats[2].total}</strong> 被修錯；3 個錯誤中有 <strong>{stats[3].undetected}</strong> 種完全偵測不到。
+              對 codeword <span className="mono">{c.join('')}</span> 窮舉全部 {ALL_ERRORS} 種錯誤樣式（即時計算）：1 個錯誤 <strong>{stats[1].ok}/{stats[1].total}</strong> 全部修好；2 個錯誤 <strong>{stats[2].mis}/{stats[2].total}</strong> 被修錯；3 個錯誤中有 <strong>{stats[3].undetected}</strong> 種燈全暗、完全偵測不到，其餘 {stats[3].mis} 種被修錯。
             </p>
             <div className="mt-3">
               <RelatedLinks
-                title="兩個以上的錯誤：詳細分析在第二課，補救方法在第 7 章"
+                title="兩個以上的錯誤：原因在第 4 章，補救方法在第 5 章，詳細分析在第二課"
                 links={[
-                  { to: 'l2-9', text: '兩個錯誤：為什麼一定誤更正（含 21 種情況的窮舉表）' },
-                  { to: 'l2-10', text: '三個錯誤：為什麼有些錯誤完全看不見' },
+                  { to: 'distance', text: `d_min = ${D_MIN}：保證只修 ${T} 個錯的原因` },
                   { to: 'secded', text: 'SECDED：多一個位元，雙錯就能被偵測' },
+                  { to: 'l2-9', text: '兩個錯誤：為什麼一定誤更正（含窮舉表）' },
+                  { to: 'l2-10', text: '三個錯誤：為什麼有些錯誤完全看不見' },
                 ]}
               />
             </div>
           </Card>
           <Misconceptions
             items={[
-              { wrong: 'Syndrome ≠ 0 時，解碼結果一定正確。', right: '只有在「最多一個錯誤」的前提下才正確。兩個錯誤的 Syndrome 也是某一欄，解碼器會翻錯位元。' },
-              { wrong: 'Syndrome = 0 代表沒有錯誤。', right: 'Syndrome = 0 只代表 r 是合法 codeword。若 e 本身是非零 codeword（例如重量 3 的 1110000），錯誤無法被發現。' },
-              { wrong: '要知道原本的 c 才能算 Syndrome。', right: 's = Hrᵀ 只用到 r；而且 s = Heᵀ 與 c 無關。' },
+              { wrong: 'Syndrome ≠ 0 時，解碼結果一定正確。', right: '只有在「恰好翻了一位」時才正確。兩個錯誤的燈號也是某一欄，解碼器會翻錯位元。' },
+              { wrong: 'Syndrome = 0（燈全暗）代表沒有錯誤。', right: `燈全暗只代表 r 是某個 codeword。若錯誤本身是非零 codeword（例如重量 ${weight(TRIPLE_WORD)} 的 ${TRIPLE_WORD.join('')}），燈照樣全暗，錯誤無法被發現。` },
+              { wrong: '要知道原本的 c 才能算 Syndrome。', right: 's = Hrᵀ 只用到 r；而且 s = Heᵀ 與 c 無關：燈只對雜訊起反應。' },
             ]}
           />
         </Stage>
@@ -315,18 +669,38 @@ export default function M3Syndrome() {
         <Stage kind="conclusion" moduleId={ID} title="Syndrome 解碼的能力與界限">
           <Callout kind="key" title="結論">
             <p>
-              H 的 7 個欄恰好是所有非零 3-bit 向量，因此每一個單一錯誤都有獨一無二的 Syndrome，可以被定位與修正。代價是：解碼器<strong>永遠</strong>假設至多一個錯誤，遇到兩個錯誤時會「自信地修錯」。
-              要理解為什麼極限剛好是 1 個錯誤，我們需要「距離」的觀點（下一章）。
+              接收端不知道送了什麼，只看 {R} 盞燈。燈只對雜訊起反應（<M>{'s = He^{T}'}</M>）；只翻一位時，亮的燈就是 H 的第 j 欄，讀成二進位就是 j，解碼電路把那一位翻回來。
+            </p>
+            <p>
+              <strong>{PATTERNS} 種亮法 ↔ {PATTERNS} 個位置，每一種燈號都派上用場</strong>：{R} 盞燈的 {STATES} 種狀態裡，全暗代表「不動」，其餘 {PATTERNS} 種各指向一個位置，解碼器看到任何燈號都知道要做什麼，沒有一種燈號是浪費的。
+            </p>
+            <div className="grid grid-cols-4 gap-1.5 py-1 sm:grid-cols-8">
+              {Array.from({ length: STATES }, (_, v) => {
+                const bits = lampBits(v);
+                const owner = matchingColumn(bits) + 1;
+                return (
+                  <div key={v} className={`flex flex-col items-center gap-1 rounded-lg border bg-white p-1.5 ${owner === 0 ? 'border-emerald-300' : 'border-slate-200'}`}>
+                    <Lamps bits={bits} size="sm" />
+                    <span className="text-xs font-semibold text-slate-700">{owner === 0 ? '不動' : `翻位置 ${owner}`}</span>
+                  </div>
+                );
+              })}
+            </div>
+            <p>
+              代價：解碼器<strong>永遠</strong>假設最多翻了一位：燈亮就翻一位，燈暗就不動。錯兩位時，燈號指向第三個位置，解碼器會「自信地修錯」；錯誤本身是 codeword 時，燈全暗。為什麼極限剛好是 {T} 個錯，要用「距離」來看（
+              <a href="#/distance" className="font-semibold text-overall-700 hover:underline">
+                第 4 章
+              </a>
+              ）；怎麼補救，見 SECDED（
+              <a href="#/secded" className="font-semibold text-overall-700 hover:underline">
+                第 5 章
+              </a>
+              ）。
             </p>
           </Callout>
           <Card>
             <RelatedLinks links={[{ to: 'a-10', text: 'Syndrome 的 GF(8) 觀點：S₁ = r(α)' }, { to: 'a-9', text: 'H 的欄 = GF(8) 的非零元素' }]} title="延伸：代數基礎與循環碼" />
           </Card>
-          <Expandable title="證明：單一錯誤一定被正確修正">
-            <p>
-              設 <M>{'e = e_j'}</M>。則 <M>{'s = He_j^T = h_j'}</M>（H 的第 j 欄）。因為 <M>{'h_1,\\dots,h_7'}</M> 兩兩相異且非零，解碼器找到的欄唯一且就是 <M>{'h_j'}</M>，翻轉位置 j 後得到 <M>{'r + e_j = c + e_j + e_j = c'}</M>。∎
-            </p>
-          </Expandable>
         </Stage>
       </div>
       <PrevNext moduleId={ID} />
