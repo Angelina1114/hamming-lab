@@ -12,11 +12,11 @@ export interface ModuleMeta {
 }
 
 export const MODULES: ModuleMeta[] = [
-  { id: 'intro', num: '0', title: '導論與使用方式', en: 'Introduction', blurb: '為什麼雜訊通道需要 error-correcting code？' },
-  { id: 'encode', num: '1', title: 'Hamming(7,4) 編碼', en: 'Encoding', blurb: '4 個資訊位元如何長出 3 個同位位元' },
-  { id: 'matrix', num: '2', title: '矩陣 H 與 G', en: 'Parity-check & Generator Matrix', blurb: '把編碼寫成線性代數：c = mG、Hcᵀ = 0' },
-  { id: 'syndrome', num: '3', title: '錯誤注入與 Syndrome 解碼', en: 'Syndrome Decoding', blurb: '翻轉位元，讓 Syndrome 告訴你錯在哪裡' },
-  { id: 'distance', num: '4', title: '能力與極限', en: 'Capability & Limits', blurb: 'd_min = 3 與 3 盞燈能撐多長' },
+  { id: 'intro', num: '0', title: '導論與使用方式', en: 'Introduction', blurb: '雜訊會翻轉位元：多送有規律的冗餘位元，才能發現並修好錯' },
+  { id: 'encode', num: '1', title: 'Hamming(7,4) 編碼', en: 'Encoding', blurb: '4 個資料位元如何長出 3 個同位位元' },
+  { id: 'matrix', num: '2', title: 'H 與 G', en: 'Parity-check & Generator Matrix', blurb: '發送端用 G 編碼，接收端用 H 的 3 盞燈檢查' },
+  { id: 'syndrome', num: '3', title: 'Syndrome 解碼', en: 'Syndrome Decoding', blurb: '翻轉位元，讓 Syndrome 告訴你錯在哪裡' },
+  { id: 'distance', num: '4', title: '能力與極限', en: 'Capability & Limits', blurb: '最小距離 3 與 3 盞燈能撐多長' },
   { id: 'secded', num: '5', title: 'SECDED：修 1 個、偵測 2 個', en: 'Single Error Correction, Double Error Detection', blurb: '多一個整體同位位元 P0：(s, q) 的四種判斷' },
   // ---------------- 代數基礎與 Cyclic Codes (bridges Lesson 1 and Lesson 2; replaces the former optional GF(8) page) ----------------
   { id: 'a-0', num: 'A0', group: 'algebra', title: '概念地圖：為什麼需要抽象代數？', en: 'Concept Map', blurb: '線性代數已經夠用，為什麼還要 g(x)、GF(8)？' },

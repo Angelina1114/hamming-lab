@@ -20,7 +20,7 @@ const ROLE_LABEL: Record<BitRole | 'plain', string> = {
 
 const SIZE = {
   sm: 'h-8 w-8 text-base rounded-md',
-  md: 'h-11 w-11 text-xl rounded-lg',
+  md: 'h-8 w-8 text-base rounded-md sm:h-11 sm:w-11 sm:text-xl sm:rounded-lg',
   lg: 'h-14 w-14 text-2xl rounded-xl',
 };
 
@@ -94,7 +94,7 @@ interface BitRowProps {
 
 export function BitRow({ bits, layout, states, size = 'md', onToggle, showPositions = true, plain = false, gapBefore }: BitRowProps) {
   return (
-    <div className="flex flex-wrap items-end gap-1.5 sm:gap-2">
+    <div className="flex flex-wrap items-end gap-1 sm:gap-2">
       {bits.map((b, i) => (
         <div key={i} className={gapBefore === i ? 'ml-2 border-l-2 border-dashed border-slate-300 pl-3 sm:ml-3' : ''}>
           <BitCell
@@ -125,7 +125,7 @@ export function MessageInput({ message, onToggle, size = 'lg' }: { message: read
 
 export function RoleLegend({ overall = false, errors = false }: { overall?: boolean; errors?: boolean }) {
   const items: [string, string][] = [
-    ['bg-data-50 border-data-300', '資訊位元（Information bit）'],
+    ['bg-data-50 border-data-300', '資料位元（Data bit）'],
     ['bg-parity-50 border-parity-300', '同位位元（Parity bit）'],
   ];
   if (overall) items.push(['bg-overall-50 border-overall-300', '整體同位位元（Overall parity）']);

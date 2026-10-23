@@ -211,7 +211,7 @@ function SlideHost<C>({
         </div>
       </main>
       {notesOpen && (
-        <aside aria-label="講者備註" className="z-30 max-h-[30vh] overflow-y-auto border-t border-amber-200 bg-amber-50 px-4 py-3 text-base leading-relaxed text-slate-800 sm:px-6">
+        <aside aria-label="講者備註" className="z-30 max-h-[42vh] overflow-y-auto border-t border-amber-200 bg-amber-50 px-4 py-3 text-base leading-relaxed text-slate-800 sm:px-6">
           <div className="mb-1 text-sm font-semibold text-amber-800">講者備註</div>
           {slide.notes ?? <span className="text-slate-500">這一頁沒有備註。</span>}
         </aside>

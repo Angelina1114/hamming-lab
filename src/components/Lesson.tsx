@@ -75,6 +75,22 @@ export const STAGES: Record<StageKind, { zh: string; en: string; icon: typeof He
 export const LESSON1_STAGES: StageKind[] = ['why', 'definition', 'calculation', 'visualization', 'experiment', 'conclusion'];
 export const LESSON2_STAGES: StageKind[] = ['goals', 'intuition', 'math', 'algorithm', 'interactive', 'verify', 'next'];
 export const ALGEBRA_STAGES: StageKind[] = ['why', 'what', 'how', 'example', 'connection'];
+/** Lesson 1 reads situation → design → derivation → picture → experiment → conclusion: same stage kinds, its own names */
+const LESSON1_LABELS: Partial<Record<StageKind, { zh: string; en: string }>> = {
+  why: { zh: '情境', en: 'Situation' },
+  definition: { zh: '設計', en: 'Design' },
+  calculation: { zh: '推導', en: 'Derivation' },
+  visualization: { zh: '圖解', en: 'Picture' },
+  experiment: { zh: '實驗', en: 'Experiment' },
+  conclusion: { zh: '結論', en: 'Conclusion' },
+};
+const isLesson1 = (moduleId: string) => {
+  const m = MODULES.find((x) => x.id === moduleId);
+  return !!m && !m.lesson && m.group !== 'algebra' && !m.advanced;
+};
+/** stage name as shown on a given page */
+const stageLabel = (kind: StageKind, moduleId: string) => (isLesson1(moduleId) && LESSON1_LABELS[kind]) || STAGES[kind];
+
 const orderOf = (k: StageKind) => (LESSON1_STAGES.includes(k) ? LESSON1_STAGES : LESSON2_STAGES.includes(k) ? LESSON2_STAGES : ALGEBRA_STAGES);
 
 interface StageProps {
@@ -86,13 +102,14 @@ interface StageProps {
 
 export function Stage({ kind, moduleId, title, children }: StageProps) {
   const s = STAGES[kind];
+  const name = stageLabel(kind, moduleId);
   const Icon = s.icon;
   return (
     <section id={`${moduleId}-${kind}`} data-stage={kind} className="scroll-mt-28">
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <span className={`chip border ${s.accent}`}>
           <Icon className="h-3.5 w-3.5" />
-          {orderOf(kind).indexOf(kind) + 1}. {s.zh} <span className="opacity-60">{s.en}</span>
+          {orderOf(kind).indexOf(kind) + 1}. {name.zh} <span className="opacity-60">{name.en}</span>
         </span>
         <h2 className="text-lg font-bold text-slate-900 sm:text-xl">{title}</h2>
       </div>
@@ -105,6 +122,15 @@ export function Stage({ kind, moduleId, title, children }: StageProps) {
 export function FlowBar({ moduleId, order = LESSON1_STAGES }: { moduleId: string; order?: StageKind[] }) {
   const STAGE_ORDER = order;
   const [active, setActive] = useState<StageKind>(order[0]);
+  const listRef = useRef<HTMLOListElement>(null);
+  // keep the highlighted chip visible when the bar is wider than the screen (phones); scrolls only the bar, never the page
+  useEffect(() => {
+    const ol = listRef.current;
+    const a = ol?.querySelector<HTMLElement>('[data-on]');
+    if (!ol || !a || ol.scrollWidth <= ol.clientWidth) return;
+    const delta = a.getBoundingClientRect().left - ol.getBoundingClientRect().left;
+    ol.scrollTo({ left: ol.scrollLeft + delta - (ol.clientWidth - a.offsetWidth) / 2, behavior: 'smooth' });
+  }, [active]);
   useEffect(() => {
     // active stage = the last section whose top has scrolled past 40% of the viewport
     let frame = 0;
@@ -134,14 +160,16 @@ export function FlowBar({ moduleId, order = LESSON1_STAGES }: { moduleId: string
   }, [moduleId]);
   return (
     <nav aria-label="教學流程" className="sticky top-14 z-20 -mx-4 mb-6 border-b border-slate-200 bg-slate-50/90 px-4 py-2 backdrop-blur lg:top-0 sm:-mx-6 sm:px-6">
-      <ol className="flex gap-1 overflow-x-auto text-xs [scrollbar-width:none]">
+      <ol ref={listRef} className="flex gap-1 overflow-x-auto text-xs [scrollbar-width:none]">
         {STAGE_ORDER.map((k, i) => {
           const s = STAGES[k];
+          const name = stageLabel(k, moduleId);
           const on = k === active;
           return (
             <li key={k} className="flex shrink-0 items-center">
               <a
                 href={`#${moduleId}-${k}`}
+                data-on={on || undefined}
                 onClick={(e) => {
                   e.preventDefault();
                   document.getElementById(`${moduleId}-${k}`)?.scrollIntoView({ behavior: 'smooth' });
@@ -151,8 +179,8 @@ export function FlowBar({ moduleId, order = LESSON1_STAGES }: { moduleId: string
                 }`}
               >
                 <span className={`h-1.5 w-1.5 rounded-full ${on ? 'bg-white' : s.dot}`} />
-                {s.zh}
-                <span className={`hidden md:inline ${on ? 'text-slate-300' : 'text-slate-400'}`}>{s.en}</span>
+                {name.zh}
+                <span className={`hidden md:inline ${on ? 'text-slate-300' : 'text-slate-400'}`}>{name.en}</span>
               </a>
               {i < STAGE_ORDER.length - 1 && <ChevronRight className="mx-0.5 h-3 w-3 text-slate-300" />}
             </li>
