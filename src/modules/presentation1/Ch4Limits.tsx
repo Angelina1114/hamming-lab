@@ -112,7 +112,7 @@ function Word({ bits: b, flipped = [] }: { bits: readonly Bit[]; flipped?: reado
 const Ph = ({ children }: { children: ReactNode }) => <span className="whitespace-nowrap">{children}</span>;
 
 /* ------------------------------------------------------------------ */
-/* 1. 最小距離 3：A 走到 B 要 3 步                                       */
+/* 1. 為什麼只保證修 1 位：A 走到 B 要 3 步                               */
 /* ------------------------------------------------------------------ */
 
 /** The walk A → B, split into the half nearer A and the half nearer B; the in-between words appear one step at a time. */
@@ -184,11 +184,17 @@ function PathSlide({ s }: { s: Stepper }) {
           </Box>
         </Reveal>
         <Reveal on={s.step >= 3}>
-          <Box tone="bg-sky-50 text-sky-950" title={<M>{`d_{\\min} = ${D_MIN}`}</M>}>
+          <Box
+            tone="bg-sky-50 text-sky-950"
+            title={
+              <>
+                Minimum distance（最小距離）<M>{`d_{\\min} = ${D_MIN}`}</M>
+              </>
+            }
+          >
             <p>
-              窮舉 {MD.pairsChecked} 對 codeword：最近的一對也差 {D_MIN} 位。任何 codeword 翻 {T} 位，都還在自己這一側：
+              {WORDS.length} 個 codeword 兩兩比較（{MD.pairsChecked} 對），最近的一對也差 {D_MIN} 位。任何 codeword 翻 {T} 位：離原本 {T}、離別人至少 {D_MIN - T} → 一定修得回來。
             </p>
-            <Tex block>{`t = \\left\\lfloor \\tfrac{${D_MIN}-1}{2} \\right\\rfloor = ${T}`}</Tex>
           </Box>
         </Reveal>
       </div>
@@ -197,7 +203,7 @@ function PathSlide({ s }: { s: Stepper }) {
 }
 
 /* ------------------------------------------------------------------ */
-/* 2. 2^ℓ ≥ n + 1 與完美碼                                              */
+/* 2. 2^ℓ ≥ n + 1 與 perfect code                                      */
 /* ------------------------------------------------------------------ */
 
 function PerfectSlide({ s }: { s: Stepper }) {
@@ -206,18 +212,18 @@ function PerfectSlide({ s }: { s: Stepper }) {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)]">
         <Reveal on={s.step >= 0}>
           <Box tone="bg-sky-50 text-sky-950" title="燈號要分出 n + 1 種情況">
-            <p>更正 1 個錯，接收端只看燈號就要分出：</p>
+            <p>n 個位置、ℓ 盞燈（= ℓ 個 parity bit）。更正 1 個錯，燈號要分出：</p>
             <ul className="mt-1 space-y-1 text-slate-700">
               <li>· 沒有錯：1 種（不動）</li>
               <li>· 錯在 n 個位置之一：n 種（翻那一位）</li>
             </ul>
             <p className="mt-2">
-              ℓ 個 parity bit = ℓ 盞警示燈，只有 <M>{'2^{\\ell}'}</M> 種亮法：
+              ℓ 盞燈只有 <M>{'2^{\\ell}'}</M> 種亮法：
             </p>
             <div className="text-2xl">
               <Tex block>{'2^{\\ell} \\ge n + 1'}</Tex>
             </div>
-            <p className="text-slate-600">這是「更正 1 個錯」的極限。</p>
+            <p className="text-slate-600">更正 1 個錯的極限，教科書稱為 Hamming bound。</p>
           </Box>
         </Reveal>
         <Reveal on={s.step >= 1}>
@@ -242,11 +248,10 @@ function PerfectSlide({ s }: { s: Stepper }) {
               })}
             </div>
             <p className="mt-2">
-              {STATES} 種燈號全部用到，沒有一種浪費：<strong>perfect code（完美碼）</strong>。
+              {STATES} 種燈號全部用到，沒有一種浪費：<strong>perfect code</strong>。
             </p>
             <p className="mt-1 text-slate-600">
-              {HB.codewords} 個 codeword × {HB.volume} 種接收結果 = {HB.lhs} = 2<sup>{N}</sup>
-              {IS_PARTITION ? '' : ' ✗'}：收到任何 {N} 位元字串，燈號都有明確的動作。這就是教科書的 Hamming bound（球填充界）<M>{'2^{k}(1 + n) \\le 2^{n}'}</M> 取等號。
+              {HB.codewords} 個 codeword × {HB.volume} 種情況 = 全部 {HB.rhs} 個 {N} 位元字串{IS_PARTITION ? '' : ' ✗'}。
             </p>
           </Box>
         </Reveal>
@@ -266,8 +271,8 @@ function PerfectSlide({ s }: { s: Stepper }) {
 
 export const CH4_SLIDES: DeckSlide<null>[] = [
   {
-    title: `第 4 章：Minimum distance（最小距離）為 ${D_MIN}：A 走到 B 要 ${D_AB} 步`,
-    sub: '雜訊每翻一位，received word 就往前推一步',
+    title: `第 4 章：為什麼只保證修 ${T} 位`,
+    sub: `A、B 是兩個 codeword（訊息 ${bits(A_ENTRY.message)}、${bits(B_ENTRY.message)}）；離 = 差幾位，接收端猜最近的那個`,
     steps: () => 4,
     render: (s) => <PathSlide s={s} />,
     takeaway: (
@@ -309,16 +314,17 @@ export const CH4_SLIDES: DeckSlide<null>[] = [
           → minimum distance {D_MIN}：窮舉 {MD.pairsChecked} 對，最近的一對也差 {D_MIN} 位
           <ul className={NOTES_SUB}>
             <li>
-              t = ⌊({D_MIN} − 1)/2⌋ = {T}；第 2 章 H 的設計 ①② 保證至少 {D_MIN} 步：翻 1、2 位燈一定亮
+              任何 codeword 翻 {T} 位：離原本 {T}、離別人至少 {D_MIN} − {T} = {D_MIN - T} → 一定修得回來
             </li>
+            <li>第 2 章 H 的設計 ①② 保證至少 {D_MIN} 步：翻 1、2 位燈一定亮</li>
           </ul>
         </li>
       </ul>
     ),
   },
   {
-    title: `第 4 章：Perfect code：${STATES} 種燈號剛好用完`,
-    sub: '要更正 1 個錯，ℓ 盞燈要分辨 n + 1 種情況',
+    title: `第 4 章：Perfect code（完美碼）：${STATES} 種燈號剛好用完`,
+    sub: `${L} 盞燈要分辨 ${N} + 1 種情況`,
     steps: () => 3,
     render: (s) => <PerfectSlide s={s} />,
     takeaway: (

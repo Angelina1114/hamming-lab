@@ -47,6 +47,7 @@ import { Tex, M } from '../components/Tex';
 import { BitRow, BitString } from '../components/Bits';
 import { Bars } from '../components/Bars';
 import { DistanceLine } from '../components/DistanceLine';
+import { PathWalk, WarningLamps } from '../components/PathWalk';
 import { BallDiagram, CubeBall, PackingDiagram } from '../components/BoundFigures';
 import { RelatedLinks } from '../components/alg/Links';
 import { Callout, Card, Derivation, Expandable, FlowBar, KeyPoint, LabGrid, Misconceptions, ModuleHeader, PrevNext, ResetButton, Segmented, Stage, Stat } from '../components/Lesson';
@@ -97,21 +98,16 @@ const LAMPS_ARE_NEAREST = allVectors(N).every((w) => {
   return nr.unique && vecEquals(WORDS[nr.nearest[0]], decode74(w).corrected);
 });
 
-/** chapter 3's running example: the noise flips position 5 first */
-const EXAMPLE_POS = 5;
-/** the A → B path: A = codeword of the shared default message, B = codeword of 1111; d(A, B) = d_min (pinned in core.test) */
+/**
+ * The A → B path (PathWalk computes the same pair): A = codeword of the default message, B = codeword of 1111;
+ * d(A, B) = d_min (pinned in core.test). Chapter 4 keeps this fixed pair; it does not follow the shared message.
+ */
 const A_IDX = CODE.findIndex((e) => vecEquals(e.message, DEFAULT_MESSAGE));
 const B_IDX = CODE.findIndex((e) => e.message.every((b) => b === 1));
 const A = WORDS[A_IDX];
 const B = WORDS[B_IDX];
 const D_AB = hammingDistance(A, B);
 const AB_DIFF = differingPositions(A, B).map((i) => i + 1);
-const PATH = flipPath(A, B, [EXAMPLE_POS - 1]).map((st) => {
-  const dec = decode74(st.word);
-  return { ...st, dA: hammingDistance(st.word, A), dB: hammingDistance(st.word, B), dec, toA: vecEquals(dec.corrected, A), toB: vecEquals(dec.corrected, B) };
-});
-const STEP1 = PATH[1];
-const STEP2 = PATH[2];
 
 /** all double errors: Hamming(7,4) puts every one next to another codeword, Extended(8,4) none */
 const DOUBLE = doubleErrorLandings(WORDS);
@@ -139,129 +135,10 @@ const LAMP = PARITY_CHECKS.map((pc) => pc.name);
 /** reading the lamps as a binary number: P4 P2 P1, the most significant first */
 const READ = [...LAMP.keys()].reverse();
 const binText = (bits: readonly Bit[]) => `${READ.map((i) => bits[i]).join('')}₂`;
-/** a lamp state as bits in H's row order (P1 first) from its binary value */
-const lampBits = (v: number): Bit[] => Array.from({ length: L }, (_, i) => ((v >> i) & 1) as Bit);
-const lampText = (bits: readonly Bit[]) => (isZeroVector(bits) ? '全暗' : `${LAMP.filter((_, i) => bits[i]).join('、')} 亮`);
-const posList = (idx: readonly number[]) => idx.map((i) => i + 1).join('、');
 
 /* ------------------------------------------------------------------ */
 /* Small pictures                                                      */
 /* ------------------------------------------------------------------ */
-
-/** The receiver's warning lamps, in H's row order (P1, P2, P4): lit = that check failed. */
-function Lamps({ bits, size = 'md' }: { bits: readonly Bit[]; size?: 'sm' | 'md' }) {
-  const d = size === 'sm' ? 'h-4 w-4' : 'h-6 w-6';
-  return (
-    <span className="inline-flex items-end gap-1.5 align-middle" role="img" aria-label={`警示燈${lampText(bits)}`}>
-      {bits.map((b, i) => (
-        <span key={LAMP[i]} className="inline-flex flex-col items-center gap-0.5">
-          <span className={`${d} rounded-full border-2 ${b ? 'border-rose-500 bg-rose-400 shadow-[0_0_8px_2px_rgba(244,63,94,0.45)]' : 'border-slate-300 bg-slate-200'}`} />
-          <span className="text-[10px] font-semibold leading-none text-slate-500">{LAMP[i]}</span>
-        </span>
-      ))}
-    </span>
-  );
-}
-
-/** What the receiver ends up with at step k of the A → B walk. */
-function PathResult({ k }: { k: number }) {
-  const st = PATH[k];
-  if (k === 0) return <span className="chip bg-emerald-100 text-emerald-800">收到 A</span>;
-  if (st.toA) return <span className="chip bg-emerald-100 text-emerald-800">修回 A ✓</span>;
-  if (st.toB && k === D_AB) return <span className="chip bg-rose-100 text-rose-800">就是 B：看不出錯</span>;
-  if (st.toB) return <span className="chip bg-rose-100 text-rose-800">改成 B ✗</span>;
-  return <span className="chip bg-slate-100 text-slate-600">{bitsToString(st.dec.corrected)}</span>;
-}
-
-const pathAction = (k: number) => (PATH[k].dec.position ? `翻位置 ${PATH[k].dec.position}` : '不動');
-const pathRowTone = (k: number) => (k === 1 ? 'bg-emerald-50/60' : k === 2 ? 'bg-rose-50/60' : '');
-
-/** The walk A → B, one flipped bit per row: distances, the lamps, what the receiver does (a table from sm, stacked rows on phones). */
-function PathTable() {
-  return (
-    <>
-      <div className="hidden overflow-x-auto sm:block">
-        <table className="w-full min-w-[600px] text-sm">
-          <thead>
-            <tr className="text-left text-xs text-slate-500">
-              <th className="py-1 pr-2">雜訊翻了</th>
-              <th className="pr-2">Received word</th>
-              <th className="pr-2">離 A</th>
-              <th className="pr-2">離 B</th>
-              <th className="pr-2">{L} 盞警示燈</th>
-              <th className="pr-2">接收端</th>
-              <th>結果</th>
-            </tr>
-          </thead>
-          <tbody>
-            {PATH.map((st, k) => (
-              <tr key={k} className={`border-t border-slate-100 ${pathRowTone(k)}`}>
-                <td className="py-1.5 pr-2">
-                  <span className="font-semibold text-slate-800">{k} 位</span>
-                  <span className="block text-[11px] text-slate-500">{k === 0 ? '送出 A' : `位置 ${posList(st.flipped)}`}</span>
-                </td>
-                <td className="pr-2">
-                  <BitString bits={st.word} className="text-sm font-semibold" highlight={(j) => (st.flipped.includes(j) ? 'text-rose-600 font-bold' : undefined)} />
-                </td>
-                <td className={`pr-2 font-mono ${st.dA < st.dB ? 'font-bold text-data-700' : 'text-slate-500'}`}>{st.dA}</td>
-                <td className={`pr-2 font-mono ${st.dB < st.dA ? 'font-bold text-overall-700' : 'text-slate-500'}`}>{st.dB}</td>
-                <td className="pr-2">
-                  <Lamps bits={st.dec.syndrome} size="sm" />
-                </td>
-                <td className="pr-2 text-xs text-slate-700">{pathAction(k)}</td>
-                <td>
-                  <PathResult k={k} />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <ol className="space-y-2 sm:hidden">
-        {PATH.map((st, k) => (
-          <li key={k} className={`rounded-xl border border-slate-200 px-3 py-2 text-sm ${pathRowTone(k)}`}>
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <span>
-                <span className="font-semibold text-slate-800">翻 {k} 位</span>
-                <span className="ml-1.5 text-xs text-slate-500">{k === 0 ? '送出 A' : `位置 ${posList(st.flipped)}`}</span>
-              </span>
-              <PathResult k={k} />
-            </div>
-            <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
-              <BitString bits={st.word} className="text-sm font-semibold" highlight={(j) => (st.flipped.includes(j) ? 'text-rose-600 font-bold' : undefined)} />
-              <span className="text-xs text-slate-600">
-                離 A <strong className={st.dA < st.dB ? 'text-data-700' : 'font-normal'}>{st.dA}</strong>・離 B <strong className={st.dB < st.dA ? 'text-overall-700' : 'font-normal'}>{st.dB}</strong>
-              </span>
-            </div>
-            <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-700">
-              <Lamps bits={st.dec.syndrome} size="sm" />
-              <span>→ 接收端{pathAction(k)}</span>
-            </div>
-          </li>
-        ))}
-      </ol>
-    </>
-  );
-}
-
-/** Hamming(7,4)'s 8 lamp states, each with the one action it stands for (H's columns in binary order: state j = 翻位置 j). */
-function LampStates() {
-  return (
-    <div className="grid grid-cols-4 gap-1.5">
-      {Array.from({ length: STATES }, (_, v) => {
-        const b = lampBits(v);
-        const pos = syndromeToPosition(b);
-        return (
-          <div key={v} className={`flex flex-col items-center gap-1 rounded-lg border px-1 py-1.5 ${pos === 0 ? 'border-emerald-300 bg-emerald-50/60' : 'border-slate-200 bg-white'}`}>
-            <Lamps bits={b} size="sm" />
-            <span className="font-mono text-[11px] text-slate-500">{binText(b)}</span>
-            <span className="text-xs font-semibold text-slate-700">{pos === 0 ? '不動' : `翻位置 ${pos}`}</span>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
 
 /** One codeword and its 8 received words (0 or 1 flip): 8 different lamp states, one action each. */
 function ReceivedOutcomes() {
@@ -290,7 +167,6 @@ function ReceivedOutcomes() {
           <thead>
             <tr className="text-left text-xs text-slate-500">
               <th className="py-1 pr-2">收到的 r</th>
-              <th className="pr-2">雜訊翻了</th>
               <th className="pr-2">
                 {L} 盞警示燈（讀成 {READ.map((i) => LAMP[i]).join('')}）
               </th>
@@ -306,10 +182,9 @@ function ReceivedOutcomes() {
                   <td className="py-1 pr-2">
                     <BitString bits={w} className="font-semibold" highlight={(j) => (pos.includes(j) ? 'text-rose-600 font-bold' : undefined)} />
                   </td>
-                  <td className="pr-2 text-xs text-slate-600">{pos.length === 0 ? '沒翻' : `位置 ${posList(pos)}`}</td>
                   <td className="pr-2">
                     <span className="inline-flex flex-wrap items-center gap-x-2">
-                      <Lamps bits={s} size="sm" />
+                      <WarningLamps s={s} size="sm" />
                       <span className="font-mono text-xs text-slate-500">{binText(s)}</span>
                     </span>
                   </td>
@@ -321,7 +196,7 @@ function ReceivedOutcomes() {
         </table>
       </div>
       <p className="mt-3 text-sm text-slate-700">
-        {rows.length} 種接收結果點亮 <strong>{distinct} 種不同的燈號</strong>：全暗 = 不動，其餘 {PATTERNS} 種各翻一個位置，沒有重複，也沒有剩下。換成其他 codeword 也一樣（{ALL_STATES_USED}/{WORDS.length} 個都是）。
+        {rows.length} 種接收結果點亮 <strong>{distinct} 種不同燈號</strong>，沒有重複也沒有剩下；{ALL_STATES_USED}/{WORDS.length} 個 codeword 都是。
       </p>
     </Card>
   );
@@ -345,7 +220,7 @@ export default function M4Limits() {
     <div>
       <ModuleHeader moduleId={ID}>
         <p>
-          第 3 章看到：雜訊只翻 {T} 位時，燈號指出位置，翻回來就好；翻 2 位時，燈號指向第三個位置，decoder 反而造成 miscorrection：把原本沒錯的位置也翻掉。這一章回答兩個問題：這個 code 到底能<strong>保證</strong>什麼？只有 {L} 盞燈，codeword 最長能做多長？
+          第 3 章：翻 {T} 位修得好，翻 2 位會造成 miscorrection。這一章找出分界在哪，以及 {L} 盞燈的極限。
         </p>
       </ModuleHeader>
       <KeyPoint>
@@ -354,221 +229,168 @@ export default function M4Limits() {
       <FlowBar moduleId={ID} />
 
       <div className="space-y-12">
-        <Stage kind="why" moduleId={ID} title={`翻 ${T} 位修得好，翻 2 位就造成 miscorrection`}>
-          <Card title="第 3 章留下的兩個問題">
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <Stat label={`翻 ${T} 位（全部 ${ONE.total} 種）`} value={`${ONE.ok}/${ONE.total}`} sub="修好" tone="emerald" />
-              <Stat label={`翻 2 位（全部 ${TWO.total} 種）`} value={`${TWO.mis}/${TWO.total}`} sub="Miscorrection：燈號指向第三個位置" tone="rose" />
+        <Stage kind="why" moduleId={ID} title="第 3 章留下的兩個問題">
+          <Card>
+            <div className="grid grid-cols-1 items-center gap-4 lg:grid-cols-2">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <Stat label={`翻 ${T} 位（全部 ${ONE.total} 種）`} value={`${ONE.ok}/${ONE.total}`} sub="修好" tone="emerald" />
+                <Stat label={`翻 2 位（全部 ${TWO.total} 種）`} value={`${TWO.mis}/${TWO.total}`} sub="Miscorrection" tone="rose" />
+              </div>
+              <ul className="space-y-1.5 text-sm leading-relaxed text-slate-700">
+                <li>
+                  <strong>能保證什麼？</strong>分界線在哪，由什麼決定？
+                </li>
+                <li>
+                  <strong>能做多長？</strong>位置再多，{L} 盞燈還分得出是哪一位錯嗎？
+                </li>
+              </ul>
             </div>
-            <ol className="mt-3 list-decimal space-y-1 pl-5 text-sm leading-relaxed text-slate-700">
-              <li>
-                <strong>能保證什麼？</strong>翻 {T} 位一定修好、翻 2 位就不行：分界線在哪裡，由什麼決定？
-              </li>
-              <li>
-                <strong>能做多長？</strong>{L} 盞燈保護 {N} 個位置；位置再多一些，{L} 盞燈還分得出是哪一位錯嗎？
-              </li>
-            </ol>
-            <p className="mt-3 text-sm leading-relaxed text-slate-700">
-              先換一個看法：<strong>雜訊每翻一位，received word 就離送出的 codeword 遠一步。</strong>翻 {T} 位還很近；翻 2 位，可能已經走到另一個 codeword 旁邊。
-            </p>
           </Card>
         </Stage>
 
         <Stage kind="definition" moduleId={ID} title="接收端猜最近的 codeword：從 A 走到 B">
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <Card title="接收端的猜法：離 received word 最近的 codeword">
-              <div className="space-y-2 text-sm leading-relaxed text-slate-700">
+          <Card>
+            <div className="grid grid-cols-1 gap-x-6 gap-y-3 text-sm leading-relaxed text-slate-700 lg:grid-cols-2">
+              <div className="space-y-2">
                 <p>
-                  接收端看不到雜訊，只看到 received word r。它的設計是<strong>猜離 r 最近的 codeword</strong>，理由是：雜訊翻 1 位比翻 2 位常見得多，翻得越少越可能發生，所以最近的那個最可能就是送出的。
+                  接收端只看到 r。雜訊翻得越少越常見，所以它猜<strong>離 r 最近的 codeword</strong>，稱為 <strong>nearest-codeword decoding（最近 codeword 解碼）</strong>。
                 </p>
                 <p className="text-slate-600">
-                  第 3 章的 {L} 盞燈，就是這個猜法的快速硬體版：不必和 {WORDS.length} 個 codeword 一一比較，看燈就知道最近的是誰（全部 {2 ** N} 個 received word 都驗證過{LAMPS_ARE_NEAREST ? ' ✓' : ' ✗'}，比較工具在下方進階）。
+                  第 3 章的 {L} 盞燈就是它的快速版：全部 {2 ** N} 個 received word 都驗證過{LAMPS_ARE_NEAREST ? ' ✓' : ' ✗'}（逐一比較的工具在進階）。
                 </p>
               </div>
-            </Card>
-            <Card title="寫成數學：distance 與 nearest-codeword decoding">
-              <div className="space-y-2 text-sm leading-relaxed text-slate-700">
+              <div className="space-y-2">
                 <p>
-                  兩個字串的 <strong>Hamming distance</strong>，就是它們有幾個位置不同，也就是雜訊<strong>至少要翻幾位</strong>，才能把一個變成另一個。x + y 的 1 正好是 x、y 不同的位置（1 + 1 = 0），所以
+                  兩個字串的 <strong>Hamming distance（漢明距離）</strong>是它們有幾個位置不同，也就是雜訊至少要翻幾位。x + y 的 1 正好落在不同的位置：
                 </p>
                 <Tex block>{'d(x,y) = \\left|\\{\\, j : x_j \\neq y_j \\,\\}\\right| = \\mathrm{wt}(x+y)'}</Tex>
-                <p>
-                  接收端的猜法叫 <strong>nearest-codeword decoding（最近 codeword 解碼）</strong>：收到 r，選 <M>{'d(r,c)'}</M> 最小的 codeword <M>c</M>。
-                </p>
-              </div>
-            </Card>
-          </div>
-          <Card title={`一條路：A → B，共 ${D_AB} 步`}>
-            <p className="text-sm leading-relaxed text-slate-700">
-              取兩個 codeword：A（m = {DEFAULT_MESSAGE.join('')}）與 B（m = {CODE[B_IDX].message.join('')}），它們差 {D_AB} 位（位置 {AB_DIFF.join('、')}）。雜訊從 A 出發，每翻一位就往 B 推一步（先翻位置 {EXAMPLE_POS}，就是第 3 章的例子）：
-            </p>
-            <div className="flex justify-center">
-              <DistanceLine d={D_AB} nodeLabel={(k) => `翻 ${k} 位`} />
-            </div>
-            <div className="mt-3">
-              <PathTable />
-            </div>
-            <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
-              <div className="rounded-xl border border-emerald-300 bg-emerald-50/70 p-3 text-sm leading-relaxed text-emerald-950">
-                <div className="mb-1 font-bold text-emerald-800">翻 {T} 位：仍離 A 最近 → 修得回來</div>
-                離 A {STEP1.dA}、離 B {STEP1.dB}。接收端猜 A，猜對了：燈號（{lampText(STEP1.dec.syndrome)}）指向位置 {STEP1.dec.position}，翻回來就是 A。
-              </div>
-              <div className="rounded-xl border border-rose-300 bg-rose-50/70 p-3 text-sm leading-relaxed text-rose-950">
-                <div className="mb-1 font-bold text-rose-800">翻 2 位：過了中線，修不回來</div>
-                這條路上，離 A {STEP2.dA}、離 B 只剩 {STEP2.dB}：過了中線，最近的變成 B。只偵測的話燈會亮，接收端知道「有錯」；硬要更正，燈號指向位置 {STEP2.dec.position}，翻下去就變成 B：miscorrection。
               </div>
             </div>
-            <p className="mt-4 text-sm leading-relaxed text-slate-600">
-              分界就在 A、B 的正中間。{D_AB} 步的路，中點在 {D_AB / 2} 步：翻 {T} 位還在 A 這一側；翻 2 位已經過了中線，離 B 比較近。
-            </p>
           </Card>
+          <PathWalk
+            messageA={CODE[A_IDX].message}
+            messageB={CODE[B_IDX].message}
+            intro={
+              <>
+                A = {CODE[A_IDX].message.join('')} 的 codeword，B = {CODE[B_IDX].message.join('')} 的 codeword，差 {D_AB} 位（位置 {AB_DIFF.join('、')}）。雜訊從 A 出發，每翻一位走一步。
+              </>
+            }
+          />
+          <Callout kind="info" title={`分界在中點 ${D_AB / 2} 步`}>
+            <p>
+              翻 {T} 位仍離 A 最近，修得回來；翻 {T + 1} 位已過中線，燈會亮，但硬要更正就變成 B：miscorrection。
+            </p>
+          </Callout>
         </Stage>
 
-        <Stage kind="calculation" moduleId={ID} title={`Minimum distance ${D_MIN}：最近的兩個 codeword 也隔 ${D_MIN} 步`}>
+        <Stage kind="calculation" moduleId={ID} title={`Minimum distance（最小距離）${D_MIN} 與 ${L} 盞燈的極限`}>
+          <h3 className="text-base font-bold text-slate-800">
+            能保證什麼：最近的兩個 codeword 也隔 {D_MIN} 步
+          </h3>
           <LabGrid
             main={
-              <Card title="不只 A、B 這一對">
+              <Card>
                 <div className="space-y-2 text-sm leading-relaxed text-slate-700">
                   <p>
-                    A、B 不是特例。把 {WORDS.length} 個 codeword 兩兩比較（{MD.pairsChecked} 對），最近的一對也差 {D_MIN} 位。這個最小值叫 <strong>minimum distance</strong>：
+                    A、B 不是特例：{WORDS.length} 個 codeword 兩兩比較（{MD.pairsChecked} 對），最近的一對也差 {D_MIN} 位，稱為 <strong>minimum distance</strong>：
                   </p>
                   <Tex block>{`d_{\\min} = \\min_{c \\neq c'} d(c, c') = ${D_MIN}`}</Tex>
                   <p>
-                    所以不管發送端送哪一個 codeword，翻 {T} 位後，它離原本的 codeword 是 {T}，離其他 codeword 至少 {D_MIN} − {T} = {D_MIN - T}：最近的永遠是送出的那一個，一定修得回來。整個 code 能保證多少，由最容易混淆的那一對決定：
+                    任何 codeword 翻 {T} 位，離原本 {T}、離其他至少 {D_MIN} − {T} = {D_MIN - T}，所以一定修得回來。
                   </p>
-                  <Tex block>{`t = \\left\\lfloor \\frac{d_{\\min}-1}{2} \\right\\rfloor = \\left\\lfloor \\frac{${D_MIN}-1}{2} \\right\\rfloor = ${T}`}</Tex>
                   <p className="text-slate-600">
-                    只偵測、不更正的話，翻 1 到 {DETECT} 位燈都會亮：偵測得到 <M>{`d_{\\min} - 1 = ${DETECT}`}</M> 位。但同一個 decoder 不能一邊修 {T} 位、一邊偵測 2 位：翻 2 位的字，看起來就像另一個 codeword 翻了 {T} 位（第 5 章）。
+                    只偵測的話，翻 1 到 {DETECT} 位燈都會亮：<M>{`d_{\\min} - 1 = ${DETECT}`}</M>。一般的 <M>{'d_{\\min}'}</M> 見進階。
                   </p>
                 </div>
               </Card>
             }
             aside={
-              <>
-                <Stat label="最近的兩個 codeword 差幾位" value={D_MIN} sub={`窮舉全部 ${MD.pairsChecked} 對`} tone="indigo" />
-                <Card title={`${D_MIN} 步是第 2 章的 H 換來的`}>
-                  <p className="text-sm leading-relaxed text-slate-700">
-                    H 的設計 ① 沒有全 0 的欄：翻 1 位，燈一定亮。H 的設計 ② 沒有兩欄相同：翻 2 位時亮的是兩欄之和，也一定不是全暗。燈全暗才代表收到的是 codeword，所以翻 1、2 位都不可能把一個 codeword 變成另一個：codeword 之間至少隔 {D_MIN} 步。
-                  </p>
-                  <p className="mt-2 text-xs text-slate-500">
-                    H 的設計 ①② 見<ChLink to="matrix">第 2 章</ChLink>；用 H 的欄直接讀出 minimum distance 的方法，見下方進階「Linear code 的捷徑」。
-                  </p>
-                </Card>
-              </>
+              <Card title={`${D_MIN} 步從哪來`}>
+                <p className="text-sm leading-relaxed text-slate-700">
+                  H 的設計 ① 沒有全 0 欄、② 沒有兩欄相同：翻 1、2 位時燈一定亮。燈全暗才是 codeword，所以 codeword 之間至少隔 {D_MIN} 步。
+                </p>
+                <p className="mt-2 text-xs text-slate-500">
+                  見<ChLink to="matrix">第 2 章</ChLink>；用 H 的欄讀出 <M>{'d_{\\min}'}</M>，見進階「Linear code 的捷徑」。
+                </p>
+              </Card>
             }
           />
-        </Stage>
 
-        <Stage kind="visualization" moduleId={ID} title={`${L} 盞燈能撐多長：每一種情況都要一種燈號`}>
+          <h3 className="pt-4 text-base font-bold text-slate-800">
+            能做多長：perfect code（完美碼），{STATES} 種燈號剛好用完
+          </h3>
           <LabGrid
             main={
-              <Card title="更正 1 個錯，燈號要分出 n + 1 種情況">
+              <Card>
                 <div className="space-y-2 text-sm leading-relaxed text-slate-700">
                   <p>
-                    要更正 1 個錯，接收端只看燈號，就得分出 n + 1 種情況：<strong>沒有錯</strong>（不動），或<strong>錯在 n 個位置的哪一個</strong>（翻那一位）。每一種情況都要有自己的燈號，否則兩種情況亮法一樣，接收端就不知道該做哪一件事。
-                  </p>
-                  <p>
-                    ℓ 個 parity bit = ℓ 盞警示燈（<M>{'\\ell = n - k'}</M>），只有 <M>{'2^{\\ell}'}</M> 種亮法，所以：
+                    更正 1 個錯，燈號要分出 n + 1 種情況：沒錯，或錯在 n 個位置之一。ℓ 盞燈（<M>{'\\ell = n - k'}</M> 個 parity bit）只有 <M>{'2^{\\ell}'}</M> 種亮法，所以
                   </p>
                   <Tex block>{'\\underbrace{2^{\\ell}}_{\\ell\\text{ 盞燈的狀態數}} \\;\\ge\\; \\underbrace{n + 1}_{\\text{要分辨的情況數}}'}</Tex>
-                  <p>
-                    這是<strong>更正 1 個錯</strong>時的極限：ℓ 盞燈最多保護 <M>{'n = 2^{\\ell} - 1'}</M> 個位置。Hamming({N},{K})：<M>{`2^{${L}} = ${STATES} \\ge ${N} + 1 = ${N + 1}`}</M>，剛好相等：{STATES} 種燈號各有一個動作，一種都沒剩。
+                  <p className="text-slate-600">
+                    <ChLink to="encode">第 1 章</ChLink>、<ChLink to="matrix">第 2 章 H 的設計 ③</ChLink>已經數過，這裡寫成不等式。
                   </p>
-                </div>
-                <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm leading-relaxed text-slate-700">
-                  <div className="mb-1 font-bold text-slate-900">同一件事，前面已經出現過兩次</div>
-                  <ul className="list-disc space-y-1 pl-5">
-                    <li>
-                      <ChLink to="encode">第 1 章</ChLink>：{L} 個 parity bit 有 {PATTERNS} 種失敗組合，({N},{K}) 剛好用滿 {N} 個位置。
-                    </li>
-                    <li>
-                      <ChLink to="matrix">第 2 章 H 的設計 ③</ChLink>：{L} 盞燈最多分辨 {PATTERNS} 個位置；要能指出是哪一位出錯，{L} 個檢查器能保護的長度已經到最大。
-                    </li>
-                  </ul>
-                  <p className="mt-1 text-slate-600">這裡只是把同一句話寫成一條不等式，不是新的限制。</p>
-                </div>
-                <div className="mt-3 space-y-2 text-sm leading-relaxed text-slate-700">
                   <p>
-                    教科書上的 <strong>Hamming bound</strong> 寫成左邊的樣子；更正 1 個錯時，兩邊同除以 <M>{'2^k'}</M>，就是右邊的燈號條件（<M>{'n - k'}</M> 正是 parity bit 的個數 ℓ）：
+                    這是更正 1 個錯的極限，教科書稱為 <strong>Hamming bound</strong>：
                   </p>
                   <Tex block>{'2^{k}(1 + n) \\le 2^{n} \\iff 1 + n \\le 2^{n-k} = 2^{\\ell}'}</Tex>
-                  <p className="text-slate-600">左邊的一般形式（要更正 t 個錯）和它的 Hamming ball（漢明球）圖像，見下方進階。</p>
+                  <p className="text-slate-600">一般形式與 Hamming ball（漢明球）見進階。</p>
+                  <p>
+                    Hamming({N},{K})：<M>{`2^{${L}} = ${STATES} = ${N} + 1`}</M>，等號成立。
+                  </p>
                 </div>
               </Card>
             }
             aside={
-              <>
-                <Card title={`Hamming(${N},${K})：${STATES} 種燈號，各有一個動作`}>
-                  <LampStates />
-                  <p className="mt-2 text-xs leading-relaxed text-slate-600">
-                    全暗 = 不動，其餘 {PATTERNS} 種各指一個位置（讀成 {READ.map((i) => LAMP[i]).join('')} 就是位置編號）：要分辨的 {N} + 1 種情況，剛好用掉 <M>{`2^{${L}} = ${STATES}`}</M> 種燈號。
-                  </p>
-                </Card>
-                <Card title="Hamming code 家族：每多 1 盞燈，長度約翻倍">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="text-left text-xs text-slate-500">
-                          <th className="py-1 pr-2">ℓ 盞燈</th>
-                          <th className="pr-2">
-                            <M>{'2^{\\ell}'}</M> 種燈號
-                          </th>
-                          <th className="pr-2">
-                            <M>{'n = 2^{\\ell} - 1'}</M>
-                          </th>
-                          <th className="pr-2">
-                            <M>{'k = n - \\ell'}</M>
-                          </th>
-                          <th>燈號全部用到</th>
+              <Card title="Hamming code 家族：每多 1 盞燈，長度約翻倍">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-left text-xs text-slate-500">
+                        <th className="py-1 pr-2">ℓ 盞燈</th>
+                        <th className="pr-2">
+                          <M>{'2^{\\ell}'}</M> 種燈號
+                        </th>
+                        <th className="pr-2">
+                          <M>{'n = 2^{\\ell} - 1'}</M>
+                        </th>
+                        <th className="pr-2">
+                          <M>{'k = n - \\ell'}</M>
+                        </th>
+                        <th>燈號全部用到</th>
+                      </tr>
+                    </thead>
+                    <tbody className="font-mono">
+                      {FAMILY.map((f) => (
+                        <tr key={f.l} className={`border-t border-slate-100 ${f.l === L ? 'bg-emerald-50 font-semibold' : ''}`}>
+                          <td className="py-1 pr-2">{f.l}</td>
+                          <td className="pr-2">{f.states}</td>
+                          <td className="pr-2">{f.n}</td>
+                          <td className="pr-2">{f.k}</td>
+                          <td className={`font-sans text-xs ${f.full ? 'text-emerald-700' : 'text-rose-700'}`}>{f.full ? `✓ ${f.states} = ${f.n} + 1` : '✗'}</td>
                         </tr>
-                      </thead>
-                      <tbody className="font-mono">
-                        {FAMILY.map((f) => (
-                          <tr key={f.l} className={`border-t border-slate-100 ${f.l === L ? 'bg-emerald-50 font-semibold' : ''}`}>
-                            <td className="py-1 pr-2">{f.l}</td>
-                            <td className="pr-2">{f.states}</td>
-                            <td className="pr-2">{f.n}</td>
-                            <td className="pr-2">{f.k}</td>
-                            <td className={`font-sans text-xs ${f.full ? 'text-emerald-700' : 'text-rose-700'}`}>{f.full ? `✓ ${f.states} = ${f.n} + 1` : '✗'}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  <p className="mt-2 text-xs leading-relaxed text-slate-600">
-                    多 1 盞燈，能保護的位置約多一倍，parity bit 卻只多 1 個：{LONG.m} 盞燈保護 {LONG.n} 個位置，其中 {LONG.k} 個是資料。每一列都讓 <M>{'2^{\\ell} = n + 1'}</M>：燈號一種都不浪費（下一節）。第二課 2-12 把 ℓ 記作 m。
-                  </p>
-                  <p className="mt-1 text-xs text-slate-500">
-                    訊息比 {K} 位元長怎麼辦？切成小塊還是換更長的 Hamming code、長度對不上時的 shortened code（縮短碼），見{' '}
-                    <a href="#/l2-12" className="font-semibold text-overall-700 hover:underline">
-                      第二課 2-12
-                    </a>
-                    。
-                  </p>
-                </Card>
-              </>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <p className="mt-2 text-xs leading-relaxed text-slate-600">
+                  {LONG.m} 盞燈保護 {LONG.n} 個位置，其中 {LONG.k} 個是資料；第二課 2-12 把 ℓ 記作 m。
+                </p>
+              </Card>
             }
           />
-        </Stage>
-
-        <Stage kind="experiment" moduleId={ID} title={`Perfect code（完美碼）：${STATES} 種燈號，一種都沒浪費`}>
           <LabGrid
             main={<ReceivedOutcomes />}
             aside={
               <>
                 <Card title="等號成立 = perfect code">
-                  <div className="space-y-2 text-sm leading-relaxed text-slate-700">
-                    <p>
-                      Hamming({N},{K}) 讓 <M>{'2^{\\ell} \\ge n + 1'}</M> 的等號成立：{STATES} = {N} + 1。用燈來說：{L} 盞燈的 {STATES} 種狀態，<strong>每一種都有用到，沒有浪費</strong>。這樣的 code 叫 <strong>perfect code</strong>。
-                    </p>
-                    <p>
-                      整個空間也剛好分完：{HB.codewords} 個 codeword × {HB.volume} 種接收結果 = {HB.lhs}，正是全部 <M>{`2^{${N}} = ${HB.rhs}`}</M> 個 {N} 位元字串，{PARTITION.isPartition ? '每一個都恰好出現一次' : '✗ 有重複或遺漏'}。收到任何字串，燈號都對應一個明確的動作。
-                    </p>
-                  </div>
+                  <p className="text-sm leading-relaxed text-slate-700">
+                    等號成立的 code 稱為 <strong>perfect code</strong>：{HB.codewords} 個 codeword × {HB.volume} 種接收結果 = {HB.lhs}，正是全部 <M>{`2^{${N}}`}</M> 個 {N} 位元字串，{PARTITION.isPartition ? '每個恰好出現一次 ✓' : '✗ 有重複或遺漏'}。
+                  </p>
                 </Card>
-                <Callout kind="warning" title="代價：沒有燈號留給「錯了兩個」">
+                <Callout kind="warning" title="代價：perfect 不代表什麼錯都修得好">
                   <p>
-                    翻 2 位時，亮的是兩欄之和：不是全暗（H 的設計 ①②），就只能是 {PATTERNS} 種「翻位置 j」之一。{STATES} 種狀態都已經有主人，decoder 只能照著翻：翻 2 位一律造成 miscorrection（{TWO.mis}/{TWO.total}）。
+                    翻 2 位時，亮的是兩欄之和，只能是 {PATTERNS} 種「翻位置 j」之一：沒有一種燈號留給「錯了兩個」。decoder 照著翻，{TWO.mis}/{TWO.total} 都是 miscorrection。
                   </p>
                 </Callout>
               </>
@@ -578,38 +400,26 @@ export default function M4Limits() {
 
         <Stage kind="conclusion" moduleId={ID} title={`修 ${T} 位的保證，${STATES} 種燈號剛好用完`}>
           <Callout kind="key" title="結論">
-            <p>
-              <strong>能保證什麼</strong>：雜訊每翻一位，received word 就走一步。codeword 之間至少隔 <M>{`d_{\\min} = ${D_MIN}`}</M> 步：翻 {T} 位還離原本的 codeword 最近，修得回來；翻 2 位可能走到別人旁邊：只能偵測，硬要更正就是 miscorrection。
-            </p>
-            <p>
-              <strong>能做多長</strong>：要更正 1 個錯，ℓ 盞燈的 <M>{'2^{\\ell}'}</M> 種狀態要分出 n + 1 種情況，<M>{'2^{\\ell} \\ge n + 1'}</M>。{L} 盞燈最多 {PATTERNS} 個位置：和<ChLink to="encode">第 1 章</ChLink>、<ChLink to="matrix">第 2 章 H 的設計 ③</ChLink>是同一件事。
-            </p>
-            <p>
-              <strong>Perfect code</strong>：Hamming code 讓等號成立，每一種燈號都有用到；代價是沒有一種燈號能說「錯了兩個」。要讓接收端回報雙錯，就得多出可用的狀態：<ChLink to="secded">第 5 章 SECDED</ChLink> 多加 1 個 P0（overall parity bit）。
-            </p>
+            <ul className="list-disc space-y-1 pl-5">
+              <li>
+                <strong>能保證什麼</strong>：codeword 之間至少隔 <M>{`d_{\\min} = ${D_MIN}`}</M> 步，翻 {T} 位一定修得回來。
+              </li>
+              <li>翻 {T + 1} 位燈會亮，但最近的已經是別的 codeword：硬要更正就是 miscorrection。</li>
+              <li>
+                <strong>能做多長</strong>：更正 1 個錯需要 <M>{'2^{\\ell} \\ge n + 1'}</M>，{L} 盞燈最多保護 {PATTERNS} 個位置。
+              </li>
+              <li>Hamming({N},{K}) 剛好等號成立（perfect code），沒有燈號留給「錯了兩個」→ 第 5 章 SECDED 多一盞燈。</li>
+            </ul>
           </Callout>
           <Misconceptions
             items={[
-              { wrong: 'perfect code 什麼錯都修得好。', right: `「perfect」只代表 ${STATES} 種燈號都用到、沒有浪費。翻 2 位時燈號照樣指向某一位，decoder 照樣翻，結果造成 miscorrection。` },
-              {
-                wrong: (
-                  <>
-                    <M>{'d_{\\min}'}</M> 是 codeword 之間的平均 distance。
-                  </>
-                ),
-                right: (
-                  <>
-                    <M>{'d_{\\min}'}</M> 是最近的那一對：保證能力由最容易混淆的那一對決定。
-                  </>
-                ),
-              },
               {
                 wrong: (
                   <>
                     <M>{'2^{\\ell} \\ge n + 1'}</M> 是任何 code 的長度上限。
                   </>
                 ),
-                right: '它是「要更正 1 個錯」的極限。要更正更多錯，要分辨的情況更多，長度上限更緊（一般形式見進階）。',
+                right: '它只管更正 1 個錯。只偵測不必分出位置，code 可以更長；要修更多錯，上限更緊（見進階）。',
               },
             ]}
           />
@@ -619,7 +429,7 @@ export default function M4Limits() {
               links={[
                 { to: 'secded', text: '多 1 個位元，錯 2 位就能被偵測' },
                 { to: 'l2-9', text: '兩個錯誤一定造成 miscorrection：原因與窮舉表' },
-                { to: 'l2-12', text: '更長的 Hamming code 與 shortened code' },
+                { to: 'l2-12', text: '更長的 Hamming code 與 shortened code（縮短碼）' },
               ]}
             />
           </Card>
