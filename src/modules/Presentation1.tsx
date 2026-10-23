@@ -23,20 +23,20 @@ const STATES = 2 ** L;
 const D_MIN = minimumDistance(codewords74().map((x) => x.codeword)).dmin;
 const T = correctionCapability(D_MIN);
 
-/** one line per part of Lesson 1, matching each chapter's 重點 */
+/** one line per part of Lesson 1: each chapter's 重點 (KeyPoint) on the web page, word for word */
 const SUMMARY: [string, string, ReactNode][] = [
-  ['導論', '', '雜訊會偷偷翻轉位元：多送有規律的 redundant bit，接收端才能發現錯，甚至自己修好。'],
-  ['第 1 章', '編碼', `${L} 組互相重疊的檢查：每個位置被一組獨一無二的檢查盯著，錯在哪裡，失敗的組合就不同。`],
-  ['第 2 章', 'H 與 G', 'G 是發送端的 XOR 接線圖；H 的每一欄非零、互不相同、按二進位排：錯在哪，燈號就直接是那個位置。'],
-  ['第 3 章', 'Syndrome 解碼', '亮的燈 = H 的第 j 欄 = 出錯的位置 j：接收端看燈就知道該翻哪一位。'],
+  ['導論', '', '雜訊會偷偷翻轉位元：發送端多送幾個有規律的位元，接收端才能發現錯誤，甚至自己修好它。'],
+  ['第 1 章', '編碼', `把位置編號寫成二進位來分配檢查：發送端只用 ${L} 組 XOR 補上 parity bit；哪個位置出錯，失敗的檢查讀成二進位就是它的編號。`],
+  ['第 2 章', 'H 與 G', `G 是發送端的 encoder 接線圖，H 是接收端的 ${L} 盞警示燈：沒有雜訊時，送出的每個 codeword 都讓燈全暗。`],
+  ['第 3 章', 'Syndrome 解碼', '亮的燈 = H 的第 j 欄 = 出錯的位置 j：接收端不必知道送了什麼，看燈就知道該翻哪一位。'],
   [
     '第 4 章',
     '能力與極限',
     <>
-      雜訊每翻一位就推一步：<M>{`d_{\\min} = ${D_MIN}`}</M> 保證翻 {T} 位修得回來；{L} 盞燈的 {STATES} 種狀態剛好用完。
+      雜訊每翻一位，就把 received word 往前推一步：<M>{`d_{\\min} = ${D_MIN}`}</M> 保證翻 {T} 位修得回來，而 {L} 盞燈的 {STATES} 種狀態剛好用完。
     </>,
   ],
-  ['第 5 章', 'SECDED', '多一盞燈數翻轉個數的奇偶：錯 1 個照樣修好，錯 2 個舉手回報，而不是悄悄造成 miscorrection。'],
+  ['第 5 章', 'SECDED', '多一盞燈數翻轉個數的奇偶：錯 1 個照樣修好，錯 2 個就舉手回報，而不是悄悄造成 miscorrection。'],
 ];
 
 function SummarySlide() {
@@ -56,7 +56,7 @@ function SummarySlide() {
           </li>
         ))}
       </ol>
-      <p className="text-lg text-slate-600">第二課：同一個 code 換成多項式與 GF(8) 的觀點，用 linear feedback shift register（LFSR，線性回授移位暫存器）編碼、用 Chien search 解碼。</p>
+      <p className="text-lg text-slate-600">第二課：用多項式和移位暫存器電路做同一件事。</p>
     </div>
   );
 }
@@ -74,15 +74,15 @@ const SUMMARY_SLIDE: DeckSlide<Ctx> = {
   ),
   notes: (
     <ul className={NOTES_UL}>
-      <li>導論：沒有 redundancy，錯了也看不出來；一個 parity bit 只能發現錯</li>
-      <li>第 1 章：{L} 組重疊的檢查，失敗的組合指出位置</li>
+      <li>導論：沒有 redundancy，錯了也看不出來；一個 parity bit 只能發現錯，{L} 個重疊的檢查才能定位</li>
+      <li>第 1 章：位置編號寫成二進位，P1、P2、P4 各管二進位含 1、2、4 的位置；失敗的檢查讀成二進位 = 出錯位置</li>
       <li>第 2 章：G 是發送端的接線圖；H 的設計 ①–⑤ 讓每一欄非零、互不相同、按二進位排，沒有雜訊時燈全暗（HGᵀ = 0）</li>
       <li>第 3 章：亮的燈 = H 的第 j 欄 = 位置 j，燈號讀成二進位接上 decoder</li>
       <li>
         第 4 章：<M>{`d_{\\min} = ${D_MIN}`}</M> → 保證修 {T} 位；{L} 盞燈的 {STATES} 種狀態用完 = perfect code，沒有燈號留給「錯了兩個」
       </li>
       <li>第 5 章：多一個 overall parity bit P0、多一盞燈 q 數奇偶 → SECDED：錯 1 個修好、錯 2 個回報；伺服器記憶體用的就是這一套</li>
-      <li>第二課預告：同一個 code 換成多項式與 GF(8)，LFSR 編碼、Chien search 解碼</li>
+      <li>第二課預告：同一個 code 換成多項式與 GF(8) 的觀點，移位暫存器電路就是 LFSR（linear feedback shift register），解碼用 Chien search</li>
     </ul>
   ),
 };

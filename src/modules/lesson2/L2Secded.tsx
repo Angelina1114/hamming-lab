@@ -107,7 +107,7 @@ export default function L2Secded() {
                   </tr>
                   <tr className="border-t border-slate-100">
                     <td className="py-1.5 text-slate-600">四種判斷</td>
-                    <td colSpan={2}>完全相同（為什麼互不重疊，見第一課第 5 章「這四格怎麼分開 0、1、2 個錯誤」）</td>
+                    <td colSpan={2}>完全相同（為什麼互不重疊，見第一課第 5 章「(s, q) 怎麼分開 0、1、2 個錯」）</td>
                   </tr>
                   <tr className="border-t border-slate-100">
                     <td className="py-1.5 text-slate-600">本章新增</td>
