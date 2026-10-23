@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { type Bit, type Design, DEFAULT_MESSAGE, H74, LAYOUT_74, PARITY_CHECKS, encode74, failingChecks, outcomeTable, singleErrorCandidates } from '../core';
+import { type Bit, type Design, DEFAULT_MESSAGE, H74, K4, LAYOUT_74, N7, PARITY_CHECKS, codewords74, encode74, failingChecks, outcomeTable, singleErrorCandidates } from '../core';
 import { M } from './Tex';
 import { Card, ResetButton, Segmented } from './Lesson';
 import { usePresenting } from '../lib/presenting';
@@ -133,8 +133,8 @@ export function ParityLab({ message = DEFAULT_MESSAGE }: { message?: readonly Bi
     truth = { ok: true, text: `真的是 ${flipNames[0]} 錯了：判斷正確，可以修正。`, short: `真的是 ${flipNames[0]}：修對了` };
   else if (cands.length === 1)
     truth = flips.includes(cands[0])
-      ? { ok: false, text: `實際錯了 ${flipList}，接收端卻以為只有 ${X} 錯：${X} 確實錯了、會被翻回來，但其餘 ${flips.length - 1} 個錯誤還在 → miscorrection：超過能力，第 3、4 章會細看。`, short: `錯了 ${flipList} → miscorrection` }
-      : { ok: false, text: `實際錯了 ${flipList}，接收端卻以為只有 ${X} 錯 → 會把原本沒錯的 ${X} 也翻掉，造成 miscorrection：超過能力，第 3、4 章會細看。`, short: `錯了 ${flipList} → miscorrection` };
+      ? { ok: false, text: `實際錯了 ${flipList}，接收端卻以為只有 ${X} 錯：翻回 ${X} 之後，其餘 ${flips.length - 1} 個錯誤還在，沒修完（第 3 章）。`, short: `錯了 ${flipList} → 沒修完` }
+      : { ok: false, text: `實際錯了 ${flipList}，接收端卻以為只有 ${X} 錯 → 反而把沒錯的 ${X} 也翻掉，改錯一位（第 3 章）。`, short: `錯了 ${flipList} → 改錯了` };
   else truth = { ok: true, text: `實際錯了 ${flipList}。接收端知道「有錯」是對的，只是沒辦法修。`, short: `錯了 ${flipList}：知道有錯是對的` };
 
   const tabs = (
@@ -254,24 +254,41 @@ export function ParityLab({ message = DEFAULT_MESSAGE }: { message?: readonly Bi
               </tbody>
             </table>
           </div>
-          {presenting ? (
-            <p className={`mt-2 ${t.body} text-slate-700`}>
-              {checks} 個檢查 → <M>{`2^{${checks}} = ${2 ** checks}`}</M> 種結果，扣掉「全部通過」剩 {2 ** checks - 1} 種，要分給 {n} 個位置：
-              {2 ** checks - 1 >= n ? <strong className="text-sky-700"> 剛好夠，能定位。</strong> : <strong className="text-orange-700"> 不夠，定位不了。</strong>}
-            </p>
-          ) : (
-            <p className={`mt-2 ${t.body} text-slate-700`}>
-              {checks} 個檢查，每個不是通過就是失敗，一共只有 <M>{`2^{${checks}} = ${2 ** checks}`}</M> 種結果。扣掉「全部通過」，剩 {2 ** checks - 1}{' '}
-              種可以用來指出錯誤，但要分辨的位置有 {n} 個：
-              {2 ** checks - 1 >= n ? (
-                <strong className="text-sky-700"> 剛好夠，每個位置一種結果，所以能定位、能修正。</strong>
-              ) : (
-                <strong className="text-orange-700"> 結果比位置少，一定有好幾個位置共用同一種結果，所以定位不了。</strong>
-              )}
-            </p>
-          )}
+          <p className={`mt-2 ${t.body} text-slate-700`}>
+            {checks} 個檢查 → <M>{`2^{${checks}} = ${2 ** checks}`}</M> 種結果，扣掉「全部通過」剩 {2 ** checks - 1} 種，要分給 {n} 個位置：
+            {2 ** checks - 1 >= n ? <strong className="text-sky-700"> 剛好夠，能定位。</strong> : <strong className="text-orange-700"> 不夠，定位不了。</strong>}
+          </p>
         </div>
       </div>
     </Card>
+  );
+}
+
+/** legal strings out of all strings: send the 4 data bits as they are, add 1 bit, add 3 (Hamming(7,4)) */
+const LEGAL_ROWS = [
+  { name: '不多送', n: K4, legal: 2 ** K4 },
+  { name: '多送 1 位', n: K4 + 1, legal: 2 ** K4 },
+  { name: `多送 ${N7 - K4} 位（Hamming(${N7},${K4})）`, n: N7, legal: codewords74().length },
+];
+
+/** Three bars, legal / all strings: the more bits sent, the rarer the legal ones (shared by the intro page and its slide). */
+export function LegalBars() {
+  const presenting = usePresenting();
+  return (
+    <div className={`space-y-1.5 ${presenting ? 'text-lg' : 'text-sm'}`}>
+      {LEGAL_ROWS.map((r) => (
+        <div key={r.name}>
+          <div className="flex justify-between gap-2">
+            <span className="min-w-0">{r.name}</span>
+            <span className="shrink-0 whitespace-nowrap font-mono">
+              {r.legal} / {2 ** r.n}
+            </span>
+          </div>
+          <div className="h-2 overflow-hidden rounded-full bg-white">
+            <div className="h-full rounded-full bg-emerald-500" style={{ width: `${(r.legal / 2 ** r.n) * 100}%` }} />
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }

@@ -12,7 +12,7 @@ export interface ModuleMeta {
 }
 
 export const MODULES: ModuleMeta[] = [
-  { id: 'intro', num: '0', title: '導論與使用方式', en: 'Introduction', blurb: '雜訊會翻轉位元：多送有規律的 redundant bit，才能發現並修好錯' },
+  { id: 'intro', num: '0', title: '導論與使用方式', en: 'Introduction', blurb: '雜訊會翻轉位元：多送幾個有規律的位元，才能發現並修好錯' },
   { id: 'encode', num: '1', title: 'Hamming(7,4) 編碼', en: 'Encoding', blurb: '4 個 data bit 如何長出 3 個 parity bit' },
   { id: 'matrix', num: '2', title: 'H 與 G', en: 'Parity-check & Generator Matrix', blurb: '發送端用 G 編碼，接收端用 H 的 3 盞燈檢查' },
   { id: 'syndrome', num: '3', title: 'Syndrome 解碼', en: 'Syndrome Decoding', blurb: '翻轉位元，讓 Syndrome 告訴你錯在哪裡' },

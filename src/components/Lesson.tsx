@@ -72,16 +72,15 @@ export const STAGES: Record<StageKind, { zh: string; en: string; icon: typeof He
   connection: { zh: '連結', en: 'Connection', icon: Route, accent: 'text-fuchsia-700 bg-fuchsia-50 border-fuchsia-200', dot: 'bg-fuchsia-500' },
 };
 
-export const LESSON1_STAGES: StageKind[] = ['why', 'definition', 'calculation', 'visualization', 'experiment', 'conclusion'];
+/** Lesson 1 reads situation → design → derivation → conclusion; interactives sit inside, next to the result they check */
+export const LESSON1_STAGES: StageKind[] = ['why', 'definition', 'calculation', 'conclusion'];
 export const LESSON2_STAGES: StageKind[] = ['goals', 'intuition', 'math', 'algorithm', 'interactive', 'verify', 'next'];
 export const ALGEBRA_STAGES: StageKind[] = ['why', 'what', 'how', 'example', 'connection'];
-/** Lesson 1 reads situation → design → derivation → picture → experiment → conclusion: same stage kinds, its own names */
+/** Lesson 1 uses the same stage kinds under its own names */
 const LESSON1_LABELS: Partial<Record<StageKind, { zh: string; en: string }>> = {
   why: { zh: '情境', en: 'Situation' },
   definition: { zh: '設計', en: 'Design' },
   calculation: { zh: '推導', en: 'Derivation' },
-  visualization: { zh: '圖解', en: 'Picture' },
-  experiment: { zh: '實驗', en: 'Experiment' },
   conclusion: { zh: '結論', en: 'Conclusion' },
 };
 const isLesson1 = (moduleId: string) => {
@@ -109,7 +108,8 @@ export function Stage({ kind, moduleId, title, children }: StageProps) {
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <span className={`chip border ${s.accent}`}>
           <Icon className="h-3.5 w-3.5" />
-          {orderOf(kind).indexOf(kind) + 1}. {name.zh} <span className="opacity-60">{name.en}</span>
+          {orderOf(kind).includes(kind) && `${orderOf(kind).indexOf(kind) + 1}. `}
+          {name.zh} <span className="opacity-60">{name.en}</span>
         </span>
         <h2 className="text-lg font-bold text-slate-900 sm:text-xl">{title}</h2>
       </div>
