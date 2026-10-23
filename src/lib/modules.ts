@@ -17,8 +17,7 @@ export const MODULES: ModuleMeta[] = [
   { id: 'matrix', num: '2', title: '矩陣 H 與 G', en: 'Parity-check & Generator Matrix', blurb: '把編碼寫成線性代數：c = mG、Hcᵀ = 0' },
   { id: 'syndrome', num: '3', title: '錯誤注入與 Syndrome 解碼', en: 'Syndrome Decoding', blurb: '翻轉位元，讓 Syndrome 告訴你錯在哪裡' },
   { id: 'distance', num: '4', title: '能力與極限', en: 'Capability & Limits', blurb: 'd_min = 3 與 3 盞燈能撐多長' },
-  { id: 'extended', num: '6', title: 'Extended Hamming(8,4)', en: 'Extended Hamming Code', blurb: '加一個整體同位位元：[7,4,3] → [8,4,4]' },
-  { id: 'secded', num: '7', title: 'SECDED 實驗器', en: 'Single Error Correction, Double Error Detection', blurb: 'Syndrome + Overall Parity 的四種判斷' },
+  { id: 'secded', num: '5', title: 'SECDED：修 1 個、偵測 2 個', en: 'Single Error Correction, Double Error Detection', blurb: '多一個整體同位位元 P0：(s, q) 的四種判斷' },
   // ---------------- 代數基礎與 Cyclic Codes (bridges Lesson 1 and Lesson 2; replaces the former optional GF(8) page) ----------------
   { id: 'a-0', num: 'A0', group: 'algebra', title: '概念地圖：為什麼需要抽象代數？', en: 'Concept Map', blurb: '線性代數已經夠用，為什麼還要 g(x)、GF(8)？' },
   { id: 'a-1', num: 'A1', group: 'algebra', title: 'GF(2)：Hamming Code 本來的運算', en: 'The Field GF(2)', blurb: '1 + 1 = 0、體、特徵、Hcᵀ = 0' },

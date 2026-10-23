@@ -56,7 +56,7 @@ export default function L2Secded() {
         </p>
       }
       goals={[
-        '回顧：Extended Hamming(8,4) 與 SECDED 四種判斷（理論在第一課第 6、7 章）',
+        '回顧：Extended Hamming(8,4) 與 SECDED 四種判斷（理論在第一課第 5 章）',
         '把 SECDED 套到第二課的循環碼：Syndrome 改用 r(x) mod g(x)',
         '實作細節：雙錯時不更正、保留資料、設定 Uncorrectable Error 旗標',
         '理解保證只在「至多兩個錯誤」時成立',
@@ -66,7 +66,7 @@ export default function L2Secded() {
         body: (
           <div className="prose-lab">
             <p>
-              第一課已經證明：Syndrome 回答「像是錯在哪」，整體同位位元回答「錯誤個數是奇數還是偶數」，兩者合起來就能分辨 0、1、2 個錯誤（<a className="text-indigo-700 underline" href="#/secded">第一課第 7 章 SECDED 實驗器</a>）。這一章不再重新推導，而是把同一套規則放到第二課的系統式循環碼上，並處理硬體真正要做的事：<strong>雙錯時輸出什麼、旗標怎麼設</strong>。
+              第一課已經證明：Syndrome 回答「像是錯在哪」，整體同位位元回答「錯誤個數是奇數還是偶數」，兩者合起來就能分辨 0、1、2 個錯誤（<a className="text-indigo-700 underline" href="#/secded">第一課第 5 章 SECDED</a>）。這一章不再重新推導，而是把同一套規則放到第二課的系統式循環碼上，並處理硬體真正要做的事：<strong>雙錯時輸出什麼、旗標怎麼設</strong>。
             </p>
           </div>
         ),
@@ -80,7 +80,7 @@ export default function L2Secded() {
                 <thead>
                   <tr className="text-left text-xs text-slate-500">
                     <th className="py-1">項目</th>
-                    <th>第一課第 7 章</th>
+                    <th>第一課第 5 章</th>
                     <th>本章（循環碼）</th>
                   </tr>
                 </thead>
@@ -107,7 +107,7 @@ export default function L2Secded() {
                   </tr>
                   <tr className="border-t border-slate-100">
                     <td className="py-1.5 text-slate-600">四種判斷</td>
-                    <td colSpan={2}>完全相同（為什麼互不重疊，見第一課第 7 章「為什麼這四格能分開」）</td>
+                    <td colSpan={2}>完全相同（為什麼互不重疊，見第一課第 5 章「這四格怎麼分開 0、1、2 個錯誤」）</td>
                   </tr>
                   <tr className="border-t border-slate-100">
                     <td className="py-1.5 text-slate-600">本章新增</td>
@@ -120,8 +120,7 @@ export default function L2Secded() {
               <RelatedLinks
                 title="理論在第一課"
                 links={[
-                  { to: 'extended', text: 'Extended Hamming(8,4)：為什麼 d_min 從 3 變成 4' },
-                  { to: 'secded', text: 'SECDED：四種判斷的推導與決策平面' },
+                  { to: 'secded', text: 'Extended Hamming(8,4)：d_min 從 3 變成 4，(s, q) 四種判斷的推導與決策表' },
                 ]}
               />
             </div>

@@ -167,7 +167,7 @@ export function ShortenedCalc() {
           <div className="text-xs text-slate-500">碼率 {(sp.rate * 100).toFixed(1)}%</div>
         </div>
         <div className="rounded-xl border border-orange-200 bg-orange-50/60 p-3">
-          <div className="text-xs text-slate-500">再加 1 個整體同位位元（SECDED，第一課第 7 章；第二課 2-11）</div>
+          <div className="text-xs text-slate-500">再加 1 個整體同位位元（SECDED，第一課第 5 章；第二課 2-11）</div>
           <div className="text-xl font-bold">
             ({sp.nSecded}, {k})
           </div>

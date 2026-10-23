@@ -10,7 +10,7 @@ interface MessageState {
 
 const Ctx = createContext<MessageState | null>(null);
 
-/** The 4-bit message is shared by modules 1, 2, 3, 6 and 7 so the story stays continuous. */
+/** The 4-bit message is shared by Lesson 1 chapters 1, 2, 3 and 5 so the story stays continuous. */
 export function MessageProvider({ children }: { children: ReactNode }) {
   const [message, setMessage] = useState<Bit[]>([...DEFAULT_MESSAGE]);
   const value = useMemo<MessageState>(

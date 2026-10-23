@@ -30,7 +30,7 @@ import {
 import { H84, codewords84, encode84, secdedDecode, simulate84 } from '../extended';
 import { correctionCapability, flipPath, hammingDistance, minimumDistance, nearestCodewords, weightDistribution } from '../distance';
 import { binomial, doubleErrorLandings, hammingBound, partitionByNearest, sphereVolume } from '../bound';
-import { hammingK, hammingN } from '../scaling';
+import { checkBitsFor, hammingK, hammingN, shortenedHamming } from '../scaling';
 import {
   ALPHA_POW,
   CYCLIC_G,
@@ -288,6 +288,51 @@ describe('Chapter 4: capability & limits (the numbers on the page and in the dec
       const ball = [c, ...c.map((_, i) => flipBit(c, i))];
       expect(new Set(ball.map((w) => bitsToString(syndrome74(w)))).size).toBe(8);
     });
+  });
+});
+
+describe('Chapter 5: SECDED (the numbers on the page and in the deck)', () => {
+  // chapter 4's A → B path in the extended code: A = default message, B = 1111, position 5 flipped first
+  const A = encode84(DEFAULT_MESSAGE);
+  const B = encode84([1, 1, 1, 1]);
+  const path = flipPath(A, B, [4]);
+  it('A and B differ in 3 positions in Hamming(7,4), so P0 differs too: 4 steps 01100110 → … → 11111111', () => {
+    expect(hammingDistance(encode74(DEFAULT_MESSAGE), encode74([1, 1, 1, 1]))).toBe(3);
+    expect(hammingDistance(A, B)).toBe(minimumDistance(C84).dmin);
+    expect(path.map((st) => bitsToString(st.word))).toEqual(['01100110', '01101110', '11101110', '11111110', '11111111']);
+    expect(path.map((st) => st.flipped.map((i) => i + 1))).toEqual([[], [5], [5, 1], [5, 1, 4], [5, 1, 4, 8]]);
+  });
+  it('one flip: s points at 5, q = 1, fixed back to A; two flips (5, 1): distance 2 from both, s ≠ 0 and q = 0, reported', () => {
+    const one = secdedDecode(path[1].word);
+    expect([one.case, one.correctedPosition, one.overallParity]).toEqual(['single-corrected', 5, 1]);
+    expect(one.corrected).toEqual(A);
+    expect([hammingDistance(path[2].word, A), hammingDistance(path[2].word, B)]).toEqual([2, 2]);
+    const two = secdedDecode(path[2].word);
+    expect([two.case, two.overallParity, two.corrected]).toEqual(['double-detected', 0, null]);
+    // the same two flips in Hamming(7,4): the lamps point at 4 and the word is pushed to B (chapter 4)
+    expect(decode74(path[2].word.slice(0, 7)).corrected).toEqual(B.slice(0, 7));
+  });
+  it('every single error is fixed (8/8 incl. P0), every double error reported (28/28); Hamming(7,4) miscorrects 21/21', () => {
+    const ones = errorsOfWeight(8, 1).map((e) => simulate84(zeroVector(8), e));
+    expect([ones.length, ones.filter((o) => o.success).length]).toEqual([8, 8]);
+    const twos = errorsOfWeight(8, 2).map((e) => simulate84(zeroVector(8), e));
+    expect([twos.length, twos.filter((o) => o.result.case === 'double-detected').length]).toEqual([28, 28]);
+    const twos7 = errorsOfWeight(7, 2).map((e) => simulate74(zeroVector(7), e));
+    expect([twos7.length, twos7.filter((o) => o.miscorrection).length]).toEqual([21, 21]);
+  });
+  it('the 112 strings outside the 16 radius-1 balls are each at distance 2 from 4 codewords', () => {
+    const hb = hammingBound(8, 4, 1);
+    expect([hb.codewords, hb.volume, hb.lhs, hb.rhs]).toEqual([16, 9, 144, 256]);
+    const outside = allVectors(8).filter((w) => C84.every((c) => hammingDistance(w, c) >= 2));
+    expect(outside).toHaveLength(112);
+    expect(new Set(outside.map((w) => C84.filter((c) => hammingDistance(w, c) === 2).length))).toEqual(new Set([4]));
+  });
+  it('server memory: 64 data bits need r = 7 (2⁶ = 64 < 71, 2⁷ = 128 ≥ 72) → (71,64) + P0 = (72,64)', () => {
+    const r = checkBitsFor(64);
+    expect(r).toBe(7);
+    expect(2 ** (r - 1) < 64 + (r - 1) + 1).toBe(true);
+    expect(2 ** r >= 64 + r + 1).toBe(true);
+    expect(shortenedHamming(64)).toMatchObject({ n: 71, nSecded: 72 });
   });
 });
 

@@ -11,8 +11,7 @@ const PAGES: Record<string, ComponentType> = {
   matrix: lazy(() => import('./modules/M2Matrices')),
   syndrome: lazy(() => import('./modules/M3Syndrome')),
   distance: lazy(() => import('./modules/M4Limits')),
-  extended: lazy(() => import('./modules/M6Extended')),
-  secded: lazy(() => import('./modules/M7Secded')),
+  secded: lazy(() => import('./modules/M5Secded')),
   'a-0': lazy(() => import('./modules/algebra/A0Map')),
   'a-1': lazy(() => import('./modules/algebra/A1GF2')),
   'a-2': lazy(() => import('./modules/algebra/A2WhyGF8')),
@@ -49,8 +48,9 @@ const DECKS: Record<string, ComponentType> = { 'present-1': Presentation1, prese
 function useHashRoute(): string {
   const read = () => {
     const raw = window.location.hash.replace(/^#\/?/, '').split(/[/?#]/)[0];
-    // former pages that were merged: optional GF(8) page → A0, old A11 (decoder) → A10, old Hamming Bound chapter → chapter 4
-    const id = raw === 'advanced' ? 'a-0' : raw === 'a-11' ? 'a-10' : raw === 'bound' ? 'distance' : raw;
+    // former pages that were merged: optional GF(8) page → A0, old A11 (decoder) → A10, old Hamming Bound chapter → chapter 4,
+    // old Extended Hamming(8,4) chapter → chapter 5 SECDED
+    const id = raw === 'advanced' ? 'a-0' : raw === 'a-11' ? 'a-10' : raw === 'bound' ? 'distance' : raw === 'extended' ? 'secded' : raw;
     return PAGES[id] || DECKS[id] ? id : 'intro';
   };
   const [route, setRoute] = useState(read);
@@ -78,7 +78,7 @@ function SharedMessageChip() {
         <span className="text-slate-500">→</span>
         <BitString bits={c} className="text-slate-100" highlight={(i) => ([0, 1, 3].includes(i) ? 'text-parity-300' : 'text-data-300')} />
       </div>
-      <div className="mt-1 text-[11px] leading-snug text-slate-500">第一課第 1、2、3、6、7 章使用同一組訊息，方便串連觀念。</div>
+      <div className="mt-1 text-[11px] leading-snug text-slate-500">第一課第 1、2、3、5 章使用同一組訊息，方便串連觀念。</div>
     </div>
   );
 }
