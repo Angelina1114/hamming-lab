@@ -707,7 +707,7 @@ export default function M2Matrices() {
               <div className="min-w-0 flex-1 basis-80 space-y-2 text-sm leading-relaxed text-slate-700">
                 <p>
                   <M>{'G^T'}</M> 的第 i 欄就是 <M>{'g_i'}</M>，所以乘積的第 i 欄是 <M>{'g_i'}</M> 送進 {L} 個檢查器的結果：
-                  {isZeroMatrix(HGt) ? `${HGt.length} × ${HGt[0].length} 全是 0` : '✗ 不是零矩陣'}，每個 <M>{'g_i'}</M> 都讓燈全暗。再用疊加（G 的設計 ①），任何 codeword 都讓燈全暗（也常寫成 <M>{'GH^{T} = 0'}</M>）：
+                  {isZeroMatrix(HGt) ? `${HGt.length} × ${HGt[0].length} 全是 0` : '✗ 不是零矩陣'}，每個 <M>{'g_i'}</M> 都讓燈全暗；再用疊加（G 的設計 ①），任何 codeword 也一樣（也常寫成 <M>{'GH^{T} = 0'}</M>）：
                 </p>
                 <Tex block>{'Hc^T = H(mG)^T = H\\,G^T m^T = (HG^T)\\,m^T = 0'}</Tex>
               </div>
@@ -808,7 +808,7 @@ export default function M2Matrices() {
           </Expandable>
 
           <Card
-            title="Linear code（線性碼）：兩個 codeword 相加，燈照樣全暗"
+            title="Linear code（線性碼）：兩個 codeword 相加，還是 codeword"
             actions={
               <select className="rounded-lg border border-slate-200 px-2 py-1 font-mono text-xs" value={partner} onChange={(ev) => setPartner(Number(ev.target.value))} aria-label="選擇第二個訊息 m′">
                 {CODEWORDS.map((x, k) => (
@@ -822,7 +822,7 @@ export default function M2Matrices() {
             <div className="grid grid-cols-1 items-center gap-5 lg:grid-cols-2">
               <div className="min-w-0 space-y-2 text-sm leading-relaxed text-slate-700">
                 <p>
-                  每個檢查器只做 XOR：兩個讓燈全暗的字相加，每盞燈看到的是偶數個 1 加偶數個 1，還是偶數：<M>{"H(c+c')^{T} = Hc^{T} + Hc'^{T} = 0 + 0 = 0"}</M>。
+                  每個檢查器只做 XOR：兩個 codeword 相加，每盞燈看到的是偶數個 1 加偶數個 1，還是偶數：<M>{"H(c+c')^{T} = Hc^{T} + Hc'^{T} = 0 + 0 = 0"}</M>。
                 </p>
                 <p>
                   任兩個 codeword 相加還是 codeword，這樣的 code 叫 <strong>linear code</strong>。
