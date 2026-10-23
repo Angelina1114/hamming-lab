@@ -10,8 +10,7 @@ const PAGES: Record<string, ComponentType> = {
   encode: lazy(() => import('./modules/M1Encoding')),
   matrix: lazy(() => import('./modules/M2Matrices')),
   syndrome: lazy(() => import('./modules/M3Syndrome')),
-  distance: lazy(() => import('./modules/M4Distance')),
-  bound: lazy(() => import('./modules/M5Bound')),
+  distance: lazy(() => import('./modules/M4Limits')),
   extended: lazy(() => import('./modules/M6Extended')),
   secded: lazy(() => import('./modules/M7Secded')),
   'a-0': lazy(() => import('./modules/algebra/A0Map')),
@@ -50,8 +49,8 @@ const DECKS: Record<string, ComponentType> = { 'present-1': Presentation1, prese
 function useHashRoute(): string {
   const read = () => {
     const raw = window.location.hash.replace(/^#\/?/, '').split(/[/?#]/)[0];
-    // former pages that were merged: optional GF(8) page → A0, old A11 (decoder) → A10
-    const id = raw === 'advanced' ? 'a-0' : raw === 'a-11' ? 'a-10' : raw;
+    // former pages that were merged: optional GF(8) page → A0, old A11 (decoder) → A10, old Hamming Bound chapter → chapter 4
+    const id = raw === 'advanced' ? 'a-0' : raw === 'a-11' ? 'a-10' : raw === 'bound' ? 'distance' : raw;
     return PAGES[id] || DECKS[id] ? id : 'intro';
   };
   const [route, setRoute] = useState(read);

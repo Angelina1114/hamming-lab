@@ -1,7 +1,7 @@
 /**
  * Hamming spheres, the Hamming (sphere-packing) bound and perfect codes.
  */
-import { type BitVector, allVectors } from './gf2';
+import { type BitVector, allVectors, flipBit } from './gf2';
 import { hammingDistance } from './distance';
 
 /** Binomial coefficient C(n, k), exact for the small n used here. */
@@ -129,4 +129,29 @@ export function knownPerfectFamily(n: number, k: number, t: number): string | nu
   if (t === 1 && r >= 2 && n === 2 ** r - 1) return `Hamming Code [${n},${k},3]`;
   if (n === 23 && k === 12 && t === 3) return 'Binary Golay code [23,12,7]';
   return null;
+}
+
+export interface DoubleErrorLandings {
+  /** C(n, 2): double errors per codeword */
+  perWord: number;
+  /** |C| · C(n, 2) */
+  total: number;
+  /** received words within distance 1 of a codeword OTHER than the one sent (nearest-codeword decoding miscorrects them) */
+  nearOther: number;
+}
+
+/** Every weight-2 error on every codeword: how many land within distance 1 of another codeword. */
+export function doubleErrorLandings(code: readonly BitVector[]): DoubleErrorLandings {
+  const n = code[0].length;
+  let total = 0;
+  let nearOther = 0;
+  code.forEach((c, k) => {
+    for (let i = 0; i < n; i++)
+      for (let j = i + 1; j < n; j++) {
+        const w = flipBit(flipBit(c, i), j);
+        total++;
+        if (code.some((x, l) => l !== k && hammingDistance(w, x) <= 1)) nearOther++;
+      }
+  });
+  return { perWord: binomial(n, 2), total, nearOther };
 }

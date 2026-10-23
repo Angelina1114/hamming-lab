@@ -80,7 +80,7 @@ export function ParityLab() {
   if (flips.length === 0) truth = { ok: true, text: '沒有任何位元被翻轉，判斷正確。' };
   else if (!anyFail) truth = { ok: false, text: `實際錯了 ${flips.length} 個（${flipNames.join('、')}），但每個檢查裡的 1 又剛好變回偶數個 → 接收端完全沒發現，被騙了。` };
   else if (cands.length === 1 && flips.length === 1 && cands[0] === flips[0]) truth = { ok: true, text: `真的是 ${flipNames[0]} 錯了：判斷正確，可以修正。` };
-  else if (cands.length === 1) truth = { ok: false, text: `實際錯了 ${flips.length} 個（${flipNames.join('、')}），接收端卻以為只有 ${name(cands[0])} 錯 → 會改錯（超過能力，第 3 章會細看）。` };
+  else if (cands.length === 1) truth = { ok: false, text: `實際錯了 ${flips.length} 個（${flipNames.join('、')}），接收端卻以為只有 ${name(cands[0])} 錯 → 會改錯（超過能力，第 3、4 章會細看）。` };
   else truth = { ok: true, text: `實際錯了 ${flips.length} 個（${flipNames.join('、')}）。接收端知道「有錯」是對的，只是沒辦法修。` };
 
   return (

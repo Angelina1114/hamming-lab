@@ -1,7 +1,7 @@
 import { correctionCapability } from '../core';
 
-/** A geodesic path A → B of length d with radius-t regions around both ends. */
-export function DistanceLine({ d }: { d: number }) {
+/** A geodesic path A → B of length d with radius-t regions around both ends. `nodeLabel` names the in-between words (default: the step number). */
+export function DistanceLine({ d, nodeLabel = (k) => `${k}` }: { d: number; nodeLabel?: (k: number) => string }) {
   const t = correctionCapability(d);
   const W = 560;
   const pad = 40;
@@ -20,7 +20,7 @@ export function DistanceLine({ d }: { d: number }) {
           <g key={k}>
             <circle cx={x} cy={43} r={end ? 9 : 6} fill={k === 0 ? '#3b6cf6' : k === d ? '#8b55f0' : inA && inB ? '#e11d48' : inA ? '#93b4fd' : inB ? '#c6a8fd' : '#fff'} stroke={end ? 'none' : '#64748b'} strokeWidth={1.5} />
             <text x={x} y={78} textAnchor="middle" fontSize={11} fill="#64748b">
-              {k === 0 ? 'A' : k === d ? 'B' : `${k}`}
+              {k === 0 ? 'A' : k === d ? 'B' : nodeLabel(k)}
             </text>
           </g>
         );

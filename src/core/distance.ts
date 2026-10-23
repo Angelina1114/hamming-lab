@@ -1,7 +1,7 @@
 /**
  * Hamming distance, minimum distance and nearest-codeword (minimum-distance) decoding.
  */
-import { type Bit, type BitVector } from './gf2';
+import { type Bit, type BitVector, flipBit } from './gf2';
 
 /** d_H(x, y) = number of coordinates where x and y differ. */
 export function hammingDistance(x: readonly Bit[], y: readonly Bit[]): number {
@@ -16,6 +16,27 @@ export function differingPositions(x: readonly Bit[], y: readonly Bit[]): number
   const out: number[] = [];
   for (let i = 0; i < x.length; i++) if (x[i] !== y[i]) out.push(i);
   return out;
+}
+
+export interface PathStep {
+  word: BitVector;
+  /** 0-based positions flipped so far, in the order they were flipped */
+  flipped: number[];
+}
+
+/**
+ * The walk from a to b that flips one differing position per step: d(a, b) + 1 words, a first and b last.
+ * Positions listed in `first` (0-based) are flipped first, the rest in increasing order.
+ */
+export function flipPath(a: readonly Bit[], b: readonly Bit[], first: readonly number[] = []): PathStep[] {
+  const diff = differingPositions(a, b);
+  const order = [...first.filter((i) => diff.includes(i)), ...diff.filter((i) => !first.includes(i))];
+  const steps: PathStep[] = [{ word: [...a], flipped: [] }];
+  for (const i of order) {
+    const prev = steps[steps.length - 1];
+    steps.push({ word: flipBit(prev.word, i), flipped: [...prev.flipped, i] });
+  }
+  return steps;
 }
 
 /** Full |C|×|C| distance table. */

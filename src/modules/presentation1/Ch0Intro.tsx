@@ -37,7 +37,7 @@ const AGENDA: [string, string, ReactNode][] = [
     '第 4 章',
     '能力與極限',
     <>
-      <M>{`d_{\\min} = ${D_MIN}`}</M>：修 {T} 個；{CODEWORDS} 顆球剛好鋪滿 {2 ** N} 個字串
+      <M>{`d_{\\min} = ${D_MIN}`}</M>：修 {T} 個；{R} 盞燈的 {2 ** R} 種狀態剛好用完
     </>,
   ],
   ['第 5 章', 'SECDED', '多 1 個整體同位位元：修 1 個、偵測 2 個'],
@@ -86,7 +86,7 @@ const ROAD: [string, ReactNode, ReactNode][] = [
     '第 4 章',
     '能力與極限',
     <>
-      <M>{'d_{\\min}'}</M>、完美碼
+      <M>{'d_{\\min}'}</M>、燈號用完
     </>,
   ],
   ['第 5 章', 'SECDED', '修 1、偵測 2'],

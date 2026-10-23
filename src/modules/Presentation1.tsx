@@ -4,25 +4,22 @@ import {
   LAYOUT_74,
   codewords74,
   codewords84,
-  correctionCapability,
   encode84,
   minimumDistance,
   secdedDecode,
   syndromeToPosition,
 } from '../core';
 import { useMessage } from '../lib/store';
-import { M, Tex } from '../components/Tex';
+import { M } from '../components/Tex';
 import { MessageInput } from '../components/Bits';
 import { StatusBadge } from '../components/Lesson';
-import { BallDiagram, CubeBall, PackingDiagram } from '../components/BoundFigures';
-import { DistanceLine } from '../components/DistanceLine';
 import { Deck, type DeckSlide } from '../components/Deck';
 import { CH0_SLIDES } from './presentation1/Ch0Intro';
 import { CH1_SLIDES } from './presentation1/Ch1Encode';
 import { CH2_SLIDES } from './presentation1/Ch2Matrices';
 import { CH3_SLIDES } from './presentation1/Ch3Syndrome';
-import { INTRO_CH4_SLIDES } from './presentation1/IntroCh3to4';
-import { INTRO_CH5_SLIDES, INTRO_CH6_SLIDES, INTRO_CH7_SLIDES } from './presentation1/IntroCh5to7';
+import { CH4_SLIDES } from './presentation1/Ch4Limits';
+import { INTRO_CH6_SLIDES, INTRO_CH7_SLIDES } from './presentation1/IntroCh5to7';
 
 type Ctx = null;
 const LAYOUT_84 = [...LAYOUT_74.map((p) => p.label), 'P0'];
@@ -30,47 +27,6 @@ const LAYOUT_84 = [...LAYOUT_74.map((p) => p.label), 'P0'];
 /* ------------------------------------------------------------------ */
 /* Slides                                                             */
 /* ------------------------------------------------------------------ */
-
-function DistanceSlide() {
-  const [d, setD] = useState(3);
-  const md = useMemo(() => minimumDistance(codewords74().map((x) => x.codeword)), []);
-  const t = correctionCapability(d);
-  return (
-    <div className="space-y-5 text-xl">
-      <p>
-        Hamming 距離 = 兩個字串有幾個位置不一樣。Hamming(7,4) 的 16 個 codeword 兩兩比較（{md.pairsChecked} 對），最近的一對距離是 <strong>{md.dmin}</strong>，所以 <M>{`d_{\\min} = ${md.dmin}`}</M>。
-      </p>
-      <label className="flex items-center gap-4">
-        <span>
-          設 <M>{'d_{\\min}'}</M> =
-        </span>
-        <input type="range" min={1} max={7} value={d} onChange={(ev) => setD(Number(ev.target.value))} className="w-64 accent-slate-900" aria-label="最小距離" />
-        <span className="font-mono text-3xl font-bold">{d}</span>
-      </label>
-      <DistanceLine d={d} />
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <div className="rounded-2xl bg-sky-50 p-4">
-          保證能修正 <M>{`t = \\lfloor (${d} - 1)/2 \\rfloor = ${t}`}</M> 個：錯 t 個以內，一定還在原本那個 codeword 的地盤。
-        </div>
-        <div className="rounded-2xl bg-amber-50 p-4">
-          保證能偵測 <M>{`d_{\\min} - 1 = ${d - 1}`}</M> 個：錯不到 d_min 個，不可能剛好變成另一個 codeword。
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function BoundSlide() {
-  return (
-    <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-      <BallDiagram />
-      <div className="space-y-4">
-        <PackingDiagram />
-        <Tex block>{'2^k \\cdot V_2(n,t) \\le 2^n \\qquad 16 \\times 8 = 128 = 2^7'}</Tex>
-      </div>
-    </div>
-  );
-}
 
 function ExtendedSlide() {
   const { message, toggleBit } = useMessage();
@@ -203,7 +159,7 @@ function SummarySlide() {
         <li>
           <M>{'d_{\\min} = 3 \\Rightarrow t = 1'}</M>：保證修 1 個，錯 2 個會改錯。
         </li>
-        <li>16 × 8 = 128：Hamming(7,4) 是完美碼，沒有多餘空間偵測雙錯。</li>
+        <li>完美碼：每一種燈號都用到，沒有一種留給雙錯。</li>
         <li>多一個整體同位位元 → (8,4)，d_min = 4：SECDED 修 1 個、偵測 2 個。</li>
       </ol>
       <p className="text-lg text-slate-600">
@@ -219,12 +175,7 @@ const SLIDES: DeckSlide<Ctx>[] = [
   ...CH1_SLIDES,
   ...CH2_SLIDES,
   ...CH3_SLIDES,
-  ...INTRO_CH4_SLIDES,
-  { title: '第 4 章：d_min 決定更正與偵測能力', sub: 'd_min 越大，每個 codeword 的地盤越大', steps: () => 1, render: () => <DistanceSlide /> },
-  INTRO_CH5_SLIDES[0],
-  { title: '第 5 章：漢明球', sub: 'n = 3 的立方體：沿著邊走的步數 = 距離', steps: () => 1, render: () => <CubeBall /> },
-  { title: '第 5 章：Hamming Bound', sub: '球不能重疊，空間只有 2ⁿ 個字串', steps: () => 1, render: () => <BoundSlide /> },
-  ...INTRO_CH5_SLIDES.slice(1),
+  ...CH4_SLIDES,
   ...INTRO_CH6_SLIDES,
   { title: '第 6 章：實例：編碼成 8 個位元', sub: '多一個整體同位位元 P0', steps: () => 1, render: () => <ExtendedSlide /> },
   ...INTRO_CH7_SLIDES,

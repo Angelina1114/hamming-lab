@@ -16,8 +16,7 @@ export const MODULES: ModuleMeta[] = [
   { id: 'encode', num: '1', title: 'Hamming(7,4) 編碼', en: 'Encoding', blurb: '4 個資訊位元如何長出 3 個同位位元' },
   { id: 'matrix', num: '2', title: '矩陣 H 與 G', en: 'Parity-check & Generator Matrix', blurb: '把編碼寫成線性代數：c = mG、Hcᵀ = 0' },
   { id: 'syndrome', num: '3', title: '錯誤注入與 Syndrome 解碼', en: 'Syndrome Decoding', blurb: '翻轉位元，讓 Syndrome 告訴你錯在哪裡' },
-  { id: 'distance', num: '4', title: 'Hamming 距離與最小距離', en: 'Minimum Distance', blurb: 'Codeword 彼此離多遠，決定能修正幾個錯' },
-  { id: 'bound', num: '5', title: 'Hamming Bound 與完美碼', en: 'Hamming Bound & Perfect Code', blurb: '128 個字串剛好分成 16 個漢明球' },
+  { id: 'distance', num: '4', title: '能力與極限', en: 'Capability & Limits', blurb: 'd_min = 3 與 3 盞燈能撐多長' },
   { id: 'extended', num: '6', title: 'Extended Hamming(8,4)', en: 'Extended Hamming Code', blurb: '加一個整體同位位元：[7,4,3] → [8,4,4]' },
   { id: 'secded', num: '7', title: 'SECDED 實驗器', en: 'Single Error Correction, Double Error Detection', blurb: 'Syndrome + Overall Parity 的四種判斷' },
   // ---------------- 代數基礎與 Cyclic Codes (bridges Lesson 1 and Lesson 2; replaces the former optional GF(8) page) ----------------

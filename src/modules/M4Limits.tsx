@@ -1,0 +1,1219 @@
+import { useMemo, useState, type ReactNode } from 'react';
+import { CheckCircle2, Layers, Minus, Plus, XCircle } from 'lucide-react';
+import {
+  type Bit,
+  DEFAULT_MESSAGE,
+  H74,
+  K4,
+  LAYOUT_74,
+  N7,
+  PARITY_CHECKS,
+  allVectors,
+  bitsToInt,
+  bitsToString,
+  codewords74,
+  column,
+  codewords84,
+  correctionCapability,
+  decode74,
+  detectionCapability,
+  differingPositions,
+  distanceMatrix,
+  doubleErrorLandings,
+  flipBit,
+  flipPath,
+  hammingBound,
+  hammingDistance,
+  hammingK,
+  hammingN,
+  hammingParams,
+  isZeroVector,
+  knownPerfectFamily,
+  minimumDistance,
+  nearestCodewords,
+  parseBits,
+  partitionByNearest,
+  simulate74,
+  sphereTerms,
+  syndrome74,
+  syndromeToPosition,
+  vecAdd,
+  vecEquals,
+  weight,
+  weightDistribution,
+  zeroVector,
+} from '../core';
+import { Tex, M } from '../components/Tex';
+import { BitRow, BitString } from '../components/Bits';
+import { Bars } from '../components/Bars';
+import { DistanceLine } from '../components/DistanceLine';
+import { BallDiagram, CubeBall, PackingDiagram } from '../components/BoundFigures';
+import { RelatedLinks } from '../components/alg/Links';
+import { Callout, Card, Derivation, Expandable, FlowBar, KeyPoint, LabGrid, Misconceptions, ModuleHeader, PrevNext, ResetButton, Segmented, Stage, Stat } from '../components/Lesson';
+
+const ID = 'distance';
+
+/* ------------------------------------------------------------------ */
+/* Numbers on this page (computed from the core, never typed)          */
+/* ------------------------------------------------------------------ */
+
+/** 7 positions, 4 data bits, 3 checkers = 3 lamps */
+const N = N7;
+const K = K4;
+const R = H74.length;
+/** 3 lamps: 2³ states, all dark = nothing to flip, the other 7 each name a position */
+const STATES = 2 ** R;
+const PATTERNS = STATES - 1;
+
+const CODE = codewords74();
+const WORDS = CODE.map((e) => e.codeword);
+const MD = minimumDistance(WORDS);
+const D_MIN = MD.dmin;
+/** guaranteed correction ⌊(d_min − 1)/2⌋ and detection d_min − 1 */
+const T = correctionCapability(D_MIN);
+const DETECT = detectionCapability(D_MIN);
+/** the bound for Hamming(7,4): 2ᵏ(1 + n) = 16 × 8 = 128 = 2ⁿ */
+const HB = hammingBound(N, K, T);
+const PARTITION = partitionByNearest(WORDS, N);
+/** the long code of the same family (chapter 2 design ③ points here) */
+const LONG = hammingParams(7);
+
+/**
+ * What chapter 3's decoder does with every error of weight w. The outcome never depends on the
+ * codeword sent (s = Heᵀ), so the all-zero codeword stands in for all 16.
+ */
+function decoderOutcomes(w: number) {
+  const runs = allVectors(N)
+    .filter((e) => weight(e) === w)
+    .map((e) => simulate74(zeroVector(N), e));
+  return { total: runs.length, ok: runs.filter((o) => o.success).length, mis: runs.filter((o) => o.miscorrection).length };
+}
+const ONE = decoderOutcomes(1);
+const TWO = decoderOutcomes(2);
+
+/** the lamps and the nearest-codeword guess agree on every received word */
+const LAMPS_ARE_NEAREST = allVectors(N).every((w) => {
+  const nr = nearestCodewords(w, WORDS);
+  return nr.unique && vecEquals(WORDS[nr.nearest[0]], decode74(w).corrected);
+});
+
+/** chapter 3's running example: the noise flips position 5 first */
+const EXAMPLE_POS = 5;
+/** the A → B path: A = codeword of the shared default message, B = codeword of 1111; d(A, B) = d_min (pinned in core.test) */
+const A_IDX = CODE.findIndex((e) => vecEquals(e.message, DEFAULT_MESSAGE));
+const B_IDX = CODE.findIndex((e) => e.message.every((b) => b === 1));
+const A = WORDS[A_IDX];
+const B = WORDS[B_IDX];
+const D_AB = hammingDistance(A, B);
+const AB_DIFF = differingPositions(A, B).map((i) => i + 1);
+const PATH = flipPath(A, B, [EXAMPLE_POS - 1]).map((st) => {
+  const dec = decode74(st.word);
+  return { ...st, dA: hammingDistance(st.word, A), dB: hammingDistance(st.word, B), dec, toA: vecEquals(dec.corrected, A), toB: vecEquals(dec.corrected, B) };
+});
+const STEP1 = PATH[1];
+const STEP2 = PATH[2];
+
+/** all double errors: Hamming(7,4) puts every one next to another codeword, Extended(8,4) none */
+const DOUBLE = doubleErrorLandings(WORDS);
+const DOUBLE8 = doubleErrorLandings(codewords84().map((e) => e.codeword));
+
+/** the minimum-weight shortcut: weight distribution, and the three columns h₁ + h₂ + h₃ = 0 behind the lightest codeword */
+const WEIGHTS = weightDistribution(WORDS, N);
+const MIN_WEIGHT = WEIGHTS.findIndex((a, w) => w > 0 && a > 0);
+const TRIPLE = [1, 2, 3];
+const TRIPLE_ZERO = isZeroVector(TRIPLE.map((j) => column(H74, j - 1)).reduce((a, b) => vecAdd(a, b)));
+
+/** a codeword and its 7 single-flip neighbours: the 8 words the receiver can get when at most 1 bit flips */
+const received = (c: readonly Bit[]): Bit[][] => [[...c], ...c.map((_, i) => flipBit(c, i))];
+/** how many codewords light all 8 lamp states with their 8 received words */
+const ALL_STATES_USED = WORDS.filter((c) => new Set(received(c).map((w) => bitsToString(syndrome74(w)))).size === STATES).length;
+
+/** the Hamming family in lamp language: r lamps, 2ʳ states, n = 2ʳ − 1 positions, all states used */
+const FAMILY = [2, 3, 4, 5, 6, 7].map((r) => {
+  const n = hammingN(r);
+  const k = hammingK(r);
+  return { r, states: 2 ** r, n, k, full: hammingBound(n, k, 1).equality };
+});
+
+const LAMP = PARITY_CHECKS.map((pc) => pc.name);
+const lampText = (bits: readonly Bit[]) => (isZeroVector(bits) ? '全暗' : `${LAMP.filter((_, i) => bits[i]).join('、')} 亮`);
+const posList = (idx: readonly number[]) => idx.map((i) => i + 1).join('、');
+
+/* ------------------------------------------------------------------ */
+/* Small pictures                                                      */
+/* ------------------------------------------------------------------ */
+
+/** The receiver's warning lamps, in H's row order (P1, P2, P4): lit = that check failed. */
+function Lamps({ bits, size = 'md' }: { bits: readonly Bit[]; size?: 'sm' | 'md' }) {
+  const d = size === 'sm' ? 'h-4 w-4' : 'h-6 w-6';
+  return (
+    <span className="inline-flex items-end gap-1.5 align-middle" role="img" aria-label={`警示燈${lampText(bits)}`}>
+      {bits.map((b, i) => (
+        <span key={LAMP[i]} className="inline-flex flex-col items-center gap-0.5">
+          <span className={`${d} rounded-full border-2 ${b ? 'border-rose-500 bg-rose-400 shadow-[0_0_8px_2px_rgba(244,63,94,0.45)]' : 'border-slate-300 bg-slate-200'}`} />
+          <span className="text-[10px] font-semibold leading-none text-slate-500">{LAMP[i]}</span>
+        </span>
+      ))}
+    </span>
+  );
+}
+
+/** The walk A → B, one flipped bit per row: distances, the lamps, what the receiver does. */
+function PathTable() {
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full min-w-[600px] text-sm">
+        <thead>
+          <tr className="text-left text-xs text-slate-500">
+            <th className="py-1 pr-2">雜訊翻了</th>
+            <th className="pr-2">收到的字</th>
+            <th className="pr-2">離 A</th>
+            <th className="pr-2">離 B</th>
+            <th className="pr-2">{R} 盞燈</th>
+            <th className="pr-2">接收端</th>
+            <th>結果</th>
+          </tr>
+        </thead>
+        <tbody>
+          {PATH.map((st, k) => {
+            const result =
+              k === 0 ? (
+                <span className="chip bg-emerald-100 text-emerald-800">收到 A</span>
+              ) : st.toA ? (
+                <span className="chip bg-emerald-100 text-emerald-800">修回 A ✓</span>
+              ) : st.toB && k === D_AB ? (
+                <span className="chip bg-rose-100 text-rose-800">就是 B：看不出錯</span>
+              ) : st.toB ? (
+                <span className="chip bg-rose-100 text-rose-800">改成 B ✗</span>
+              ) : (
+                <span className="chip bg-slate-100 text-slate-600">{bitsToString(st.dec.corrected)}</span>
+              );
+            return (
+              <tr key={k} className={`border-t border-slate-100 ${k === 1 ? 'bg-emerald-50/60' : k === 2 ? 'bg-rose-50/60' : ''}`}>
+                <td className="py-1.5 pr-2">
+                  <span className="font-semibold text-slate-800">{k} 位</span>
+                  <span className="block text-[11px] text-slate-500">{k === 0 ? '送出 A' : `位置 ${posList(st.flipped)}`}</span>
+                </td>
+                <td className="pr-2">
+                  <BitString bits={st.word} className="text-sm font-semibold" highlight={(j) => (st.flipped.includes(j) ? 'text-rose-600 font-bold' : undefined)} />
+                </td>
+                <td className={`pr-2 font-mono ${st.dA < st.dB ? 'font-bold text-data-700' : 'text-slate-500'}`}>{st.dA}</td>
+                <td className={`pr-2 font-mono ${st.dB < st.dA ? 'font-bold text-overall-700' : 'text-slate-500'}`}>{st.dB}</td>
+                <td className="pr-2">
+                  <Lamps bits={st.dec.syndrome} size="sm" />
+                </td>
+                <td className="pr-2 text-xs text-slate-700">{st.dec.position ? `翻位置 ${st.dec.position}` : '不動'}</td>
+                <td>{result}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+/** One codeword and its 8 received words (0 or 1 flip): 8 different lamp states, one action each. */
+function ReceivedOutcomes() {
+  const [sel, setSel] = useState(A_IDX);
+  const center = WORDS[sel];
+  const rows = received(center);
+  const distinct = new Set(rows.map((w) => bitsToString(syndrome74(w)))).size;
+  return (
+    <Card title={`送出一個 codeword，最多翻 ${T} 位：${rows.length} 種接收結果`}>
+      <div className="mb-3 flex flex-wrap items-center gap-1">
+        <span className="mr-1 text-xs text-slate-500">送出 m =</span>
+        {CODE.map((e) => (
+          <button
+            key={e.index}
+            type="button"
+            aria-pressed={e.index === sel}
+            onClick={() => setSel(e.index)}
+            className={`chip border font-mono ${e.index === sel ? 'border-emerald-600 bg-emerald-600 text-white' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-400'}`}
+          >
+            {e.message.join('')}
+          </button>
+        ))}
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[420px] text-sm">
+          <thead>
+            <tr className="text-left text-xs text-slate-500">
+              <th className="py-1 pr-2">收到的 r</th>
+              <th className="pr-2">雜訊翻了</th>
+              <th className="pr-2">{R} 盞燈（Syndrome）</th>
+              <th>接收端</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((w) => {
+              const pos = differingPositions(w, center);
+              const s = syndrome74(w);
+              return (
+                <tr key={bitsToString(w)} className="border-t border-slate-100">
+                  <td className="py-1 pr-2">
+                    <BitString bits={w} className="font-semibold" highlight={(j) => (pos.includes(j) ? 'text-rose-600 font-bold' : undefined)} />
+                  </td>
+                  <td className="pr-2 text-xs text-slate-600">{pos.length === 0 ? '沒翻（codeword 本身）' : `位置 ${posList(pos)}`}</td>
+                  <td className="pr-2">
+                    <span className="inline-flex items-center gap-2">
+                      <Lamps bits={s} size="sm" />
+                      <span className="font-mono text-xs text-slate-500">{s.join('')}</span>
+                    </span>
+                  </td>
+                  <td className={`text-xs font-semibold ${pos.length === 0 ? 'text-emerald-700' : 'text-slate-700'}`}>{isZeroVector(s) ? '不動' : `翻位置 ${syndromeToPosition(s)}`}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      <p className="mt-3 text-sm text-slate-700">
+        {rows.length} 種接收結果點亮 <strong>{distinct} 種不同的燈號</strong>：全暗 = 不動，其餘 {PATTERNS} 種各翻一個位置，沒有重複，也沒有剩下。換成其他 codeword 也一樣（{ALL_STATES_USED}/{WORDS.length} 個都是）。
+      </p>
+    </Card>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* The page                                                            */
+/* ------------------------------------------------------------------ */
+
+export default function M4Limits() {
+  return (
+    <div>
+      <ModuleHeader moduleId={ID}>
+        <p>
+          第 3 章看到：雜訊只翻 {T} 位時，燈號指出位置，翻回來就好；翻 2 位時，燈號指向第三個位置，解碼器反而改錯。這一章回答兩個問題：這個碼到底能<strong>保證</strong>什麼？只有 {R} 盞燈，codeword 最長能做多長？
+        </p>
+      </ModuleHeader>
+      <KeyPoint>
+        雜訊每翻一位，就把收到的字往前推一步：<M>{`d_{\\min} = ${D_MIN}`}</M> 保證翻 {T} 位修得回來，而 {R} 盞燈的 {STATES} 種狀態剛好用完。
+      </KeyPoint>
+      <FlowBar moduleId={ID} />
+
+      <div className="space-y-12">
+        <Stage kind="why" moduleId={ID} title={`翻 ${T} 位修得好，翻 2 位就改錯`}>
+          <Card title="第 3 章留下的兩個問題">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <Stat label={`翻 ${T} 位（全部 ${ONE.total} 種）`} value={`${ONE.ok}/${ONE.total}`} sub="修好" tone="emerald" />
+              <Stat label={`翻 2 位（全部 ${TWO.total} 種）`} value={`${TWO.mis}/${TWO.total}`} sub="被改錯：燈號指向第三個位置" tone="rose" />
+            </div>
+            <ol className="mt-3 list-decimal space-y-1 pl-5 text-sm leading-relaxed text-slate-700">
+              <li>
+                <strong>能保證什麼？</strong>翻 {T} 位一定修好、翻 2 位就不行：分界線在哪裡，由什麼決定？
+              </li>
+              <li>
+                <strong>能做多長？</strong>{R} 盞燈保護 {N} 個位置；位置再多一些，{R} 盞燈還分得出是哪一位錯嗎？
+              </li>
+            </ol>
+            <div className="mt-3 space-y-2 text-sm leading-relaxed text-slate-700">
+              <p>
+                先換一個看法：<strong>雜訊每翻一位，收到的字就離送出的 codeword 遠一步。</strong>接收端看不到雜訊，只能猜「離收到的字最近的 codeword」：翻 1 位比翻 2 位常見得多，最近的那個最可能就是送出的。
+              </p>
+              <p className="text-slate-600">
+                第 3 章的 {R} 盞燈，就是這個猜法的快速硬體版：不必和 {WORDS.length} 個 codeword 一一比較，看燈就知道最近的是誰（全部 {2 ** N} 個接收字都驗證過{LAMPS_ARE_NEAREST ? ' ✓' : ' ✗'}，比較工具在下方進階）。
+              </p>
+            </div>
+          </Card>
+        </Stage>
+
+        <Stage kind="definition" moduleId={ID} title="從 A 走到 B：雜訊每翻一位，就推一步">
+          <Card title={`一條路：A → B，共 ${D_AB} 步`}>
+            <div className="space-y-2 text-sm leading-relaxed text-slate-700">
+              <p>
+                兩個字串的<strong>距離</strong>，就是它們有幾個位置不同，也就是雜訊<strong>至少要翻幾位</strong>，才能把一個變成另一個。取兩個 codeword：A（m = {DEFAULT_MESSAGE.join('')}）與 B（m = {CODE[B_IDX].message.join('')}），它們差 {D_AB} 位（位置 {AB_DIFF.join('、')}）。雜訊從 A 出發，每翻一位就往 B 推一步（先翻位置 {EXAMPLE_POS}，就是第 3 章的例子）：
+              </p>
+            </div>
+            <div className="flex justify-center">
+              <DistanceLine d={D_AB} nodeLabel={(k) => `翻 ${k} 位`} />
+            </div>
+            <div className="mt-3">
+              <PathTable />
+            </div>
+            <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
+              <div className="rounded-xl border border-emerald-300 bg-emerald-50/70 p-3 text-sm leading-relaxed text-emerald-950">
+                <div className="mb-1 font-bold text-emerald-800">翻 {T} 位：仍離 A 最近 → 修得回來</div>
+                離 A {STEP1.dA}、離 B {STEP1.dB}。接收端猜 A，猜對了：燈號（{lampText(STEP1.dec.syndrome)}）指向位置 {STEP1.dec.position}，翻回來就是 A。
+              </div>
+              <div className="rounded-xl border border-rose-300 bg-rose-50/70 p-3 text-sm leading-relaxed text-rose-950">
+                <div className="mb-1 font-bold text-rose-800">翻 2 位：可能跑到 B 那邊 → 只能偵測</div>
+                這條路上，離 A {STEP2.dA}、離 B 只剩 {STEP2.dB}：最近的變成 B。燈會亮，接收端知道「有錯」；硬要更正，燈號指向位置 {STEP2.dec.position}，翻下去就變成 B，改錯了。
+              </div>
+            </div>
+            <div className="mt-4 space-y-2 text-sm leading-relaxed text-slate-700">
+              <p>寫成數學：x + y 的 1 正好是 x、y 不同的位置（1 + 1 = 0），所以</p>
+              <Tex block>{'d(x,y) = \\left|\\{\\, i : x_i \\neq y_i \\,\\}\\right| = \\mathrm{wt}(x+y)'}</Tex>
+              <p>
+                接收端的猜法叫<strong>最近 codeword 解碼</strong>（Nearest-codeword decoding）：收到 r，選 <M>{'d(r,c)'}</M> 最小的 codeword <M>c</M>。
+              </p>
+              <p className="text-slate-600">
+                回到這條路：分界就在 A、B 的正中間。{D_AB} 步的路，中點在 {D_AB / 2} 步：翻 {T} 位還在 A 這一側；翻 2 位已經過了中線，離 B 比較近。
+              </p>
+            </div>
+          </Card>
+        </Stage>
+
+        <Stage kind="calculation" moduleId={ID} title={`d_min = ${D_MIN}：最近的兩個 codeword 也隔 ${D_MIN} 步`}>
+          <LabGrid
+            main={
+              <Card title="不只 A、B 這一對">
+                <div className="space-y-2 text-sm leading-relaxed text-slate-700">
+                  <p>
+                    A、B 不是特例。把 {WORDS.length} 個 codeword 兩兩比較（{MD.pairsChecked} 對），最近的一對也差 {D_MIN} 位。這個最小值叫<strong>最小距離</strong>：
+                  </p>
+                  <Tex block>{`d_{\\min} = \\min_{c \\neq c'} d(c, c') = ${D_MIN}`}</Tex>
+                  <p>
+                    所以不管發送端送哪一個 codeword，翻 {T} 位後，它離原本的 codeword 是 {T}，離其他 codeword 至少 {D_MIN} − {T} = {D_MIN - T}：最近的永遠是送出的那一個，一定修得回來。整個碼能保證多少，由最容易混淆的那一對決定：
+                  </p>
+                  <Tex block>{`t = \\left\\lfloor \\frac{d_{\\min}-1}{2} \\right\\rfloor = \\left\\lfloor \\frac{${D_MIN}-1}{2} \\right\\rfloor = ${T}`}</Tex>
+                  <p className="text-slate-600">
+                    只偵測、不更正的話，翻 1 到 {DETECT} 位燈都會亮：偵測得到 <M>{`d_{\\min} - 1 = ${DETECT}`}</M> 位。但同一個解碼器不能一邊修 {T} 位、一邊偵測 2 位：翻 2 位的字，看起來就像另一個 codeword 翻了 {T} 位（第 5 章）。
+                  </p>
+                </div>
+              </Card>
+            }
+            aside={
+              <>
+                <Stat label="最近的兩個 codeword 差幾位" value={D_MIN} sub={`窮舉全部 ${MD.pairsChecked} 對`} tone="indigo" />
+                <Card title={`${D_MIN} 步是第 2 章的 H 換來的`}>
+                  <p className="text-sm leading-relaxed text-slate-700">
+                    H 的設計 ① 沒有全 0 的欄：翻 1 位，燈一定亮。設計 ② 沒有兩欄相同：翻 2 位時亮的是兩欄之和，也一定不是全暗。燈全暗才代表收到的是 codeword，所以翻 1、2 位都不可能把一個 codeword 變成另一個：codeword 之間至少隔 {D_MIN} 步。
+                  </p>
+                  <p className="mt-2 text-xs text-slate-500">
+                    設計 ①② 見
+                    <a href="#/matrix" className="mx-1 font-semibold text-overall-700 hover:underline">
+                      第 2 章
+                    </a>
+                    ；用 H 的欄直接讀出 d_min 的方法，見下方進階「線性碼的捷徑」。
+                  </p>
+                </Card>
+              </>
+            }
+          />
+        </Stage>
+
+        <Stage kind="visualization" moduleId={ID} title={`${R} 盞燈能撐多長：2ʳ ≥ n + 1`}>
+          <LabGrid
+            main={
+              <Card title="更正 1 個錯，燈號要分出 n + 1 種情況">
+                <div className="space-y-2 text-sm leading-relaxed text-slate-700">
+                  <p>
+                    要更正 1 個錯，接收端只看燈號，就得分出 n + 1 種情況：<strong>沒有錯</strong>（不動），或<strong>錯在 n 個位置的哪一個</strong>（翻那一位）。每一種情況都要有自己的燈號，否則兩種情況亮法一樣，接收端就不知道該做哪一件事。r 盞燈只有 <M>{'2^r'}</M> 種亮法，所以：
+                  </p>
+                  <Tex block>{'\\underbrace{2^{r}}_{r\\text{ 盞燈的狀態數}} \\;\\ge\\; \\underbrace{n + 1}_{\\text{要分辨的情況數}}'}</Tex>
+                  <p>
+                    這是<strong>更正 1 個錯</strong>時的極限：r 盞燈最多保護 <M>{'n = 2^r - 1'}</M> 個位置。Hamming({N},{K})：<M>{`2^{${R}} = ${STATES} \\ge ${N} + 1 = ${N + 1}`}</M>，剛好相等。
+                  </p>
+                </div>
+                <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm leading-relaxed text-slate-700">
+                  <div className="mb-1 font-bold text-slate-900">同一件事，前面已經出現過兩次</div>
+                  <ul className="list-disc space-y-1 pl-5">
+                    <li>
+                      <a href="#/encode" className="font-semibold text-overall-700 hover:underline">
+                        第 1 章
+                      </a>
+                      「為什麼訊息是 {K} 個位元？」：{R} 個同位位元有 {PATTERNS} 種失敗組合，({N},{K}) 剛好用滿 {N} 個位置。
+                    </li>
+                    <li>
+                      <a href="#/matrix" className="font-semibold text-overall-700 hover:underline">
+                        第 2 章
+                      </a>
+                      H 的設計 ③：{R} 盞燈最多分辨 {PATTERNS} 個位置；要能指出是哪一位出錯，{R} 個檢查器能保護的長度已經到最大。
+                    </li>
+                  </ul>
+                  <p className="mt-1 text-slate-600">這裡只是把同一句話寫成一條不等式，不是新的限制。</p>
+                </div>
+                <div className="mt-3 space-y-2 text-sm leading-relaxed text-slate-700">
+                  <p>
+                    教科書上的 <strong>Hamming Bound</strong> 寫成左邊的樣子；更正 1 個錯時，兩邊同除以 <M>{'2^k'}</M>，就是右邊的燈號條件（<M>{'n - k'}</M> 正是同位位元的個數 r）：
+                  </p>
+                  <Tex block>{'2^{k}(1 + n) \\le 2^{n} \\iff 1 + n \\le 2^{n-k} = 2^{r}'}</Tex>
+                  <p className="text-slate-600">左邊的一般形式（要更正 t 個錯）和它的「漢明球」圖像，見下方進階。</p>
+                </div>
+              </Card>
+            }
+            aside={
+              <Card title="Hamming Code 家族：每多 1 盞燈，長度約翻倍">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-left text-xs text-slate-500">
+                        <th className="py-1 pr-2">r 盞燈</th>
+                        <th className="pr-2">2ʳ 種燈號</th>
+                        <th className="pr-2">n = 2ʳ − 1</th>
+                        <th className="pr-2">k = n − r</th>
+                        <th>燈號全部用到</th>
+                      </tr>
+                    </thead>
+                    <tbody className="font-mono">
+                      {FAMILY.map((f) => (
+                        <tr key={f.r} className={`border-t border-slate-100 ${f.r === R ? 'bg-emerald-50 font-semibold' : ''}`}>
+                          <td className="py-1 pr-2">{f.r}</td>
+                          <td className="pr-2">{f.states}</td>
+                          <td className="pr-2">{f.n}</td>
+                          <td className="pr-2">{f.k}</td>
+                          <td className={`font-sans text-xs ${f.full ? 'text-emerald-700' : 'text-rose-700'}`}>{f.full ? `✓ ${f.states} = ${f.n} + 1` : '✗'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <p className="mt-2 text-xs leading-relaxed text-slate-600">
+                  多 1 盞燈，能保護的位置約多一倍，同位位元卻只多 1 個：{LONG.m} 盞燈保護 {LONG.n} 個位置，其中 {LONG.k} 個是資料。每一列都讓 <M>{'2^r = n + 1'}</M>：燈號一種都不浪費（下一節）。第二課 2-12 把 r 記作 m。
+                </p>
+                <p className="mt-1 text-xs text-slate-500">
+                  訊息比 {K} 位元長怎麼辦？切成小塊還是換更長的 Hamming Code、長度對不上時的縮短碼，見{' '}
+                  <a href="#/l2-12" className="font-semibold text-overall-700 hover:underline">
+                    第二課 2-12
+                  </a>
+                  。
+                </p>
+              </Card>
+            }
+          />
+        </Stage>
+
+        <Stage kind="experiment" moduleId={ID} title={`完美碼：${STATES} 種燈號，一種都沒浪費`}>
+          <LabGrid
+            main={<ReceivedOutcomes />}
+            aside={
+              <>
+                <Card title="等號成立 = 完美碼">
+                  <div className="space-y-2 text-sm leading-relaxed text-slate-700">
+                    <p>
+                      Hamming({N},{K}) 讓 <M>{'2^r \\ge n + 1'}</M> 的等號成立：{STATES} = {N} + 1。用燈來說：{R} 盞燈的 {STATES} 種狀態，<strong>每一種都有用到，沒有浪費</strong>。這樣的碼叫<strong>完美碼</strong>（Perfect code）。
+                    </p>
+                    <p>
+                      整個空間也剛好分完：{HB.codewords} 個 codeword × {HB.volume} 種接收結果 = {HB.lhs}，正是全部 <M>{`2^{${N}} = ${HB.rhs}`}</M> 個 {N} 位元字串，{PARTITION.isPartition ? '每一個都恰好出現一次' : '✗ 有重複或遺漏'}。收到任何字串，燈號都對應一個明確的動作。
+                    </p>
+                  </div>
+                </Card>
+                <Callout kind="warning" title="代價：沒有燈號留給「錯了兩個」">
+                  <p>
+                    翻 2 位時，亮的是兩欄之和：不是全暗（設計 ①②），就只能是 {PATTERNS} 種「翻位置 j」之一。{STATES} 種狀態都已經有主人，解碼器只能照著翻：翻 2 位一律被改錯（{TWO.mis}/{TWO.total}）。
+                  </p>
+                </Callout>
+              </>
+            }
+          />
+        </Stage>
+
+        <Stage kind="conclusion" moduleId={ID} title={`修 ${T} 位的保證，${STATES} 種燈號剛好用完`}>
+          <Callout kind="key" title="結論">
+            <p>
+              <strong>能保證什麼</strong>：雜訊每翻一位，收到的字就走一步。codeword 之間至少隔 <M>{`d_{\\min} = ${D_MIN}`}</M> 步：翻 {T} 位還離原本的 codeword 最近，修得回來；翻 2 位可能走到別人旁邊，只能偵測，硬要更正就改錯。
+            </p>
+            <p>
+              <strong>能做多長</strong>：要更正 1 個錯，r 盞燈的 <M>{'2^r'}</M> 種狀態要分出 n + 1 種情況，<M>{'2^r \\ge n + 1'}</M>。{R} 盞燈最多 {PATTERNS} 個位置：和第 1 章、第 2 章設計 ③ 是同一件事。
+            </p>
+            <p>
+              <strong>完美碼</strong>：Hamming Code 讓等號成立，每一種燈號都有用到；代價是沒有一種燈號能說「錯了兩個」。要讓接收端回報雙錯，就得多出可用的狀態：
+              <a href="#/secded" className="mx-1 font-semibold text-overall-700 hover:underline">
+                第 5 章 SECDED
+              </a>
+              多加 1 個整體同位位元。
+            </p>
+          </Callout>
+          <Misconceptions
+            items={[
+              { wrong: '完美碼什麼錯都修得好。', right: `「完美」只代表 ${STATES} 種燈號都用到、沒有浪費。翻 2 位時燈號照樣指向某一位，解碼器照樣翻，結果改錯。` },
+              { wrong: 'd_min 是 codeword 之間的平均距離。', right: 'd_min 是最近的那一對：保證能力由最容易混淆的那一對決定。' },
+              { wrong: '2ʳ ≥ n + 1 是任何碼的長度上限。', right: '它是「要更正 1 個錯」的極限。要更正更多錯，要分辨的情況更多，長度上限更緊（一般形式見進階）。' },
+            ]}
+          />
+          <Card>
+            <RelatedLinks
+              title="延伸"
+              links={[
+                { to: 'secded', text: '多 1 個位元，錯 2 位就能被偵測' },
+                { to: 'l2-9', text: '兩個錯誤：為什麼一定誤更正（含窮舉表）' },
+                { to: 'l2-12', text: '更長的 Hamming Code 與縮短碼' },
+              ]}
+            />
+          </Card>
+        </Stage>
+
+        <Advanced />
+      </div>
+      <PrevNext moduleId={ID} />
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* 進階 (collapsed): the full distance toolkit, Hamming spheres and the general bound */
+/* ------------------------------------------------------------------ */
+
+function Advanced() {
+  return (
+    <section id={`${ID}-advanced`} className="scroll-mt-28 space-y-4 border-t border-slate-200 pt-8">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="chip border border-slate-300 bg-white text-slate-700">
+          <Layers className="h-3.5 w-3.5" />
+          進階 <span className="opacity-60">Advanced</span>
+        </span>
+        <h2 className="text-lg font-bold text-slate-900 sm:text-xl">距離與 Hamming Bound 的完整工具</h2>
+      </div>
+      <p className="text-sm text-slate-600">主線只用一條路和 {R} 盞燈。這裡收著完整的距離工具、漢明球，以及要更正 t 個錯時的 Hamming Bound。</p>
+
+      <h3 className="pt-2 text-base font-bold text-slate-800">距離的完整工具</h3>
+      <div className="space-y-2">
+        <Expandable title={`錯 2 位的精確情形：${DOUBLE.total} 種全部落在別人旁邊`}>
+          <DoubleErrorFact />
+        </Expandable>
+        <Expandable title="計算任兩個字串的距離">
+          <DistanceCalculator />
+        </Expandable>
+        <Expandable title={`${WORDS.length} 個 codeword 彼此的距離：路徑、距離分佈與距離矩陣`}>
+          <CodewordExplorer />
+        </Expandable>
+        <Expandable title={`最近 codeword 解碼：和 ${WORDS.length} 個 codeword 一一比較`}>
+          <NearestDecoder />
+        </Expandable>
+        <Expandable title="一般的 d_min：保證修正 t 個、偵測 d_min − 1 個">
+          <DminSlider />
+        </Expandable>
+        <Expandable title="定理證明：d_min ≥ 2t+1 ⇒ 最近 codeword 解碼可修正 t 個錯誤">
+          <p>
+            設送出 <M>c</M>、收到 <M>r</M>，錯誤數 <M>{'\\le t'}</M>，所以 <M>{'d(r,c) \\le t'}</M>。對任何其他 codeword <M>{"c'"}</M>，由三角不等式：
+          </p>
+          <Tex block>{"d(r,c') \\ge d(c,c') - d(r,c) \\ge (2t+1) - t = t+1 > t \\ge d(r,c)."}</Tex>
+          <p>所以 <M>c</M> 是唯一的最近 codeword。∎</p>
+        </Expandable>
+        <Expandable title="線性碼的捷徑：d_min = 最小非零 codeword 重量">
+          <p>
+            因為 <M>{"d(c,c') = \\mathrm{wt}(c+c')"}</M> 而 <M>{"c+c'"}</M> 也是 codeword，只要檢查 {WORDS.length - 1} 個非零 codeword 的重量，不用比較 {MD.pairsChecked} 對。Hamming(7,4) 的重量分佈：
+            {WEIGHTS.flatMap((a, w) => (a ? [`${a} 個重量 ${w}`] : [])).join('、')}；最小非零重量 = {MIN_WEIGHT} = <M>{'d_{\\min}'}</M>。
+          </p>
+          <p>
+            用 H 來看：<M>{'Hc^{T}'}</M> 是把 c 裡「是 1 的位置」那幾欄加起來，所以有重量 w 的 codeword ⇔ H 有 w 欄加起來 = 0。沒有全 0 的欄（設計 ①）排除重量 1，沒有兩欄相同（設計 ②）排除重量 2，而 <M>{`h_${TRIPLE.join(' + h_')} ${TRIPLE_ZERO ? '=' : '\\neq'} 0`}</M> 給出重量 {TRIPLE.length}：<M>{`d_{\\min} = ${D_MIN}`}</M>。
+          </p>
+        </Expandable>
+      </div>
+
+      <h3 className="pt-2 text-base font-bold text-slate-800">漢明球與 Hamming Bound 的一般形式</h3>
+      <div className="space-y-2">
+        <Expandable title="漢明球、球的體積與一般形式 2ᵏ · V₂(n,t) ≤ 2ⁿ">
+          <BallFigures />
+        </Expandable>
+        <Expandable title="調整 n、k、t，檢查 Hamming Bound">
+          <BoundExplorer />
+        </Expandable>
+        <Expandable title="真正的 2ⁿ 個字串分組：Hamming(7,4) 的 128 個、Extended(8,4) 的 256 個">
+          <PartitionView />
+        </Expandable>
+        <Expandable title="球不重疊的證明">
+          <p>
+            若 <M>{"x \\in B(c,1)\\cap B(c',1)"}</M>，則由三角不等式 <M>{"d(c,c') \\le d(c,x) + d(x,c') \\le 2"}</M>，與 <M>{`d_{\\min} = ${D_MIN}`}</M> 矛盾。
+          </p>
+        </Expandable>
+      </div>
+    </section>
+  );
+}
+
+function DoubleErrorFact() {
+  return (
+    <>
+      <p>
+        主線的 A → B 路徑說翻 2 位「可能」跑到別人那邊：光靠 <M>{`d_{\\min} = ${D_MIN}`}</M>，只保證得了這麼多。對 Hamming(7,4)，其實是「一定」：{WORDS.length} 個 codeword 各有 <M>{`\\binom{${N}}{2} = ${DOUBLE.perWord}`}</M> 種雙錯，共 {WORDS.length} × {DOUBLE.perWord} = {DOUBLE.total} 種；全部試過，每一個收到的字都離<strong>另一個</strong> codeword 距離 1（{DOUBLE.nearOther}/{DOUBLE.total}）。
+      </p>
+      <p>
+        原因是完美碼：每一個 {N} 位元字串都恰好離某個 codeword ≤ 1。翻 2 位的字離原本的 codeword 是 2，所以離它只有 1 的，一定是別人。不論用燈號還是比距離，解碼器都會把它改成那個別人：雙錯一律誤更正（第 3 章的 {TWO.mis}/{TWO.total}）。
+      </p>
+      <p className="text-slate-600">
+        不是每個碼都這樣：Extended(8,4) 的 {DOUBLE8.total} 種雙錯裡，落在別人距離 1 之內的有 {DOUBLE8.nearOther} 種。它們離每個 codeword 都至少 2，所以只能偵測、不會被改錯（第 5 章）。
+      </p>
+    </>
+  );
+}
+
+/* ---------------- distance toolkit ---------------- */
+
+/** sequential single-hue ramp for distances 0..7 */
+const distColor = (d: number) => {
+  const L = 97 - d * 9.5;
+  return { background: `hsl(224 76% ${L}%)`, color: L < 62 ? '#fff' : '#1e293b' };
+};
+
+function DistanceCalculator() {
+  const [x, setX] = useState<Bit[]>(parseBits('1011101'));
+  const [y, setY] = useState<Bit[]>(parseBits('1001001'));
+  const diff = differingPositions(x, y);
+  const resize = (delta: number) => {
+    const n = Math.min(12, Math.max(3, x.length + delta));
+    const fit = (v: Bit[]) => Array.from({ length: n }, (_, i) => (v[i] ?? 0) as Bit);
+    setX(fit(x));
+    setY(fit(y));
+  };
+  return (
+    <LabGrid
+      main={
+        <Card
+          title="點擊位元修改 x、y"
+          actions={
+            <>
+              <span className="text-xs text-slate-500">長度 n = {x.length}</span>
+              <button className="btn-ghost !p-1" onClick={() => resize(-1)} aria-label="縮短">
+                <Minus className="h-3 w-3" />
+              </button>
+              <button className="btn-ghost !p-1" onClick={() => resize(1)} aria-label="加長">
+                <Plus className="h-3 w-3" />
+              </button>
+              <ResetButton
+                onClick={() => {
+                  setX(parseBits('1011101'));
+                  setY(parseBits('1001001'));
+                }}
+              />
+            </>
+          }
+        >
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <span className="w-6 font-serif italic">x</span>
+              <BitRow bits={x} plain size="sm" onToggle={(i) => setX(flipBit(x, i))} states={x.map((_, i) => (diff.includes(i) ? 'diff' : 'normal'))} />
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="w-6 font-serif italic">y</span>
+              <BitRow bits={y} plain size="sm" onToggle={(i) => setY(flipBit(y, i))} states={y.map((_, i) => (diff.includes(i) ? 'diff' : 'normal'))} />
+            </div>
+            <div className="flex items-center gap-3 border-t border-slate-100 pt-3">
+              <span className="w-6 text-sm">x+y</span>
+              <BitRow bits={vecAdd(x, y)} plain size="sm" showPositions={false} states={vecAdd(x, y).map((b) => (b ? 'diff' : 'muted'))} />
+            </div>
+          </div>
+        </Card>
+      }
+      aside={
+        <>
+          <Stat label={<M>{'d_H(x,y)'}</M>} value={diff.length} sub={`不同的位置：${diff.map((i) => i + 1).join(', ') || '無'}`} tone="indigo" />
+          <Derivation
+            steps={[
+              { title: '逐位比較', body: <p>紫色標示 x 與 y 不同的位置：{diff.map((i) => i + 1).join(', ') || '（無）'}。</p> },
+              { title: '用 GF(2) 加法', body: <Tex block>{`x + y = ${vecAdd(x, y).join('')}`}</Tex> },
+              { title: '數 1 的個數', body: <Tex block>{`d_H(x,y) = \\mathrm{wt}(x+y) = ${weight(vecAdd(x, y))}`}</Tex> },
+            ]}
+          />
+          <p className="text-xs text-slate-500">
+            <M>{'d_H'}</M> 是真正的度量（metric）：滿足三角不等式。本章把 <M>{'d_H'}</M> 簡寫成 <M>d</M>。
+          </p>
+        </>
+      }
+    />
+  );
+}
+
+function CodewordExplorer() {
+  const [pair, setPair] = useState<[number, number]>([A_IDX, B_IDX]);
+  const D = useMemo(() => distanceMatrix(WORDS), []);
+  const histogram = [...MD.histogram.entries()].sort((a, b) => a[0] - b[0]).map(([d, n]) => ({ x: d, y: n }));
+  const PA = WORDS[pair[0]];
+  const PB = WORDS[pair[1]];
+  const pathDiff = differingPositions(PA, PB);
+  const path = flipPath(PA, PB).map((st) => st.word);
+  const selectCodeword = (i: number) => {
+    if (i === pair[1]) return;
+    setPair([pair[1], i]);
+  };
+  return (
+    <LabGrid
+      main={
+        <>
+          <Card title={`全部 ${WORDS.length} 個 Hamming(7,4) 合法 codeword（點擊兩個來比較）`}>
+            <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
+              {CODE.map((e) => {
+                const sel = pair.indexOf(e.index);
+                return (
+                  <button
+                    key={e.index}
+                    onClick={() => selectCodeword(e.index)}
+                    className={`rounded-lg border px-2 py-1.5 text-left transition-colors ${
+                      sel === 0 ? 'border-data-500 bg-data-50 ring-2 ring-data-300' : sel === 1 ? 'border-overall-500 bg-overall-50 ring-2 ring-overall-300' : 'border-slate-200 hover:border-slate-400'
+                    }`}
+                  >
+                    <div className="text-[10px] text-slate-400">
+                      #{e.index} · m = {e.message.join('')}
+                    </div>
+                    <BitString bits={e.codeword} className="text-sm font-semibold" highlight={(j) => (LAYOUT_74[j].role === 'parity' ? 'text-parity-600' : 'text-data-700')} />
+                  </button>
+                );
+              })}
+            </div>
+            <div className="mt-4 space-y-2 rounded-xl bg-slate-50 p-3">
+              <div className="flex items-center gap-3">
+                <span className="chip bg-data-100 text-data-700">A #{pair[0]}</span>
+                <BitRow bits={PA} plain size="sm" showPositions={false} states={PA.map((_, i) => (pathDiff.includes(i) ? 'diff' : 'normal'))} />
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="chip bg-overall-100 text-overall-700">B #{pair[1]}</span>
+                <BitRow bits={PB} plain size="sm" showPositions={false} states={PB.map((_, i) => (pathDiff.includes(i) ? 'diff' : 'normal'))} />
+              </div>
+              <div className="text-sm">
+                <M>{`d_H(A,B) = ${pathDiff.length}`}</M>
+                {pathDiff.length === MD.dmin && <span className="ml-2 chip bg-amber-100 text-amber-800">這是最接近的一對之一</span>}
+              </div>
+            </div>
+          </Card>
+          <Card title="從 A 走到 B：每次翻一個位元">
+            <p className="mb-2 text-xs text-slate-500">這是一條 Hamming 空間中的最短路徑（每一步距離 1），不是平面上的直線。最右欄是該字串真正的最近 codeword。</p>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[420px] text-sm">
+                <thead>
+                  <tr className="text-left text-xs text-slate-500">
+                    <th className="py-1">步</th>
+                    <th>字串</th>
+                    <th>
+                      d<sub>H</sub>(·,A)
+                    </th>
+                    <th>
+                      d<sub>H</sub>(·,B)
+                    </th>
+                    <th>最近 codeword</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {path.map((w, k) => {
+                    const nr = nearestCodewords(w, WORDS);
+                    const owner = nr.nearest.length === 1 ? nr.nearest[0] : -1;
+                    return (
+                      <tr key={k} className="border-t border-slate-100">
+                        <td className="py-1 font-mono text-slate-400">{k}</td>
+                        <td>
+                          <BitString bits={w} highlight={(j) => (k > 0 && pathDiff.slice(0, k).includes(j) ? 'text-fuchsia-600 font-bold' : undefined)} />
+                        </td>
+                        <td className="font-mono">{hammingDistance(w, PA)}</td>
+                        <td className="font-mono">{hammingDistance(w, PB)}</td>
+                        <td>
+                          {owner === pair[0] ? (
+                            <span className="chip bg-data-100 text-data-700">A</span>
+                          ) : owner === pair[1] ? (
+                            <span className="chip bg-overall-100 text-overall-700">B</span>
+                          ) : (
+                            <span className="chip bg-slate-100 text-slate-600">{owner >= 0 ? `#${owner}（距離 ${nr.minDistance}）` : `平手（距離 ${nr.minDistance}）`}</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        </>
+      }
+      aside={
+        <>
+          <div className="grid grid-cols-2 gap-2">
+            <Stat label="比較的 codeword 對" value={MD.pairsChecked} sub={`C(${WORDS.length},2)`} />
+            <Stat label={<M>{'d_{\\min}'}</M>} value={MD.dmin} sub={`共 ${MD.closestPairs.length} 對達到`} tone="indigo" />
+          </div>
+          <Card title="所有 codeword 對的距離分佈">
+            <Bars data={histogram} xLabel="距離 d" yLabel="Codeword 對數" highlight={(d) => d === MD.dmin} tooltipLabel={(d, n) => `${n} 對 codeword 距離為 ${d}`} />
+            <p className="text-xs text-slate-500">藍色長條是最小距離。沒有任何一對距離是 1 或 2。</p>
+          </Card>
+          <Card title={`${WORDS.length}×${WORDS.length} 距離矩陣（點擊格子選擇一對）`}>
+            <div className="overflow-x-auto">
+              <div className="grid w-max" style={{ gridTemplateColumns: `repeat(${WORDS.length}, 18px)` }}>
+                {D.map((row, i) =>
+                  row.map((d, j) => {
+                    const sel = (i === pair[0] && j === pair[1]) || (i === pair[1] && j === pair[0]);
+                    return (
+                      <button
+                        key={`${i}-${j}`}
+                        title={`d(#${i}, #${j}) = ${d}`}
+                        onClick={() => i !== j && setPair([i, j])}
+                        style={distColor(d)}
+                        className={`h-[18px] w-[18px] text-[9px] font-semibold leading-[18px] ${sel ? 'outline outline-2 outline-offset-[-1px] outline-amber-500' : ''}`}
+                      >
+                        {d}
+                      </button>
+                    );
+                  }),
+                )}
+              </div>
+            </div>
+            <div className="mt-2 flex items-center gap-1 text-[10px] text-slate-500">
+              距離
+              {[0, 3, 4, 7].map((d) => (
+                <span key={d} style={distColor(d)} className="rounded px-1.5 py-0.5 font-semibold">
+                  {d}
+                </span>
+              ))}
+              （顏色越深越遠）
+            </div>
+          </Card>
+        </>
+      }
+    />
+  );
+}
+
+function NearestDecoder() {
+  const [r, setR] = useState<Bit[]>(parseBits('0110111'));
+  const near = useMemo(() => nearestCodewords(r, WORDS), [r]);
+  const syn = decode74(r);
+  const sorted = useMemo(() => near.distances.map((d, i) => ({ i, d })).sort((a, b) => a.d - b.d || a.i - b.i), [near]);
+  const same = syn.corrected.join('') === WORDS[near.nearest[0]].join('');
+  return (
+    <LabGrid
+      main={
+        <Card title={`點擊接收字串 r 的位元，觀察它與 ${WORDS.length} 個 codeword 的距離`} actions={<ResetButton onClick={() => setR(parseBits('0110111'))} />}>
+          <BitRow bits={r} layout={LAYOUT_74} onToggle={(i) => setR(flipBit(r, i))} />
+          <div className="mt-4 space-y-1">
+            {sorted.map(({ i, d }) => {
+              const isNear = near.nearest.includes(i);
+              return (
+                <div key={i} className={`flex items-center gap-3 rounded-lg px-2 py-1 ${isNear ? 'bg-emerald-50' : ''}`}>
+                  <span className="w-8 text-xs text-slate-400">#{i}</span>
+                  <BitString bits={WORDS[i]} className="text-sm" highlight={(j) => (WORDS[i][j] !== r[j] ? 'text-fuchsia-600 font-bold' : undefined)} />
+                  <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
+                    <div className={`h-full rounded-full ${isNear ? 'bg-emerald-500' : 'bg-slate-300'}`} style={{ width: `${(d / N) * 100}%` }} />
+                  </div>
+                  <span className={`w-6 text-right font-mono text-sm ${isNear ? 'font-bold text-emerald-700' : 'text-slate-500'}`}>{d}</span>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      }
+      aside={
+        <>
+          <Card title="解碼結果">
+            <div className="space-y-2 text-sm">
+              <div>
+                最小距離 = <strong>{near.minDistance}</strong>，達到的 codeword：{near.nearest.map((i) => `#${i}`).join(', ')}
+              </div>
+              <div>
+                最近 codeword：<span className="mono font-semibold">{WORDS[near.nearest[0]].join('')}</span>
+                {near.unique ? '（唯一）' : '（不唯一！）'}
+              </div>
+              <div>
+                Syndrome 解碼結果：<span className="mono font-semibold">{syn.corrected.join('')}</span>
+              </div>
+              <div className={`rounded-lg px-2 py-1 text-xs ${same ? 'bg-emerald-50 text-emerald-800' : 'bg-rose-50 text-rose-800'}`}>{same ? '✓ 兩種解碼方法得到相同 codeword' : '✗ 兩種方法結果不同'}</div>
+            </div>
+            <p className="mt-3 text-xs text-slate-500">
+              對 Hamming(7,4)，任何 {N} 位元字串到最近 codeword 的距離都 ≤ 1 且最近 codeword 唯一（本章「完美碼」一節）。所以 Syndrome 解碼 = 最近 codeword 解碼，但 Syndrome 只需要一次矩陣乘法，不必比較 {WORDS.length} 次。
+            </p>
+          </Card>
+          <Misconceptions
+            items={[
+              { wrong: '最近 codeword 一定是送出的 codeword。', right: '只有錯誤數 ≤ t 時才保證。錯誤太多時，接收字可能更靠近另一個 codeword。' },
+              { wrong: 'd_min 是 codeword 之間的平均距離。', right: 'd_min 是「最壞情況」：最接近的那一對決定保證能力。' },
+            ]}
+          />
+        </>
+      }
+    />
+  );
+}
+
+function DminSlider() {
+  const [d, setD] = useState(D_MIN);
+  return (
+    <>
+      <div className="flex flex-wrap items-center gap-3">
+        <span className="text-sm">
+          設 <M>{'d_{\\min}'}</M> =
+        </span>
+        <input type="range" min={1} max={8} value={d} onChange={(e) => setD(Number(e.target.value))} className="w-40 accent-slate-900" aria-label="最小距離" />
+        <span className="font-mono text-lg font-bold">{d}</span>
+        <span className="text-sm text-slate-600">
+          ⇒ <M>{`t = \\lfloor (${d}-1)/2 \\rfloor = ${correctionCapability(d)}`}</M>，可偵測 <M>{`${detectionCapability(d)}`}</M> 個錯誤
+        </span>
+      </div>
+      <DistanceLine d={d} />
+      <p className="mt-2 text-sm text-slate-600">
+        兩個最接近的 codeword A、B 之間有一條長度 <M>{'d_{\\min}'}</M> 的路徑。以每個 codeword 為中心、半徑 <M>t</M> 的「地盤」只要滿足 <M>{'2t < d_{\\min}'}</M> 就不會重疊：錯 <M>t</M> 個以內的接收字一定比較靠近原本的 codeword。若 <M>{'2t \\ge d_{\\min}'}</M>，中間就會有字串同時屬於兩邊。
+      </p>
+    </>
+  );
+}
+
+/* ---------------- Hamming spheres and the general bound ---------------- */
+
+function BallFigures() {
+  return (
+    <div className="space-y-4">
+      <p>
+        主線的「{HB.volume} 種接收結果」，一般化就是<strong>漢明球</strong>：要更正 t 個錯，每個 codeword 周圍「錯 t 個以內」的所有字串都必須解回它自己。這些區域不能重疊，加起來也不能超過整個空間的 <M>{'2^n'}</M> 個字串。
+      </p>
+      <Card title="漢明球（Hamming sphere）">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <div className="min-w-0 space-y-2 text-sm text-slate-600">
+            <Tex block>{'B(c,t) = \\{\\, x \\in \\mathbb{F}_2^n : d_H(x,c) \\le t \\,\\}'}</Tex>
+            <p>以 codeword c 為中心、半徑 t 的球：離 c 最多 t 個位元不同的所有字串，也就是「c 錯了 t 個以內的位元，可能變成的所有樣子」。</p>
+            <p>注意這是一個<strong>有限集合</strong>，不是平面上的圓。n = 3 時可以畫出它真正的樣子（圖①）：每個字串是立方體的一個頂點，球就是從中心出發、沿著邊走 t 步以內能到的頂點。</p>
+          </div>
+          <CubeBall />
+        </div>
+      </Card>
+      <Card title="球的體積（Volume）">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <div className="min-w-0 space-y-2 text-sm text-slate-600">
+            <Tex block>{'V_2(n,t) = |B(c,t)| = \\sum_{i=0}^{t} \\binom{n}{i}'}</Tex>
+            <p>
+              <M>{'\\binom{n}{i}'}</M> = 從 n 個位置裡挑 i 個來錯的選法數，也就是「離 c 恰好 i」的字串個數。把 i = 0, 1, …, t 加起來，就是球裡的字串個數。
+            </p>
+            <p>n 大的時候畫不出立方體，就改成按「翻了幾位」一圈一圈排（圖②，n = 7）。</p>
+          </div>
+          <BallDiagram />
+        </div>
+      </Card>
+      <Card title="Hamming Bound（球填充界，Sphere-packing bound）">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <div className="min-w-0 space-y-2 text-sm text-slate-600">
+            <Tex block>{'2^k \\cdot V_2(n,t) \\le 2^n'}</Tex>
+            <p>
+              每個 codeword 需要一顆 <M>{'V_2(n,t)'}</M> 個字串的球（圖②），球之間不能重疊，而整個空間只有 <M>{'2^n'}</M> 個字串（圖③）。<M>{'2^k'}</M> 顆球要全部放得下，就必須滿足上式。t = 1 時 <M>{'V_2(n,1) = 1 + n'}</M>，就是主線的 <M>{'2^r \\ge n + 1'}</M>。
+            </p>
+            <p>等號成立的 code 稱為<strong>完美碼（Perfect code）</strong>：球恰好鋪滿整個空間（圖①的「兩顆球」就是最小的例子）。</p>
+          </div>
+          <PackingDiagram />
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+function BoundExplorer() {
+  const [n, setN] = useState(N);
+  const [k, setK] = useState(K);
+  const [t, setT] = useState(T);
+  const hb = hammingBound(n, k, t);
+  const terms = sphereTerms(n, t);
+  const family = hb.equality ? knownPerfectFamily(n, k, t) : null;
+  const reset = () => {
+    setN(N);
+    setK(K);
+    setT(T);
+  };
+  return (
+    <div className="space-y-4">
+      <LabGrid
+        main={
+          <Card title="參數" actions={<ResetButton onClick={reset} />}>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <Slider
+                label="碼長 n（Codeword length）"
+                value={n}
+                min={1}
+                max={24}
+                onChange={(v) => {
+                  setN(v);
+                  setK(Math.min(k, v));
+                  setT(Math.min(t, v));
+                }}
+              />
+              <Slider label="維度 k（Dimension）" value={k} min={0} max={n} onChange={setK} />
+              <Slider label="修正半徑 t" value={t} min={0} max={n} onChange={setT} />
+            </div>
+            <div className="mt-5 space-y-3 rounded-xl bg-slate-50 p-4">
+              <Tex block>{`V_2(${n},${t}) = ${terms.map((_, i) => `\\binom{${n}}{${i}}`).join(' + ')} = ${terms.join(' + ')} = ${hb.volume}`}</Tex>
+              <Tex block>{`2^{${k}} \\cdot ${hb.volume} = ${hb.codewords} \\times ${hb.volume} = ${hb.lhs.toLocaleString()} \\;${hb.equality ? '=' : hb.satisfied ? '<' : '>'}\\; 2^{${n}} = ${hb.rhs.toLocaleString()}`}</Tex>
+            </div>
+            <div className="mt-4">
+              <div className="mb-1 flex justify-between text-xs text-slate-500">
+                <span>球所佔的比例 2ᵏ·V / 2ⁿ</span>
+                <span className="font-mono">{(hb.coverage * 100).toFixed(hb.coverage < 0.01 ? 4 : 1)}%</span>
+              </div>
+              <div className="h-3 overflow-hidden rounded-full bg-slate-200">
+                <div className={`h-full rounded-full ${hb.equality ? 'bg-emerald-500' : hb.satisfied ? 'bg-data-500' : 'bg-rose-500'}`} style={{ width: `${Math.min(100, hb.coverage * 100)}%` }} />
+              </div>
+            </div>
+          </Card>
+        }
+        aside={
+          <>
+            <Card>
+              {hb.equality ? (
+                <Verdict ok title="等號成立：完美碼參數">
+                  {family ? <>已知例子：{family}</> : '等號成立是完美碼的必要條件；此參數是否真的存在完美碼需另外判斷。'}
+                </Verdict>
+              ) : hb.satisfied ? (
+                <Verdict ok title="滿足 Hamming Bound（嚴格不等）">
+                  球沒有鋪滿空間，有 {(hb.rhs - hb.lhs).toLocaleString()} 個字串不在任何球中。注意：滿足界不代表這樣的 code 一定存在。
+                </Verdict>
+              ) : (
+                <Verdict ok={false} title="違反 Hamming Bound">
+                  不可能存在長度 {n}、{hb.codewords} 個 codeword 且能修正 {t} 個錯誤的二元碼。
+                </Verdict>
+              )}
+              <div className="mt-3 text-sm text-slate-600">
+                給定 n = {n}, t = {t}，k 最大只能是 <strong>{Math.max(0, hb.maxK)}</strong>。
+              </div>
+            </Card>
+            <Misconceptions
+              items={[
+                {
+                  wrong: '漢明球就像平面上的圓：圖上靠得近的字串，距離就比較近。',
+                  right: `Hamming 距離只計算「不同位元的個數」，不是歐氏距離。一個半徑 1 的球是 ${HB.volume} 個離散字串，它們的數值彼此可以相差很遠（見下一項「依數值排列」視圖）。圖②畫成同心圈只是按「翻幾位」分層，圈上的位置和角度沒有意義；真正的結構要看圖①的立方體（沿邊走的步數）。`,
+                },
+                { wrong: '滿足 Hamming Bound 的參數一定有對應的 code。', right: 'Hamming Bound 是必要條件，不是充分條件。例如 (n,k,t) = (90,78,2) 滿足等號，但不存在這樣的完美碼。' },
+                { wrong: '完美碼表示能修正所有錯誤。', right: '完美碼只代表「每個字串都恰好在一個半徑 t 的球內」。超過 t 個錯誤仍會被解成錯的 codeword。' },
+              ]}
+            />
+          </>
+        }
+      />
+      <Derivation
+        title="逐步推導：Hamming(7,4) 剛好等號成立"
+        steps={[
+          { title: '計算球的大小', body: <Tex block>{`V_2(${N},${T}) = ${sphereTerms(N, T).map((_, i) => `\\binom{${N}}{${i}}`).join(' + ')} = ${sphereTerms(N, T).join(' + ')} = ${HB.volume}`}</Tex> },
+          { title: '直觀意義', body: <p>每個 codeword 的球 = 它自己（沒有錯）+ {N} 種單一錯誤 = {HB.volume} 個字串，也就是主線的 {HB.volume} 種接收結果。</p> },
+          { title: `${HB.codewords} 個 codeword 的球加總`, body: <Tex block>{`2^${K} \\cdot ${HB.volume} = ${HB.codewords} \\times ${HB.volume} = ${HB.lhs}`}</Tex> },
+          { title: '和整個空間比較', body: <Tex block>{`2^${N} = ${HB.rhs} \\quad\\Rightarrow\\quad ${HB.codewords} \\times (1 + ${N}) = ${HB.lhs} = 2^${N}`}</Tex> },
+          {
+            title: '結論',
+            body: (
+              <p>
+                球彼此不重疊（因為 d_min = {D_MIN} ≥ 2·{T}+1），而總大小恰好等於空間大小，所以它們<strong>完全覆蓋</strong>整個空間：每一個 {N} 位元字串都恰好屬於一個球。反過來說，任何長度 {N}、能修正 {T} 個錯誤的二元碼最多只有 {HB.rhs} ÷ {HB.volume} = {HB.rhs / HB.volume} 個 codeword：Hamming({N},{K}) 已經沒有任何浪費。
+              </p>
+            ),
+          },
+        ]}
+      />
+    </div>
+  );
+}
+
+const CODES = {
+  h74: { label: 'Hamming(7,4)', n: 7, words: WORDS },
+  h84: { label: 'Extended(8,4)', n: 8, words: codewords84().map((e) => e.codeword) },
+};
+type CodeKey = keyof typeof CODES;
+
+function PartitionView() {
+  const [codeKey, setCodeKey] = useState<CodeKey>('h74');
+  const code = CODES[codeKey];
+  const part = useMemo(() => partitionByNearest(code.words, code.n), [code]);
+  const [sel, setSel] = useState(A_IDX);
+  const [view, setView] = useState<'groups' | 'all'>('groups');
+  const [hoverWord, setHoverWord] = useState<number | null>(null);
+  return (
+    <Card
+      title={`依最近 codeword 把全部 ${part.totalWords} 個 ${code.n}-bit 字串分組`}
+      actions={
+        <>
+          <Segmented
+            value={codeKey}
+            onChange={(v) => {
+              setCodeKey(v);
+              setSel(A_IDX);
+            }}
+            options={[
+              { value: 'h74', label: 'Hamming(7,4)' },
+              { value: 'h84', label: 'Extended(8,4)' },
+            ]}
+          />
+          <Segmented
+            value={view}
+            onChange={setView}
+            options={[
+              { value: 'groups', label: '依 codeword 分組' },
+              { value: 'all', label: '依數值排列' },
+            ]}
+          />
+        </>
+      }
+    >
+      <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <Stat label="字串總數 2ⁿ" value={part.totalWords} />
+        <Stat label="唯一歸屬的字串" value={part.groups.reduce((a, g) => a + g.length, 0)} sub={`每組 ${[...new Set(part.groups.map((g) => g.length))].join('/')} 個`} tone="indigo" />
+        <Stat label="平手（不屬於任何一組）" value={part.ties.length} tone={part.ties.length ? 'rose' : 'emerald'} />
+        <Stat label="完全分割？" value={part.isPartition ? '是 ✓' : '否 ✗'} tone={part.isPartition ? 'emerald' : 'rose'} />
+      </div>
+
+      {view === 'groups' ? (
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-8">
+          {part.groups.map((g, gi) => (
+            <button
+              key={gi}
+              onClick={() => setSel(gi)}
+              className={`rounded-xl border p-1.5 text-left transition-colors ${gi === sel ? 'border-emerald-500 bg-emerald-50 ring-2 ring-emerald-300' : 'border-slate-200 hover:border-slate-400'}`}
+            >
+              <div className="mb-1 flex items-center justify-between text-[10px] text-slate-500">
+                <span>#{gi}</span>
+                <span>{g.length} 個</span>
+              </div>
+              {g
+                .slice()
+                .sort((a, b) => hammingDistance(a, code.words[gi]) - hammingDistance(b, code.words[gi]))
+                .map((w) => {
+                  const d = hammingDistance(w, code.words[gi]);
+                  return (
+                    <div key={bitsToString(w)} className={`font-mono text-[11px] leading-4 tracking-wider ${d === 0 ? 'font-bold text-slate-900' : 'text-slate-500'}`}>
+                      <BitString bits={w} highlight={(j) => (w[j] !== code.words[gi][j] ? 'text-rose-600 font-bold' : undefined)} />
+                    </div>
+                  );
+                })}
+            </button>
+          ))}
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <div className="grid w-max gap-0.5" style={{ gridTemplateColumns: 'repeat(16, minmax(34px, 1fr))' }}>
+            {part.owner.map((o, w) => {
+              const isCenter = o >= 0 && bitsToInt(code.words[o]) === w;
+              const inSel = o === sel;
+              return (
+                <button
+                  key={w}
+                  onClick={() => o >= 0 && setSel(o)}
+                  onMouseEnter={() => setHoverWord(w)}
+                  onMouseLeave={() => setHoverWord(null)}
+                  title={`${w.toString(2).padStart(code.n, '0')} → ${o >= 0 ? `Codeword #${o}` : '平手'}`}
+                  className={`h-7 rounded text-[10px] font-semibold ${
+                    o < 0 ? 'bg-rose-50 text-rose-400' : inSel ? (isCenter ? 'bg-emerald-600 text-white' : 'bg-emerald-200 text-emerald-900') : isCenter ? 'bg-slate-700 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                  }`}
+                >
+                  {o >= 0 ? `#${o}` : '?'}
+                </button>
+              );
+            })}
+          </div>
+          <p className="mt-2 text-xs text-slate-500">
+            格子依字串的整數值 0, 1, …, {part.totalWords - 1} 排列（每列 16 個），格子內是它的最近 codeword 編號；深色格是 codeword 本身。
+            {hoverWord !== null && (
+              <span className="ml-1 font-mono text-slate-700">
+                目前：{hoverWord.toString(2).padStart(code.n, '0')}（= {hoverWord}）
+              </span>
+            )}
+            同一組的 {part.groups[0].length} 個字串在數值上分散各處：漢明球並不是「一團相鄰的點」。
+          </p>
+        </div>
+      )}
+      <p className="mt-3 text-xs text-slate-500">
+        {codeKey === 'h74'
+          ? `${part.groups.length} 組 × ${part.groups[0].length} 個 = ${part.totalWords}：沒有重疊、沒有遺漏。每一組就是主線那張表的 ${part.groups[0].length} 種接收結果。`
+          : `Extended(8,4) 每個球有 1 + ${code.n} = ${part.groups[0].length} 個字串，${part.groups.length} 個球共 ${part.groups.reduce((a, g) => a + g.length, 0)} 個；其餘 ${part.ties.length} 個字串（距離 2）同時離好幾個 codeword 一樣近 → 無法唯一解碼。這正是 SECDED「偵測但不修正」的區域。`}
+      </p>
+    </Card>
+  );
+}
+
+function Slider({ label, value, min, max, onChange }: { label: string; value: number; min: number; max: number; onChange: (v: number) => void }) {
+  return (
+    <label className="block">
+      <div className="mb-1 flex items-center justify-between text-xs text-slate-500">
+        <span>{label}</span>
+        <span className="font-mono text-base font-bold text-slate-900">{value}</span>
+      </div>
+      <input type="range" min={min} max={max} value={value} onChange={(e) => onChange(Number(e.target.value))} className="w-full accent-slate-900" />
+    </label>
+  );
+}
+
+function Verdict({ ok, title, children }: { ok: boolean; title: string; children: ReactNode }) {
+  return (
+    <div className={`rounded-xl border p-3 ${ok ? 'border-emerald-200 bg-emerald-50 text-emerald-900' : 'border-rose-200 bg-rose-50 text-rose-900'}`}>
+      <div className="flex items-center gap-1.5 font-semibold">
+        {ok ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
+        {title}
+      </div>
+      <div className="mt-1 text-sm">{children}</div>
+    </div>
+  );
+}

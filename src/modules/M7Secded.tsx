@@ -300,7 +300,7 @@ export default function M7Secded() {
         <Stage kind="conclusion" moduleId={ID} title="從 Hamming 到 SECDED 的完整故事">
           <Callout kind="key" title="結論">
             <p>
-              Hamming(7,4) 的 H 讓單一錯誤可定位（第 2–3 章）；<M>{'d_{\\min} = 3'}</M> 說明它恰好修正 1 個錯（第 4 章）；Hamming Bound 告訴我們它是完美碼、沒有多餘空間來偵測雙重錯誤（第 5 章）。
+              Hamming(7,4) 的 H 讓單一錯誤可定位（第 2–3 章）；<M>{'d_{\\min} = 3'}</M> 說明它恰好修正 1 個錯（第 4 章）；Hamming Bound 告訴我們它是完美碼、沒有多餘空間來偵測雙重錯誤（也在第 4 章）。
               加入 1 個整體同位位元得到 <M>{'d_{\\min} = 4'}</M>（第 6 章），SECDED 解碼器用 <M>{'(s, q)'}</M> 兩個訊號，在至多 2 個錯誤時保證：<strong>1 個錯必修正，2 個錯必偵測</strong>。SECDED 窮舉表中 wt(e) = 1、2 這兩列的結果正是這個保證。
             </p>
           </Callout>
@@ -315,7 +315,7 @@ export default function M7Secded() {
           </Expandable>
           <Expandable title="與距離觀點的對應">
             <p>
-              <M>{'d_{\\min} = 4'}</M> 時，半徑 1 的球不重疊；而距離 2 的字串到最近 codeword 的距離為 2，可能同時離好幾個 codeword 一樣近。SECDED 的「偵測到雙重錯誤」就是接收字落在這些球之外的區域（第 5 章 Extended(8,4) 視圖中的 112 個平手字串）。
+              <M>{'d_{\\min} = 4'}</M> 時，半徑 1 的球不重疊；而距離 2 的字串到最近 codeword 的距離為 2，可能同時離好幾個 codeword 一樣近。SECDED 的「偵測到雙重錯誤」就是接收字落在這些球之外的區域（第 4 章進階「字串分組」的 Extended(8,4) 視圖中的 112 個平手字串）。
             </p>
           </Expandable>
         </Stage>

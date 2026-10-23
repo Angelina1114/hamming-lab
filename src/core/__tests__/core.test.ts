@@ -22,13 +22,15 @@ import {
   encode74ByParity,
   extractMessage74,
   isCodeword74,
+  DEFAULT_MESSAGE,
   matchingColumn,
   simulate74,
   syndrome74,
 } from '../hamming';
 import { H84, codewords84, encode84, secdedDecode, simulate84 } from '../extended';
-import { correctionCapability, hammingDistance, minimumDistance, nearestCodewords, weightDistribution } from '../distance';
-import { binomial, hammingBound, partitionByNearest, sphereVolume } from '../bound';
+import { correctionCapability, flipPath, hammingDistance, minimumDistance, nearestCodewords, weightDistribution } from '../distance';
+import { binomial, doubleErrorLandings, hammingBound, partitionByNearest, sphereVolume } from '../bound';
+import { hammingK, hammingN } from '../scaling';
 import {
   ALPHA_POW,
   CYCLIC_G,
@@ -239,6 +241,53 @@ describe('Hamming bound & perfect code', () => {
     const p = partitionByNearest(C84, 8);
     expect(p.isPartition).toBe(false);
     expect(p.ties.length).toBeGreaterThan(0);
+  });
+});
+
+describe('Chapter 4: capability & limits (the numbers on the page and in the deck)', () => {
+  // the A → B path: A = codeword of the shared default message, B = codeword of 1111, position 5 flipped first
+  const A = encode74(DEFAULT_MESSAGE);
+  const B = encode74([1, 1, 1, 1]);
+  const path = flipPath(A, B, [4]);
+  it('A and B are a closest pair: d(A, B) = d_min = 3, path 0110011 → 0110111 → 1110111 → 1111111', () => {
+    expect(bitsToString(A)).toBe('0110011');
+    expect(bitsToString(B)).toBe('1111111');
+    expect(hammingDistance(A, B)).toBe(minimumDistance(C74).dmin);
+    expect(path.map((st) => bitsToString(st.word))).toEqual(['0110011', '0110111', '1110111', '1111111']);
+    expect(path.map((st) => st.flipped.map((i) => i + 1))).toEqual([[], [5], [5, 1], [5, 1, 4]]);
+  });
+  it('one flip: still nearest A, the lamps flip position 5 back; two flips: nearest B, the lamps flip position 4 into B', () => {
+    const one = nearestCodewords(path[1].word, C74);
+    expect(one.unique && C74[one.nearest[0]]).toEqual(A);
+    expect(decode74(path[1].word).position).toBe(5);
+    expect(decode74(path[1].word).corrected).toEqual(A);
+    const two = nearestCodewords(path[2].word, C74);
+    expect(two.unique && C74[two.nearest[0]]).toEqual(B);
+    expect(decode74(path[2].word).position).toBe(4);
+    expect(decode74(path[2].word).corrected).toEqual(B);
+    expect(syndrome74(path[3].word)).toEqual([0, 0, 0]);
+  });
+  it('every double error of Hamming(7,4) lands within distance 1 of another codeword (16 × 21 = 336); none for Extended(8,4)', () => {
+    expect(doubleErrorLandings(C74)).toEqual({ perWord: 21, total: 336, nearOther: 336 });
+    expect(doubleErrorLandings(C84)).toEqual({ perWord: 28, total: 448, nearOther: 0 });
+  });
+  it('t = 1 bound: 2^k(1 + n) ≤ 2^n ⟺ 1 + n ≤ 2^r, with equality for the whole Hamming family', () => {
+    for (let n = 1; n <= 20; n++)
+      for (let k = 0; k <= n; k++) expect(hammingBound(n, k, 1).satisfied).toBe(1 + n <= 2 ** (n - k));
+    expect([2, 3, 4, 5, 6, 7].map((r) => [hammingN(r), hammingK(r), hammingBound(hammingN(r), hammingK(r), 1).equality])).toEqual([
+      [3, 1, true],
+      [7, 4, true],
+      [15, 11, true],
+      [31, 26, true],
+      [63, 57, true],
+      [127, 120, true],
+    ]);
+  });
+  it('the 8 received words of every codeword light the 8 different lamp states', () => {
+    C74.forEach((c) => {
+      const ball = [c, ...c.map((_, i) => flipBit(c, i))];
+      expect(new Set(ball.map((w) => bitsToString(syndrome74(w)))).size).toBe(8);
+    });
   });
 });
 

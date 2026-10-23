@@ -1,5 +1,5 @@
 /**
- * Lesson 1 deck — chapter introductions for chapters 5, 6 and 7.
+ * Lesson 1 deck — chapter introductions for the Extended Hamming(8,4) and SECDED slides (the old chapters 6 and 7).
  *
  * Each intro states the chapter's question, walks through the reasoning and ends on the key result,
  * before the deck's existing figure / example slides. Every number shown is computed from the core.
@@ -11,7 +11,6 @@ import {
   H84,
   LAYOUT_84,
   allVectors,
-  binomial,
   codewords74,
   codewords84,
   correctionCapability,
@@ -42,29 +41,9 @@ const C7 = codewords74().map((e) => e.codeword);
 const C8 = codewords84().map((e) => e.codeword);
 const MD7 = minimumDistance(C7);
 const MD8 = minimumDistance(C8);
-const HB7 = hammingBound(7, 4, 1);
 const HB8 = hammingBound(8, 4, 1);
-const TERMS7 = sphereTerms(7, 1);
 const TERMS8 = sphereTerms(8, 1);
 const RANK8 = rank(H84);
-
-/** every 7-bit string is within distance 1 of exactly one Hamming(7,4) codeword */
-const ONE_BALL_EACH = allVectors(7).every((w) => C7.filter((c) => hammingDistance(w, c) <= 1).length === 1);
-
-/** all 2-error patterns of all 16 codewords, and how many of them land in ANOTHER codeword's radius-1 ball */
-const TWO_ERR = (() => {
-  let total = 0;
-  let inOther = 0;
-  C7.forEach((c, k) => {
-    for (let i = 0; i < 7; i++)
-      for (let j = i + 1; j < 7; j++) {
-        const w = flipBit(flipBit(c, i), j);
-        total++;
-        if (C7.some((x, l) => l !== k && hammingDistance(w, x) <= 1)) inOther++;
-      }
-  });
-  return { perWord: binomial(7, 2), total, inOther };
-})();
 
 const WD7 = weightDistribution(C7, 7);
 const WD8 = weightDistribution(C8, 8);
@@ -125,73 +104,6 @@ function Bits({ bits, mark = [], markClass = 'text-rose-600', gapBefore }: { bit
         </span>
       ))}
     </span>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* Chapter 5: Hamming bound and perfect codes                           */
-/* ------------------------------------------------------------------ */
-
-function Ch5Question({ s }: { s: Stepper }) {
-  return (
-    <div className="space-y-4">
-      <div className="rounded-2xl bg-slate-50 p-4 text-xl">
-        長度 7 的二進位字串一共只有 <M>{`2^7 = ${HB7.rhs}`}</M> 個。要修正 t 個錯誤，每個 codeword 都需要一塊「地盤」：它錯了 t 個以內會變成的字串，都必須被解回它自己。地盤有多大？{HB7.rhs} 個字串裡最多放得下幾塊？
-      </div>
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <Box tone="sky" title="① 漢明球：一塊地盤" show={s.step >= 1}>
-          <Tex block>{'B(c,t) = \\{\\, x : d(x,c) \\le t \\,\\}'}</Tex>
-          <p>所有和 c 最多差 t 個位元的長度 n 字串 x，也就是「c 錯了 t 個以內，可能變成的所有樣子」。</p>
-          <p className="text-slate-600">它是有限個字串的集合，不是平面上的圓。</p>
-        </Box>
-        <Box tone="amber" title="② 體積：一塊地盤有幾個字串" show={s.step >= 2}>
-          <Tex block>{'V_2(n,t) = |B(c,t)| = \\sum_{i=0}^{t} \\binom{n}{i}'}</Tex>
-          <p>
-            <M>{'\\binom{n}{i}'}</M>：從 n 個位置挑 i 個來錯的選法數。
-          </p>
-          <p>
-            n = 7、t = 1：<M>{`V_2(7,1) = ${TERMS7.join(' + ')} = ${HB7.volume}`}</M>，就是 c 自己加上 {TERMS7[1]} 種單一錯誤。
-          </p>
-        </Box>
-        <Box tone="emerald" title="③ Hamming Bound（球填充界）" show={s.step >= 3}>
-          <p>
-            兩顆球若共用一個字串，收到它就不知道該解成誰，所以球兩兩不相交（等價於第 4 章的 <M>{'d_{\\min} \\ge 2t+1'}</M>）。<M>{'2^k'}</M> 顆球、每顆 <M>{'V_2(n,t)'}</M> 個字串，全部要塞進 <M>{'2^n'}</M> 個字串裡：
-          </p>
-          <Tex block>{'2^k \\cdot V_2(n,t) \\le 2^n'}</Tex>
-        </Box>
-      </div>
-    </div>
-  );
-}
-
-function Ch5Perfect({ s }: { s: Stepper }) {
-  const rel = HB7.equality ? '=' : HB7.satisfied ? '<' : '>';
-  return (
-    <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-      <Box tone="sky" title="代入 Hamming(7,4)">
-        <p>n = 7、k = 4、t = 1：</p>
-        <Tex block>{`2^{4} \\cdot V_2(7,1) = ${HB7.codewords} \\times ${HB7.volume} = ${HB7.lhs} ${rel} 2^{7}`}</Tex>
-        <p>
-          不等式兩邊<strong>剛好相等</strong>。{HB7.codewords} 顆球彼此不重疊（<M>{`d_{\\min} = ${MD7.dmin} \\ge 2\\cdot 1 + 1`}</M>），總大小又恰好等於整個空間。
-        </p>
-      </Box>
-      <Box tone="emerald" title="完美碼（Perfect code）" show={s.step >= 1}>
-        <p>
-          等號成立 = 球恰好鋪滿空間：<strong>每一個 7 位元字串，都恰好離一個 codeword 距離 ≤ 1。</strong>
-        </p>
-        <p className="text-slate-600">窮舉 {HB7.rhs} 個字串：{ONE_BALL_EACH ? '每一個都恰好屬於 1 顆球 ✓' : '有字串不只屬於 1 顆球 ✗'}</p>
-        <p>
-          長度 7、能修 1 個錯的二元碼最多只有 {HB7.rhs} ÷ {HB7.volume} = {HB7.rhs / HB7.volume} 個 codeword：Hamming(7,4) 沒有任何浪費。
-        </p>
-      </Box>
-      <Box tone="rose" title="代價：沒有空位留給「錯 2 個」" show={s.step >= 2}>
-        <p>
-          每個 codeword 錯 2 個有 <M>{`\\binom{7}{2} = ${TWO_ERR.perWord}`}</M> 種樣子，{HB7.codewords} 個 codeword 共 {HB7.codewords} × {TWO_ERR.perWord} = {TWO_ERR.total} 種，
-          {TWO_ERR.inOther === TWO_ERR.total ? <strong>全部</strong> : <>其中 {TWO_ERR.inOther} 種</>}落在<strong>另一個</strong> codeword 的球裡：被「修」成錯的 codeword（誤更正），解碼器毫不知情。
-        </p>
-        <p className="font-semibold text-rose-800">所以 Hamming(7,4) 不能在修 1 個的同時偵測 2 個 → 第 6 章：多加 1 個位元。</p>
-      </Box>
-    </div>
   );
 }
 
@@ -422,11 +334,6 @@ function Ch7Cases({ s }: { s: Stepper }) {
 /* ------------------------------------------------------------------ */
 /* Exports (deck order)                                                */
 /* ------------------------------------------------------------------ */
-
-export const INTRO_CH5_SLIDES: DeckSlide<null>[] = [
-  { title: '第 5 章：Hamming Bound 與完美碼', sub: '7 個位元的空間，最多能放幾個 codeword？', steps: () => 4, render: (s) => <Ch5Question s={s} /> },
-  { title: '第 5 章：Hamming(7,4) 是完美碼', sub: '代入 Hamming Bound：16 × 8 = 128，等號成立', steps: () => 3, render: (s) => <Ch5Perfect s={s} /> },
-];
 
 export const INTRO_CH6_SLIDES: DeckSlide<null>[] = [
   { title: '第 6 章：Extended Hamming(8,4)', sub: '錯了 2 個時，能不能至少「發現」？', steps: () => 3, render: (s) => <Ch6Problem s={s} /> },

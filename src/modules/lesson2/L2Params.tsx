@@ -61,7 +61,7 @@ export default function L2Params() {
       }
       goals={[
         <>
-          掌握 Hamming 參數公式 <M>{'n = 2^m - 1,\\ k = n - m,\\ d_{\\min} = 3'}</M>（m = 同位位元數；第一課第 5 章記作 r）
+          掌握 Hamming 參數公式 <M>{'n = 2^m - 1,\\ k = n - m,\\ d_{\\min} = 3'}</M>（m = 同位位元數；第一課第 4 章記作 r）
         </>,
         '比較 GF(8) 與 GF(128) 範例的 Code Rate 與矩陣大小',
         '估計 Syndrome 計算、查表與 Chien Search 的成本',
