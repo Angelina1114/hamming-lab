@@ -106,7 +106,7 @@ export function BallDiagram() {
         <p className="text-slate-500">排成同心圈只是依「翻了幾位」分層，圈上的位置和角度沒有意義：例如第 1 圈任兩個字串，彼此的距離都是 2。</p>
         {tt >= 2 && (
           <p className="rounded-lg bg-rose-50 p-2 text-rose-800">
-            對 Hamming(7,4) 來說，這 {ring2.length} 個點全都落在另外 {ownerIds.length} 個 codeword 的半徑 1 球裡（同色的 {ring2.length / ownerIds.length} 個點屬於同一個 codeword），所以錯 2 位一定會被改錯。16 × {V} = {16 * V} &gt; 128：半徑 2 的球不可能互不重疊。這裡的 t = 2 只是示範體積公式怎麼長。
+            對 Hamming(7,4) 來說，這 {ring2.length} 個點全都落在另外 {ownerIds.length} 個 codeword 的半徑 1 球裡（同色的 {ring2.length / ownerIds.length} 個點屬於同一個 codeword），所以錯 2 位一定會被誤更正。16 × {V} = {16 * V} &gt; 128：半徑 2 的球不可能互不重疊。這裡的 t = 2 只是示範體積公式怎麼長。
           </p>
         )}
       </div>
@@ -218,7 +218,7 @@ export function PackingDiagram() {
           )}
           {!hb.satisfied && <strong className="text-rose-700">裝不下！所以 n = {p.n}、要修 {p.t} 個錯時，k 最多只能是 {hb.maxK}。</strong>}
         </p>
-        <p className="text-slate-500">格子怎麼排只是為了好數；真正同一顆球的字串在數值上分散各處{!presenting && '（見下方「視覺化」）'}。</p>
+        <p className="text-slate-500">格子怎麼排只是為了好數；真正同一顆球的字串在數值上分散各處{!presenting && '（見下方「真正的 2ⁿ 個字串分組」）'}。</p>
       </div>
     </div>
   );
@@ -306,13 +306,13 @@ export function CubeBall() {
         <p>頂點 = 3 位元字串；邊連接「只差 1 位」的兩個字串。沿著邊最少要走幾步，就是兩個字串的 Hamming distance（看邊，不看圖上的直線距離）。</p>
         {mode === 'one' ? (
           <p className="text-sm text-slate-800">
-            <M>{`B(${vkey(center)}, ${t})`}</M> = 從 {vkey(center)} 出發、走 {t} 步以內到得了的頂點 = {'{'}
+            <M>{`\\mathrm{Ball}(${vkey(center)}, ${t})`}</M> = 從 {vkey(center)} 出發、走 {t} 步以內到得了的頂點 = {'{'}
             {inBall.map(vkey).join(', ')}
             {'}'}，共 <M>{`${terms.join(' + ')} = ${inBall.length}`}</M> 個。
           </p>
         ) : (
           <p className="text-sm text-slate-800">
-            code {'{'}000, 111{'}'}（d_min = 3，t = 1）：兩顆半徑 1 的球 {'{'}000, 001, 010, 100{'}'} 與 {'{'}111, 110, 101, 011{'}'} 互不重疊，<M>{'2 \\times 4 = 8 = 2^3'}</M>，剛好分完整個立方體——迷你版的完美碼。它就是同位位元數 r = 2 的 Hamming Code，即 Hamming(3,1)。
+            code {'{'}000, 111{'}'}（<M>{'d_{\\min} = 3'}</M>，t = 1）：兩顆半徑 1 的球 {'{'}000, 001, 010, 100{'}'} 與 {'{'}111, 110, 101, 011{'}'} 互不重疊，<M>{'2 \\times 4 = 8 = 2^3'}</M>，剛好分完整個立方體——迷你版的完美碼。它就是 <M>{'\\ell = 2'}</M> 個同位位元的 Hamming Code，即 Hamming(3,1)。
           </p>
         )}
       </div>

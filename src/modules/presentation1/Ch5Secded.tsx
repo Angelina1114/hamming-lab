@@ -47,11 +47,11 @@ import { Box, NOTES_SUB, NOTES_UL, Reveal } from './parts';
 /* Numbers used on the slides and in the notes (computed, never typed) */
 /* ------------------------------------------------------------------ */
 
-/** Hamming(7,4): 7 positions, 4 data bits, 3 lamps; Extended(8,4): P0 at position 8 and a 4th lamp */
+/** Hamming(7,4): 7 positions, 4 data bits, ℓ = 3 parity bits = 3 lamps; Extended(8,4): P0 at position 8 and a 4th lamp q */
 const N = N7;
 const K = K4;
-const R = H74.length;
-const STATES = 2 ** R;
+const L = H74.length;
+const STATES = 2 ** L;
 const NE = N8;
 const RE = H84.length;
 const P0 = LAYOUT_84[OVERALL_INDEX].label;
@@ -93,7 +93,10 @@ const A_ENTRY = C8.find((e) => vecEquals(e.message, DEFAULT_MESSAGE)) ?? C8[0];
 const B_ENTRY = C8.find((e) => e.message.every((b) => b === 1)) ?? C8[C8.length - 1];
 const A = A_ENTRY.codeword;
 const B = B_ENTRY.codeword;
-const D_AB7 = hammingDistance(encode74(A_ENTRY.message), encode74(B_ENTRY.message));
+/** the same two messages in Hamming(7,4): chapter 4's A and B */
+const A7 = encode74(A_ENTRY.message);
+const B7 = encode74(B_ENTRY.message);
+const D_AB7 = hammingDistance(A7, B7);
 const D_AB = hammingDistance(A, B);
 const AB_DIFF = differingPositions(A, B).map((i) => i + 1);
 const PATH = flipPath(A, B, [EXAMPLE_POS - 1]).map((st) => {
@@ -102,7 +105,6 @@ const PATH = flipPath(A, B, [EXAMPLE_POS - 1]).map((st) => {
   return { ...st, dA: hammingDistance(st.word, A), dB: hammingDistance(st.word, B), dec, toA: !!out && vecEquals(out, A), toB: !!out && vecEquals(out, B) };
 });
 const MID = Math.floor(D_AB / 2);
-const STEP1 = PATH[1];
 const STEP_MID = PATH[MID];
 /** the two flips that leave the word in the middle: the chapter's double-error example */
 const PAIR = STEP_MID.flipped;
@@ -117,6 +119,9 @@ const TRIPLE = [0, 1, 2];
 const TRIPLE_RESULT = secdedDecode(TRIPLE.reduce<Bit[]>((w, i) => flipBit(w, i), [...A]));
 
 const LAMP = PARITY_CHECKS.map((pc) => pc.name);
+/** reading the lamps as a binary number: P4 P2 P1, the most significant first */
+const READ = [...LAMP.keys()].reverse();
+const binText = (b: readonly Bit[]) => `${READ.map((i) => b[i]).join('')}₂`;
 const lampText = (bits: readonly Bit[]) => (isZeroVector(bits) ? '全暗' : `${LAMP.filter((_, i) => bits[i]).join('、')} 亮`);
 const posList = (idx: readonly number[]) => [...idx].sort((a, b) => a - b).map((i) => i + 1).join('、');
 const bits = (v: readonly Bit[]) => v.join('');
@@ -173,45 +178,43 @@ const CASE_CELL: Record<SecdedCase, { label: string; where: string; action: stri
 };
 
 /* ------------------------------------------------------------------ */
-/* 1. ECC 記憶體：寧可回報，也不要改錯                                 */
+/* 1. ECC 記憶體：寧可回報，也不要誤更正                                 */
 /* ------------------------------------------------------------------ */
 
+/** chapter 4's double error on the A → B path: the decoder pushes the word to B */
+const ECC_R = PAIR.reduce<Bit[]>((w, i) => flipBit(w, i), A7);
+const ECC_DEC = decode74(ECC_R);
+const ECC_OUT = ECC_DEC.corrected;
+
 function EccSlide({ s }: { s: Stepper }) {
-  const { message } = useMessage();
-  const c = encode74(message);
-  const r = PAIR.reduce<Bit[]>((w, i) => flipBit(w, i), c);
-  const d = decode74(r);
-  const out = d.corrected;
-  const wrong = differingPositions(out, c);
   const label = 'text-base text-slate-500';
   return (
     <div className="grid grid-cols-1 gap-4 text-lg lg:grid-cols-3">
       <Reveal on={s.step >= 0}>
-        <Box tone="bg-slate-50 text-slate-900" title={`Hamming(${N},${K}) 遇到 2 個錯`}>
-          <p className="text-slate-700">伺服器記憶體整天在讀寫，雜訊偶爾翻轉位元：翻 1 位最常見，翻 2 位少見但遲早會遇到。</p>
+        <Box tone="bg-slate-50 text-slate-900" title="第 4 章的翻 2 位：被推到 B">
+          <p className="text-slate-700">伺服器記憶體整天在讀寫：翻 1 位最常見，翻 2 位少見，但遲早會遇到。</p>
           <div className="mt-2 grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-2 rounded-xl bg-white/80 px-3 py-2">
-            <span className={label}>送出 c</span>
-            <Word bits={c} size="text-xl" />
             <span className={label}>收到 r</span>
             <span className="flex flex-wrap items-center gap-3">
-              <Word bits={r} flipped={PAIR} size="text-xl" />
-              <Lamps s={d.syndrome} size="sm" />
+              <Word bits={ECC_R} flipped={PAIR} size="text-xl" />
+              <Lamps s={ECC_DEC.syndrome} size="sm" />
             </span>
             <span className={label}>解碼後</span>
             <span className="flex flex-wrap items-center gap-3">
-              <Word bits={out} flipped={wrong} size="text-xl" />
-              <Lamps s={matVec(H74, out)} size="sm" />
+              <Word bits={ECC_OUT} flipped={differingPositions(ECC_OUT, A7)} size="text-xl" />
+              <Lamps s={matVec(H74, ECC_OUT)} size="sm" />
             </span>
           </div>
           <p className="mt-2 text-slate-700">
-            雜訊翻位置 {posList(PAIR)}，燈號指向位置 {d.position}：解碼器去翻它，錯 {wrong.length} 位，交出 <span className="whitespace-nowrap">m = {bits(extractMessage74(out))}</span>。
+            就是第 4 章那條路：A 翻位置 {PAIR.map((i) => i + 1).join('、')}，燈號指向位置 {ECC_DEC.position}，一翻就{vecEquals(ECC_OUT, B7) ? '變成 B' : `變成 ${bits(ECC_OUT)}`}
+            <span className="whitespace-nowrap">（m = {bits(extractMessage74(ECC_OUT))}）</span>。
           </p>
         </Box>
       </Reveal>
       <Reveal on={s.step >= 1}>
-        <Box tone="bg-rose-50 text-rose-950" title="悄悄改錯：沒有人知道">
+        <Box tone="bg-rose-50 text-rose-950" title="悄悄誤更正：沒有人知道">
           <p>
-            解碼後的字{isCodeword74(out) ? '' : ' ✗'}<strong>本身就是合法 codeword</strong>：再檢查一次，燈也全暗。
+            解碼後的字{isCodeword74(ECC_OUT) ? '' : ' ✗'}<strong>本身就是合法 codeword</strong>：再檢查一次，燈也全暗。
           </p>
           <p className="mt-2">錯的資料被當成正確的繼續計算、寫回硬碟，等發現時已經找不到源頭。</p>
           <p className="mt-2 font-semibold text-rose-800">
@@ -223,7 +226,7 @@ function EccSlide({ s }: { s: Stepper }) {
         <Box tone="bg-emerald-50 text-emerald-950" title="寧可回報">
           <p>回報了，系統還能補救：重讀一次、重新取得，或把這一頁記憶體停用。</p>
           <p className="mt-2">
-            要回報，就得分出「錯 1 個」和「錯 2 個」。但 {R} 盞燈的 {STATES} 種狀態都已經有主人（第 4 章）。
+            要回報，就得分出「錯 1 個」和「錯 2 個」。但 {L} 盞燈的 {STATES} 種狀態都已經有主人（第 4 章）。
           </p>
           <p className="mt-2 font-semibold text-emerald-800">→ 多一盞燈：SECDED，修 1 個、偵測 2 個。</p>
         </Box>
@@ -247,10 +250,10 @@ function ParitySlide({ s }: { s: Stepper }) {
           <p className="text-slate-700">每翻一位，1 的總數奇偶就變一次：翻 1 位變奇數，翻 2 位又變回偶數。</p>
           <Tex block>{`P_0 = c_1 \\oplus c_2 \\oplus \\cdots \\oplus c_${N}`}</Tex>
           <p className="text-slate-700">
-            發送端補上 {P0}：{NE} 個位元一定有偶數個 1。
+            發送端補上 {P0}（整體同位位元）：{NE} 個位元一定有偶數個 1。
           </p>
           <p className="mt-1 text-base">
-            <Word bits={c7} size="text-lg" /> → <Word bits={c8} flipped={[]} size="text-lg" />
+            m = {bits(message)}：<Word bits={c7} size="text-lg" /> → <Word bits={c8} flipped={[]} size="text-lg" />
           </p>
           <p className="mt-2 text-slate-700">
             接收端第 {RE} 盞燈 <M>{`q = r_1 + \\cdots + r_${NE}`}</M>：翻奇數位就亮。
@@ -260,21 +263,18 @@ function ParitySlide({ s }: { s: Stepper }) {
       <Reveal on={s.step >= 1}>
         <Box tone="bg-sky-50 text-sky-950" title={`放在第 ${P0_POS} 位，代價 1 位`}>
           <p>
-            前 {N} 位和 Hamming({N},{K}) 一模一樣：{R} 盞燈、H 的設計 ①–⑤、{R}-to-{STATES} 解碼器都不用改。
+            前 {N} 位和 Hamming({N},{K}) 一模一樣：{L} 盞燈、H 的設計 ①–⑤、{L}-to-{STATES} 解碼器都不用改。
           </p>
-          <p className="mt-2">
-            碼率 <M>{`\\tfrac{${K}}{${N}} \\approx ${RATE7.toFixed(3)} \\to \\tfrac{${K}}{${NE}} = ${RATE8.toFixed(3)}`}</M>
-          </p>
-          <Tex block>{`[${N},${K},${D7}] \\;\\to\\; [${NE},${K},${D8}]`}</Tex>
-          <p className="text-slate-600">
-            {P0} 由前 {N} 位決定，不帶新資訊：k 仍是 {K}。
+          <p className="mt-2">第 {RE} 盞燈只是另外一棵 XOR 樹，看全部 {NE} 位。</p>
+          <p className="mt-2 text-slate-600">
+            {P0} 由前 {N} 位決定，不帶新資訊：k 仍是 {K}，每 {K} 個資料位元多送 1 位。
           </p>
         </Box>
       </Reveal>
       <Reveal on={s.step >= 2}>
         <Box tone="bg-amber-50 text-amber-950" title={`A 到 B 變成 ${D_AB} 步`}>
           <p className="text-base text-slate-700">
-            A、B 差 {D_AB7} 位（奇數）→ {P0} 也不同 → 差 {D_AB} 位（位置 {AB_DIFF.join('、')}）
+            A = 訊息 {bits(A_ENTRY.message)} 的 codeword，B = 訊息 {bits(B_ENTRY.message)} 的 codeword（第 4 章）：差 {D_AB7} 位（奇數）→ {P0} 也不同 → 差 {D_AB} 位（位置 {AB_DIFF.join('、')}）
           </p>
           <table className="mt-1 w-full text-base">
             <tbody>
@@ -284,16 +284,13 @@ function ParitySlide({ s }: { s: Stepper }) {
                   <td className="pr-2">
                     <Word bits={st.word} flipped={st.flipped} size="text-base" />
                   </td>
-                  <td className="whitespace-nowrap pr-2 font-mono">
-                    {st.dA}·{st.dB}
-                  </td>
-                  <td className="whitespace-nowrap text-sm">{k === 0 ? '送出' : k === MID ? '回報' : st.toA ? '修回 A' : st.toB && k === D_AB ? '就是 B' : st.toB ? '改成 B' : ''}</td>
+                  <td className="whitespace-nowrap text-base">{k === 0 ? '送出' : k === MID ? '回報' : st.toA ? '修回 A' : st.toB && k === D_AB ? '就是 B' : st.toB ? '改成 B' : ''}</td>
                 </tr>
               ))}
             </tbody>
           </table>
           <p className="mt-1 text-base text-slate-700">
-            翻 2 位停在正中間（離 A {STEP_MID.dA}、離 B {STEP_MID.dB}）：不會被推到 B。窮舉 {MD8.pairsChecked} 對：<M>{`d_{\\min} = ${D8}`}</M>。
+            翻 2 位停在正中間（離 A {STEP_MID.dA}、離 B {STEP_MID.dB}）：不會被推到 B。窮舉 {MD8.pairsChecked} 對：({N},{K}) 的 <M>{`d_{\\min} = ${D7}`}</M> → ({NE},{K}) 的 <M>{`d_{\\min} = ${D8}`}</M>。
           </p>
         </Box>
       </Reveal>
@@ -373,7 +370,7 @@ function CasesSlide({ s }: { s: Stepper }) {
             </li>
           </ul>
           <p className="mt-1">
-            2 個錯一定 <M>{'s \\neq 0'}</M>：<M>{'h_i + h_j \\neq 0'}</M>（設計 ②）；其中一個是 {P0} 時 <M>{'s = h_i \\neq 0'}</M>（設計 ①）。
+            2 個錯一定 <M>{'s \\neq 0'}</M>：<M>{"{h_j + h_{j'} \\neq 0}"}</M>（H 的設計 ②）；其中一個是 {P0} 時 <M>{'s = h_j \\neq 0'}</M>（H 的設計 ①）。
           </p>
           <p className="mt-1 text-slate-600">不修：這種字離 {TIED} 個 codeword 都是 2，猜不出送的是哪一個。</p>
         </Box>
@@ -381,7 +378,7 @@ function CasesSlide({ s }: { s: Stepper }) {
       <Reveal on={s.step >= 2}>
         <Box tone="bg-slate-50 text-slate-900" title="決策表">
           <DecisionGrid />
-          <p className="mt-2 text-base text-slate-600">錯 3 個以上不在保證範圍：可能被當成 1 個錯而改錯。</p>
+          <p className="mt-2 text-base text-slate-600">錯 3 個以上不在保證範圍：可能被當成 1 個錯而誤更正。</p>
         </Box>
       </Reveal>
     </div>
@@ -454,8 +451,16 @@ function DecoderSlide({ s }: { s: Stepper }) {
             </div>
             <div className="space-y-1 text-lg">
               <div>
-                s = <span className="font-mono font-bold">({res.syndrome.join(',')})ᵀ</span>
-                <span className="text-slate-600">{isZeroVector(res.syndrome) ? '：全暗' : `：指向位置 ${syndromeToPosition(res.syndrome)}`}</span>
+                (s₁, s₂, s₄) = <span className="font-mono font-bold">({res.syndrome.join(', ')})</span>
+              </div>
+              <div className="text-slate-600">
+                {isZeroVector(res.syndrome) ? (
+                  e7.length === 0 ? `全暗：前 ${N} 位沒有錯` : `全暗：不指向任何位置，但前 ${N} 位其實錯了 ${e7.length} 個（錯誤本身是 codeword）`
+                ) : (
+                  <>
+                    讀成 <span className="font-mono">{binText(res.syndrome)}</span> = {syndromeToPosition(res.syndrome)}：指向位置 {syndromeToPosition(res.syndrome)}
+                  </>
+                )}
               </div>
               <div>
                 q = <span className="font-mono font-bold">{res.overallParity}</span>
@@ -468,7 +473,7 @@ function DecoderSlide({ s }: { s: Stepper }) {
           <Box tone={tone(status)} title={`SECDED：${cell.label}${cell.where ? `（${cell.where}）` : ''}`}>
             <p className="text-lg">→ {cell.action}</p>
             <div className="mt-2 flex flex-wrap items-center gap-3">
-              <StatusBadge status={status} large zh={status === 'wrong' ? '誤判' : undefined} en="" />
+              <StatusBadge status={status} large zh={status === 'wrong' ? '誤更正' : undefined} en="" />
             </div>
             <div className="mt-2 text-lg">
               {res.corrected ? <Word bits={res.corrected} flipped={differingPositions(res.corrected, sent)} size="text-xl" /> : <span className="font-semibold">拒絕輸出，回報系統</span>}
@@ -478,7 +483,7 @@ function DecoderSlide({ s }: { s: Stepper }) {
         </Reveal>
         <Reveal on={s.step >= 2}>
           <Box tone={tone(h7Status)} title={`同一個錯誤，Hamming(${N},${K})`}>
-            <p className="text-lg">只看前 {N} 位和 {R} 盞燈：</p>
+            <p className="text-lg">只看前 {N} 位和 {L} 盞燈：</p>
             <div className="mt-1 flex flex-wrap items-center gap-3">
               <Lamps s={h7.syndrome} size="sm" />
               <span className="text-lg">→ {h7.position ? `翻位置 ${h7.position}` : '不動'}</span>
@@ -503,11 +508,11 @@ function ServerSlide({ s }: { s: Stepper }) {
     <div className="grid grid-cols-1 gap-4 text-lg lg:grid-cols-3">
       <Reveal on={s.step >= 0}>
         <Box tone="bg-sky-50 text-sky-950" title={`${SERVER.r} 盞燈才夠`}>
-          <p>每次讀寫 {SERVER.k} 個資料位元。更正 1 個錯，r 盞燈要分出 {SERVER.k} + r + 1 種情況（第 4 章）：</p>
+          <p>每次讀寫 {SERVER.k} 個資料位元。更正 1 個錯，ℓ 盞燈要分出 {SERVER.k} + ℓ + 1 種情況（第 4 章）：</p>
           <Tex block>{`2^{${SERVER.r - 1}} = ${2 ** (SERVER.r - 1)} < ${SERVER.k + SERVER.r}`}</Tex>
           <Tex block>{`2^{${SERVER.r}} = ${2 ** SERVER.r} \\ge ${SERVER.k + SERVER.r + 1}`}</Tex>
           <p className="text-slate-600">
-            所以 r = {SERVER.r}。
+            所以 ℓ = {SERVER.r}。
           </p>
         </Box>
       </Reveal>
@@ -570,13 +575,13 @@ function ServerSlide({ s }: { s: Stepper }) {
 
 export const CH5_SLIDES: DeckSlide<null>[] = [
   {
-    title: '第 5 章：ECC 記憶體：寧可回報，不要改錯',
-    sub: `Hamming(${N},${K}) 遇到 2 個錯：改錯了，而且沒有人知道`,
+    title: '第 5 章：寧可回報，不要誤更正',
+    sub: `ECC 記憶體：Hamming(${N},${K}) 遇到 2 個錯會誤更正，而且沒有人知道`,
     steps: () => 3,
     render: (s) => <EccSlide s={s} />,
     takeaway: (
       <>
-        <Ph>改錯的資料看起來完全正常；</Ph>
+        <Ph>誤更正的資料看起來完全正常；</Ph>
         <Ph>回報了，系統才能補救</Ph>
       </>
     ),
@@ -588,12 +593,12 @@ export const CH5_SLIDES: DeckSlide<null>[] = [
             <li>記憶體控制器就是接收端：讀出時算燈號、修好錯</li>
             <li>翻 1 位最常見，當場修好；翻 2 位少見，但伺服器日夜在跑，遲早會遇到</li>
             <li>
-              例：雜訊翻位置 {posList(PAIR)}，{R} 盞燈指向第三個位置，解碼器去翻它 → 錯 3 位
+              回到第 4 章那條路：A 翻位置 {PAIR.map((i) => i + 1).join('、')} → 燈號指向位置 {ECC_DEC.position} → 一翻就變成 B，錯 {differingPositions(ECC_OUT, A7).length} 位
             </li>
           </ul>
         </li>
         <li>
-          → 悄悄改錯：解碼後是另一個合法 codeword，再檢查燈也全暗
+          → 悄悄誤更正：解碼後是另一個合法 codeword，再檢查燈也全暗
           <ul className={NOTES_SUB}>
             <li>錯的資料被繼續計算、寫回硬碟，事後找不到源頭</li>
             <li>
@@ -606,7 +611,7 @@ export const CH5_SLIDES: DeckSlide<null>[] = [
           <ul className={NOTES_SUB}>
             <li>要回報，就要分出錯 1 個和錯 2 個</li>
             <li>
-              第 4 章：{R} 盞燈的 {STATES} 種狀態都有主人 → 多一盞燈
+              第 4 章：{L} 盞燈的 {STATES} 種狀態都有主人 → 多一盞燈
             </li>
           </ul>
         </li>
@@ -614,8 +619,8 @@ export const CH5_SLIDES: DeckSlide<null>[] = [
     ),
   },
   {
-    title: `第 5 章：多一盞燈 ${P0}：(${NE},${K})`,
-    sub: `第 ${RE} 盞燈數翻轉個數的奇偶`,
+    title: `第 5 章：${P0}（整體同位位元）與第 ${RE} 盞燈`,
+    sub: `(${NE},${K})：第 ${RE} 盞燈 q 數翻轉個數的奇偶`,
     steps: () => 3,
     render: (s) => <ParitySlide s={s} />,
     takeaway: (
@@ -631,7 +636,7 @@ export const CH5_SLIDES: DeckSlide<null>[] = [
           錯 1 個與錯 2 個，差在翻了幾位：每翻一位，1 的總數奇偶就變一次
           <ul className={NOTES_SUB}>
             <li>
-              發送端多送 {P0} = c₁ ⊕ … ⊕ c{N}：{NE} 個位元一定有偶數個 1
+              發送端多送 {P0}（整體同位位元）= c₁ ⊕ … ⊕ c{N}：{NE} 個位元一定有偶數個 1
             </li>
             <li>
               第 {RE} 盞燈 q 看全部 {NE} 位：翻奇數位亮，翻偶數位（含 0）暗
@@ -642,10 +647,10 @@ export const CH5_SLIDES: DeckSlide<null>[] = [
           → {P0} 放在第 {P0_POS} 位：前 {N} 位和 Hamming({N},{K}) 一樣
           <ul className={NOTES_SUB}>
             <li>
-              {R} 盞燈、第 2 章 H 的設計 ①–⑤、第 3 章的 {R}-to-{STATES} 解碼器都不用改
+              {L} 盞燈、第 2 章 H 的設計 ①–⑤、第 3 章的 {L}-to-{STATES} 解碼器都不用改
             </li>
             <li>
-              代價 1 位：碼率 {K}/{N} ≈ {RATE7.toFixed(3)} → {K}/{NE} = {RATE8.toFixed(3)}；[{N},{K},{D7}] → [{NE},{K},{D8}]
+              代價 1 位：碼率 {K}/{N} ≈ {RATE7.toFixed(3)} → {K}/{NE} = {RATE8.toFixed(3)}
             </li>
           </ul>
         </li>
@@ -656,13 +661,10 @@ export const CH5_SLIDES: DeckSlide<null>[] = [
               A、B 差 {D_AB7} 位，是奇數 → {P0} 也不同 → 差 {D_AB} 位
             </li>
             <li>
-              翻 1 位：離 A {STEP1.dA}、離 B {STEP1.dB} → 修回 A
-            </li>
-            <li>
               翻 2 位（位置 {PAIR.map((i) => i + 1).join('、')}）：離 A {STEP_MID.dA}、離 B {STEP_MID.dB} → 正中間 → 回報；第 4 章同樣兩位，字被推到 B
             </li>
             <li>
-              窮舉 {MD8.pairsChecked} 對：d_min {D7} → {D8}；{DOUBLE8.total} 種雙錯，落在別人旁邊的 {DOUBLE8.nearOther} 種
+              窮舉 {MD8.pairsChecked} 對：({N},{K}) 最小距離 {D7} → ({NE},{K}) 最小距離 {D8}；{DOUBLE8.total} 種雙錯，落在別人旁邊的 {DOUBLE8.nearOther} 種
             </li>
           </ul>
         </li>
@@ -697,7 +699,7 @@ export const CH5_SLIDES: DeckSlide<null>[] = [
           <ul className={NOTES_SUB}>
             <li>s = 0：沒錯；s ≠ 0：2 個 → 回報，不修</li>
             <li>
-              2 個錯一定 s ≠ 0：hᵢ + hⱼ ≠ 0（設計 ② 欄互不相同）；其中一個是 {P0} 時 s = hᵢ ≠ 0（設計 ①）
+              2 個錯一定 s ≠ 0：hⱼ + hⱼ′ ≠ 0（H 的設計 ②：欄互不相同）；其中一個是 {P0} 時 s = hⱼ ≠ 0（H 的設計 ①）
             </li>
             <li>
               不修：這種字離 {TIED} 個 codeword 都是距離 2，猜不出是哪一個
@@ -741,10 +743,10 @@ export const CH5_SLIDES: DeckSlide<null>[] = [
           → 讀 {RE} 盞燈：s = H(r₁…r{N})ᵀ，q = r₁ + … + r{NE}
         </li>
         <li>
-          → 套進四格：修好、回報，或錯 3 個以上時誤判
+          → 套進四格：修好、回報，或錯 3 個以上時誤更正
           <ul className={NOTES_SUB}>
             <li>
-              同一個錯誤，Hamming({N},{K}) 只看 {R} 盞燈：翻 2 位時一律改錯
+              同一個錯誤，Hamming({N},{K}) 只看 {L} 盞燈：翻 2 位時一律誤更正
             </li>
             <li>
               SECDED：翻 1 位 {ONE8.ok}/{ONE8.total} 修好（含 {P0}），翻 2 位 {TWO8.detected}/{TWO8.total} 回報
@@ -773,7 +775,7 @@ export const CH5_SLIDES: DeckSlide<null>[] = [
           伺服器記憶體每次讀寫 {SERVER.k} 個資料位元
           <ul className={NOTES_SUB}>
             <li>
-              更正 1 個錯（第 4 章）：2ʳ ≥ {SERVER.k} + r + 1 → r = {SERVER.r}（2<sup>{SERVER.r - 1}</sup> = {2 ** (SERVER.r - 1)} &lt; {SERVER.k + SERVER.r}，2<sup>{SERVER.r}</sup> = {2 ** SERVER.r} ≥ {SERVER.k + SERVER.r + 1}）
+              更正 1 個錯（第 4 章）：2<sup>ℓ</sup> ≥ {SERVER.k} + ℓ + 1 → ℓ = {SERVER.r}（2<sup>{SERVER.r - 1}</sup> = {2 ** (SERVER.r - 1)} &lt; {SERVER.k + SERVER.r}，2<sup>{SERVER.r}</sup> = {2 ** SERVER.r} ≥ {SERVER.k + SERVER.r + 1}）
             </li>
           </ul>
         </li>

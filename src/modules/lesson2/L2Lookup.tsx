@@ -52,9 +52,9 @@ export default function L2Lookup() {
             <p className="text-sm text-slate-700">
               若 <M>{'S_i = S_j'}</M>（<M>{'i > j'}</M>），則 <M>{'g(x) \\mid x^i - x^j = x^j(x^{i-j} - 1)'}</M>。<M>{'g(x)'}</M> 與 <M>{'x'}</M> 互質，所以 <M>{'g(x) \\mid x^{i-j} - 1'}</M>，其中 <M>{'0 < i - j < 7'}</M>。但 <M>{'g(x)'}</M> 是本原多項式（Primitive Polynomial，見 A4），使 <M>{'g \\mid x^k - 1'}</M> 的最小 k 是 7，矛盾。所以 7 個 Syndrome 兩兩相異，且都不為 0（<M>{'g \\nmid x^i'}</M>）。
             </p>
-            <p className="text-sm text-slate-700">3 位元的非零值剛好只有 7 個，所以這是一一對應——Hamming Code 是「完美」的（第一課第 4 章）。</p>
+            <p className="text-sm text-slate-700">3 位元的非零值剛好只有 7 個，所以這是一一對應——Hamming Code 是「完美」的（<a className="text-indigo-700 underline" href="#/distance">第一課第 4 章</a>）。</p>
             <p className="mt-2 text-sm text-slate-700">
-              換個角度看：把這 7 個 Syndrome 依位置 1 ~ 7 排成直行，得到的正是循環碼的同位檢查矩陣（parity-check matrix）<M>{'H_{\\text{cyc}}'}</M>（第 k 欄 = <M>{'\\alpha^{7-k}'}</M>，k = 1, …, 7）。所以「查表」就是第一課「比對 H 的哪一欄」，只是位元排列不同——詳見 <a className="text-indigo-700 underline" href="#/a-9">A9 用 GF(8) 推導 H</a>。
+              換個角度看：把這 7 個 Syndrome 依位置 1 ~ 7 排成直行，得到的正是循環碼的同位檢查矩陣（parity-check matrix）<M>{'H_{\\text{cyc}}'}</M>（第 k 欄 = <M>{'\\alpha^{7-k}'}</M>，k = 1, …, 7）。所以「查表」就是<a className="text-indigo-700 underline" href="#/syndrome">第一課「比對 H 的哪一欄」</a>，只是位元排列不同——詳見 <a className="text-indigo-700 underline" href="#/a-9">A9 用 GF(8) 推導 H</a>。
             </p>
           </Card>
         ),

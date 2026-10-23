@@ -1,11 +1,13 @@
 import { useState, type ReactNode } from 'react';
 import {
   type Bit,
+  DATA_INDICES,
   H74,
   K4,
   LAYOUT_74,
   N7,
   PARITY_CHECKS,
+  PARITY_INDICES,
   allVectors,
   codewords74,
   column,
@@ -15,6 +17,7 @@ import {
   hammingSyndromeXors,
   isCodeword74,
   isZeroVector,
+  matchingColumn,
   matrixToTex,
   minimumDistance,
   simulate74,
@@ -65,13 +68,30 @@ const POSITIONS = LAYOUT_74.map((p) => p.position);
 const READ = [...LAMP.keys()].reverse();
 const lampText = (bits: readonly Bit[]) => (isZeroVector(bits) ? '全暗' : `${LAMP.filter((_, i) => bits[i]).join('、')} 亮`);
 const binText = (bits: readonly Bit[]) => `${READ.map((i) => bits[i]).join('')}₂`;
+/** a lamp state as bits in H's row order (P1 first) from its binary value */
+const lampBits = (v: number): Bit[] => Array.from({ length: R }, (_, i) => ((v >> i) & 1) as Bit);
 
 /** column h_j of H for a 1-based position j */
 const h = (j: number): Bit[] => column(H74, j - 1);
 /** column vector as a KaTeX bmatrix */
 const colTex = (v: readonly Bit[]) => matrixToTex(v.map((b) => [b]));
 const bits = (v: readonly Bit[]) => v.join('');
-const colText = (v: readonly Bit[]) => `(${v.join(',')})ᵀ`;
+/** the lamps as a labelled vector, named after the lamps: (s₁, s₂, s₄) = (1, 0, 1) */
+const SUB_DIGIT: Record<string, string> = { '1': '₁', '2': '₂', '4': '₄' };
+const lampVec = (v: readonly Bit[]) => `(${LAMP.map((l) => `s${SUB_DIGIT[l.slice(1)]}`).join(', ')}) = (${v.join(', ')})`;
+const lampVecTex = (v: readonly Bit[]) => `(${LAMP.map((l) => `s_${l.slice(1)}`).join(', ')}) = (${v.join(', ')})`;
+/** position j from the lamps: j = s₁ + 2s₂ + 4s₄ */
+const POS_TEX = LAMP.map((l, i) => `${i ? `${2 ** i}` : ''}s_${l.slice(1)}`).join(' + ');
+
+/**
+ * Another common way to write H: data bits first, parity bits last (columns D1 D2 D3 D4 P1 P2 P4).
+ * Same columns, other order: the lamps no longer read as the position.
+ */
+const SYS_ORDER = [...DATA_INDICES, ...PARITY_INDICES];
+const H_SYS = H74.map((row) => SYS_ORDER.map((j) => row[j]));
+const SYS_LABELS = SYS_ORDER.map((j) => LAYOUT_74[j].label);
+/** 0-based column of H_SYS that equals the lamps, −1 when they are all dark */
+const sysColumn = (v: readonly Bit[]) => (isZeroVector(v) ? -1 : H_SYS[0].findIndex((_, j) => H_SYS.every((row, i) => row[j] === v[i])));
 
 /**
  * What the syndrome decoder does with every error pattern of weight w.
@@ -101,8 +121,8 @@ const EXAMPLE_COL = h(EXAMPLE_POS);
 /** the same noise on every codeword lights the same lamps */
 const SAME_LAMPS = WORDS.filter((w) => vecEquals(syndrome74(vecAdd(w, EXAMPLE_E)), EXAMPLE_COL)).length;
 
-/** two-error example: positions 3 and 5 light the column of a third position */
-const PAIR: [number, number] = [3, 5];
+/** two-error example: the running position 5 plus position 1 (the pair chapters 4 and 5 use) light the column of a third position */
+const PAIR: [number, number] = [EXAMPLE_POS, 1];
 const PAIR_SUM = vecAdd(h(PAIR[0]), h(PAIR[1]));
 const PAIR_POS = syndromeToPosition(PAIR_SUM);
 /** after the decoder flips PAIR_POS, how many bits are wrong */
@@ -118,14 +138,26 @@ const TRIPLE_IS_CODEWORD = isCodeword74(TRIPLE_WORD);
 /* Shared pictures                                                     */
 /* ------------------------------------------------------------------ */
 
-/** The receiver's warning lamps in H's row order (P1, P2, P4): lit = that checker sees an odd number of 1s. */
-function Lamps({ bits: b, size = 'md' }: { bits: readonly Bit[]; size?: 'sm' | 'md' }) {
+/**
+ * The receiver's warning lamps: lit = that checker sees an odd number of 1s.
+ * Drawn in H's row order (P1, P2, P4), or with `read` in reading order (P4, P2, P1) so that,
+ * left to right, they spell the binary number of the position. With `onToggle` each lamp is a button.
+ */
+function Lamps({ bits: b, size = 'md', read = false, onToggle }: { bits: readonly Bit[]; size?: 'sm' | 'md'; read?: boolean; onToggle?: (i: number) => void }) {
   const d = size === 'sm' ? 'h-5 w-5' : 'h-7 w-7';
+  const order = read ? READ : [...LAMP.keys()];
+  const lamp = (i: number) => <span className={`block ${d} rounded-full border-2 ${b[i] ? 'border-rose-500 bg-rose-400 shadow-[0_0_10px_3px_rgba(244,63,94,0.45)]' : 'border-slate-300 bg-slate-200'}`} />;
   return (
-    <span className="inline-flex items-end gap-2 align-middle" role="img" aria-label={`警示燈${lampText(b)}`}>
-      {b.map((v, i) => (
+    <span className="inline-flex items-end gap-2 align-middle" role={onToggle ? 'group' : 'img'} aria-label={`警示燈${lampText(b)}`}>
+      {order.map((i) => (
         <span key={LAMP[i]} className="inline-flex flex-col items-center gap-0.5">
-          <span className={`${d} rounded-full border-2 ${v ? 'border-rose-500 bg-rose-400 shadow-[0_0_10px_3px_rgba(244,63,94,0.45)]' : 'border-slate-300 bg-slate-200'}`} />
+          {onToggle ? (
+            <button type="button" aria-pressed={!!b[i]} aria-label={`切換 ${LAMP[i]} 燈`} onClick={() => onToggle(i)} className="rounded-full hover:ring-2 hover:ring-sky-300">
+              {lamp(i)}
+            </button>
+          ) : (
+            lamp(i)
+          )}
           <span className="text-sm font-semibold leading-none text-slate-500">{LAMP[i]}</span>
         </span>
       ))}
@@ -219,13 +251,13 @@ function ColumnSlide({ s }: { s: Stepper }) {
     <div className="space-y-4 text-xl">
       <Reveal on={s.step >= 0}>
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-          <Box tone="bg-data-50 text-data-800" title="前提 ①：送出的是 codeword">
+          <Box tone="bg-data-50 text-data-800" title="上一頁：燈只對雜訊起反應">
             <div className="text-2xl">
-              <M>{'Hc^{T} = 0'}</M>
+              <M>{'s = He^{T}'}</M>
             </div>
-            <p className="text-lg text-slate-700">燈本來全暗（第 2 章 HGᵀ = 0）：亮起來的每一盞，都是雜訊造成的。</p>
+            <p className="text-lg text-slate-700">送出的是 codeword，Hcᵀ = 0 已經消掉：亮起來的每一盞，都是雜訊造成的。</p>
           </Box>
-          <Box tone="bg-rose-50 text-rose-950" title="前提 ②：恰好翻了一位">
+          <Box tone="bg-rose-50 text-rose-950" title="再加一個前提：恰好翻了一位">
             <div className="text-2xl">
               <M>{'e = e_j'}</M>
             </div>
@@ -239,7 +271,7 @@ function ColumnSlide({ s }: { s: Stepper }) {
         <Reveal on={s.step >= 1}>
           <Box tone="bg-sky-50 text-sky-950" title="推導">
             <div className="-my-2 text-2xl">
-              <Tex block>{'Hr^{T} = \\underbrace{Hc^{T}}_{\\text{\\textcircled{1}}\\,=\\,0} + \\underbrace{He_j^{T}}_{\\text{\\textcircled{2}}\\,=\\,h_j} = 0 + h_j'}</Tex>
+              <Tex block>{'s = He_j^{T} = h_j \\quad (H \\text{ 的第 } j \\text{ 欄})'}</Tex>
             </div>
             <div className="flex flex-wrap items-center gap-3">
               <MatrixView matrix={H74} name="H" size="sm" colLabels={POSITIONS} rowLabels={LAMP} highlightCols={[EXAMPLE_POS - 1]} colHighlightClass="bg-sky-200 text-sky-900" />
@@ -257,7 +289,7 @@ function ColumnSlide({ s }: { s: Stepper }) {
           <Box tone="bg-emerald-50 text-emerald-950" title="位置 j 出錯時亮的燈 = H 的第 j 欄">
             <div className="my-2 flex flex-wrap items-center gap-4">
               <span className="text-lg">
-                例：位置 {EXAMPLE_POS} → <M>{`h_${EXAMPLE_POS} = (${EXAMPLE_COL.join(',')})^{T}`}</M>
+                例：位置 {EXAMPLE_POS} → <M>{lampVecTex(EXAMPLE_COL)}</M>
               </span>
               <Lamps bits={EXAMPLE_COL} />
             </div>
@@ -276,9 +308,11 @@ function ColumnSlide({ s }: { s: Stepper }) {
 /* ------------------------------------------------------------------ */
 
 function DecodeCircuitSlide({ s }: { s: Stepper }) {
-  const lamps = EXAMPLE_COL;
+  // the lamps can be clicked during the talk; they start on the running example (position 5)
+  const [lamps, setLamps] = useState<Bit[]>(EXAMPLE_COL);
+  const toggle = (i: number) => setLamps((v) => v.map((b, k) => (k === i ? ((b ^ 1) as Bit) : b)));
   const value = syndromeToPosition(lamps);
-  const fixed = vecAdd(EXAMPLE_E, unitVector(N, value - 1)); // the noise after the flip (sent = 0 stands for any c)
+  const sysCol = sysColumn(lamps);
   const arrow = <span className="text-3xl text-slate-400">→</span>;
   const machine = (tone: string, title: string, note: ReactNode) => (
     <span className={`rounded-2xl border-2 px-3 py-1.5 text-center ${tone}`}>
@@ -287,59 +321,67 @@ function DecodeCircuitSlide({ s }: { s: Stepper }) {
     </span>
   );
   return (
-    <div className="space-y-5 text-xl">
+    <div className="space-y-3 text-xl">
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         <Reveal on={s.step >= 0}>
           <Box tone="bg-slate-50" title="一般的 H：拿燈號逐欄比對">
             <div className="my-2 flex flex-wrap items-center gap-3">
               <ColumnVector bits={lamps} label={<M>{'s ='}</M>} size="sm" cellClass="bg-fuchsia-100 text-fuchsia-800" />
               <span className="text-slate-400">vs.</span>
-              <MatrixView matrix={H74} name="H" size="sm" colLabels={POSITIONS} rowLabels={LAMP} highlightCols={[value - 1]} colHighlightClass="bg-fuchsia-200 text-fuchsia-900" />
+              <MatrixView matrix={H_SYS} name={<M>{'\\tilde H'}</M>} size="sm" colLabels={SYS_LABELS} rowLabels={LAMP} highlightCols={sysCol >= 0 ? [sysCol] : []} colHighlightClass="bg-fuchsia-200 text-fuchsia-900" />
             </div>
             <p className="text-lg text-slate-700">
-              比到第 {value} 欄才找到。欄沒有照順序排，就得逐欄比對，或存一張 {TABLE_ROWS} 格的「燈號 → 位置」對照表。
+              {sysCol < 0 ? (
+                <>燈全暗：不用比。</>
+              ) : (
+                <>
+                  資料位元排前面的 <M>{'\\tilde H'}</M>：{binText(lamps)} = {value}，第 {value} 欄卻是 {SYS_LABELS[value - 1]}。只能逐欄比對（到第 {sysCol + 1} 欄 {SYS_LABELS[sysCol]} 才對上），或存一張 {TABLE_ROWS} 格對照表。
+                </>
+              )}
             </p>
           </Box>
         </Reveal>
         <Reveal on={s.step >= 1}>
           <Box tone="bg-sky-50 text-sky-950" title="Hamming 的 H：燈號直接讀成位置">
-            <div className="my-3 flex flex-wrap items-center gap-4">
-              <Lamps bits={lamps} />
+            <div className="my-2 flex flex-wrap items-center gap-4">
+              <Lamps bits={lamps} read onToggle={toggle} />
               <span>
                 {READ.map((i) => LAMP[i]).join(' ')} = <span className="font-mono font-bold">{binText(lamps)}</span> = {value}
               </span>
             </div>
-            <Tex block>{`j = s_1 + 2s_2 + 4s_3 = ${lamps.map((b, i) => `${b}\\cdot ${2 ** i}`).join(' + ')} = ${value}`}</Tex>
-            <p className="text-lg text-slate-700">
-              第 2 章 H 的設計 ④：第 j 欄 = j 的二進位。對照表變成「燈號 j → 位置 j」，不用存，也不用比。
-            </p>
+            <Tex block>{`j = ${POS_TEX} = ${lamps.map((b, i) => `${b}\\cdot ${2 ** i}`).join(' + ')} = ${value}`}</Tex>
+            <p className="text-lg text-slate-700">第 2 章 H 的設計 ④：第 j 欄 = j 的二進位。對照表變成「燈號 j → 位置 j」，不用存，也不用比。</p>
           </Box>
         </Reveal>
       </div>
       <Reveal on={s.step >= 2}>
         <Box tone="bg-emerald-50 text-emerald-950" title="解碼電路：全部組合邏輯，一次算完">
-          <div className="mt-2 flex items-center justify-between gap-2">
+          <div className="mt-1 flex items-center justify-between gap-2">
             {machine('border-slate-300 bg-white text-slate-700', '收到 r', `${N} 個位元`)}
             {arrow}
             {machine('border-parity-300 bg-parity-50 text-parity-700', `${R} 個檢查器`, `${SYNDROME_XORS} 個 XOR 閘`)}
             {arrow}
-            <Lamps bits={lamps} size="sm" />
+            <Lamps bits={lamps} size="sm" read onToggle={toggle} />
             {arrow}
             {machine('border-sky-300 bg-sky-50 text-sky-800', `${R}-to-${STATES} 解碼器`, `${STATES} 條輸出線`)}
             {arrow}
-            {machine('border-rose-300 bg-rose-50 text-rose-800', `第 ${value} 條線 = 1`, `其餘 ${STATES - 1} 條 = 0`)}
-            {arrow}
             {machine('border-emerald-300 bg-white text-emerald-800', '翻轉', `${FLIP_XORS} 個 XOR 閘`)}
           </div>
-          <p className="mt-3 text-lg text-slate-700">
-            第 j 個 XOR 閘：<M>{'r_j \\oplus 1'}</M> 把第 j 位翻回來；第 0 條線（燈全暗）不接。
-            {isZeroVector(fixed) && (
-              <>
-                {' '}
-                <M>{'\\hat c = r + e_j = c + e_j + e_j = c'}</M>
-              </>
-            )}
-          </p>
+          <div className="mt-2 grid grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] items-center gap-4">
+            <ol className="grid grid-cols-4 gap-1.5 text-base">
+              {Array.from({ length: STATES }, (_, j) => {
+                const target = matchingColumn(lampBits(j)) + 1; // output line j is wired to the position whose column of H reads j
+                return (
+                  <li key={j} className={`rounded-lg border-2 px-2 py-0.5 ${j === value ? 'border-rose-400 bg-rose-50 font-semibold text-rose-800' : 'border-slate-200 bg-white text-slate-600'}`}>
+                    <span className="font-mono">{j}</span>：{target === 0 ? '不接' : `翻位置 ${target}`}
+                  </li>
+                );
+              })}
+            </ol>
+            <p className="text-lg text-slate-700">
+              只有第 {value} 條線是 1：{value === 0 ? '它不接任何位置，r 原樣送出。' : <>第 {value} 個 XOR 閘做 <M>{`r_{${value}} \\oplus 1`}</M>，把那一位翻回來：<M>{'\\hat c = r + e_j = c'}</M>。</>}
+            </p>
+          </div>
         </Box>
       </Reveal>
     </div>
@@ -436,7 +478,7 @@ function BeyondSlide({ s }: { s: Stepper }) {
           </div>
           <Tex block>{`h_${PAIR[0]} + h_${PAIR[1]} = ${colTex(h(PAIR[0]))} + ${colTex(h(PAIR[1]))} = ${colTex(PAIR_SUM)} = h_${PAIR_POS}`}</Tex>
           <p className="text-slate-700">
-            兩欄不同，和不是 0；{PATTERNS} 種非零亮法全用上了，和一定是<strong>第三欄</strong>。解碼器翻掉正確的位置 {PAIR_POS} → {PAIR_AFTER} 個錯：<strong className="text-rose-700">誤更正</strong>（{TWO.mis}/{TWO.total} 種雙錯）。
+            兩欄不同，和不是 0；{PATTERNS} 種非零亮法全用上了，和一定是<strong>第三欄</strong>。解碼器把原本沒錯的位置 {PAIR_POS} 也翻掉 → {PAIR_AFTER} 個錯：<strong className="text-rose-700">誤更正</strong>（{TWO.mis}/{TWO.total} 種雙錯）。
           </p>
         </Box>
       </Reveal>
@@ -462,7 +504,7 @@ function BeyondSlide({ s }: { s: Stepper }) {
           </p>
           <ul className="mt-3 space-y-3">
             <li className="rounded-xl border-l-4 border-sky-400 bg-white px-3 py-2">
-              <strong>第 4 章</strong>：為什麼極限剛好是 {T} 位？codeword 之間至少差 <M>{`d_{\\min} = ${D_MIN}`}</M> 位。
+              <strong>第 4 章</strong>：極限剛好是 {T} 位，因為 codeword 之間至少差 <M>{`{d_{\\min} = ${D_MIN}}`}</M> 位。
             </li>
             <li className="rounded-xl border-l-4 border-emerald-500 bg-white px-3 py-2">
               <strong>第 5 章</strong>：SECDED，多一個同位位元，錯兩位時改成「偵測、不亂修」。
@@ -493,36 +535,33 @@ export const CH3_SLIDES: DeckSlide<null>[] = [
     notes: (
       <ul className={NOTES_UL}>
         <li>
-          接收端的處境：只有收到的 r 和 {R} 盞燈
+          接收端只有收到的 r 和 {R} 盞燈 s = Hrᵀ，也就是 Syndrome（徵狀）
           <ul className={NOTES_SUB}>
-            <li>看不到發送端送了哪個 c，也看不到雜訊翻了哪幾位</li>
             <li>
-              例：雜訊翻了位置 {EXAMPLE_POS} → 燈{lampText(EXAMPLE_COL)}
+              看不到 c，也看不到雜訊。例：翻了位置 {EXAMPLE_POS} → 燈{lampText(EXAMPLE_COL)}
             </li>
           </ul>
         </li>
         <li>
           → 把 r = c + e 代進 s = Hrᵀ
           <ul className={NOTES_SUB}>
-            <li>檢查器只做 XOR，可以疊加：H(c + e)ᵀ = Hcᵀ + Heᵀ</li>
-            <li>送出的是 codeword → Hcᵀ = 0：燈本來全暗（第 2 章 HGᵀ = 0）</li>
+            <li>檢查器只做 XOR，可以疊加；送出的是 codeword → Hcᵀ = 0（第 2 章 HGᵀ = 0）</li>
           </ul>
         </li>
         <li>
           → s = Heᵀ：燈號只取決於雜訊
           <ul className={NOTES_SUB}>
             <li>
-              同樣翻位置 {EXAMPLE_POS}，{WORDS.length} 個 codeword 各送一次，燈號都一樣（{SAME_LAMPS}/{WORDS.length}）
+              同樣翻位置 {EXAMPLE_POS}，{WORDS.length} 個 codeword 燈號都一樣（{SAME_LAMPS}/{WORDS.length}）：看燈就是在看雜訊
             </li>
-            <li>接收端不需要知道 c：看燈就是在看雜訊</li>
           </ul>
         </li>
       </ul>
     ),
   },
   {
-    title: '第 3 章：亮的燈 = 第 j 欄 = 位置 j',
-    sub: '兩個前提：送出的是 codeword，雜訊恰好翻了一位',
+    title: '第 3 章：只翻一位時，亮的是哪幾盞燈',
+    sub: '從 s = Heᵀ 出發，再加上「恰好翻了一位」',
     steps: () => 3,
     render: (s) => <ColumnSlide s={s} />,
     takeaway: (
@@ -534,29 +573,24 @@ export const CH3_SLIDES: DeckSlide<null>[] = [
     notes: (
       <ul className={NOTES_UL}>
         <li>
-          兩個前提，兩個都要講
+          從上一頁的 s = Heᵀ 出發（Hcᵀ = 0 已經消掉）
           <ul className={NOTES_SUB}>
-            <li>① 送出的是 codeword：Hcᵀ = 0，燈本來全暗，亮起來的都是雜訊造成的</li>
-            <li>② 雜訊恰好翻了一位 j：e = eⱼ（只有第 j 位是 1）</li>
+            <li>再加一個前提：雜訊恰好翻了一位 j，e = eⱼ（只有第 j 位是 1）</li>
           </ul>
         </li>
         <li>
-          → 推導：Hrᵀ = Hcᵀ + Heⱼᵀ = 0 + hⱼ
+          → 推導：s = Heⱼᵀ = hⱼ
           <ul className={NOTES_SUB}>
-            <li>Hcᵀ = 0 用前提 ①；Heⱼᵀ = hⱼ 用前提 ②</li>
             <li>eⱼ 只有第 j 位是 1：H 乘上它只挑出第 j 欄</li>
           </ul>
         </li>
         <li>
-          → 用燈來說：位置 j 出錯時亮起來的燈，剛好就是 H 的第 j 欄
+          → 位置 j 出錯時亮的燈，就是 H 的第 j 欄
           <ul className={NOTES_SUB}>
             <li>
-              例：位置 {EXAMPLE_POS} → {colText(EXAMPLE_COL)} → {lampText(EXAMPLE_COL)}
+              例：位置 {EXAMPLE_POS} → {lampVec(EXAMPLE_COL)} → {lampText(EXAMPLE_COL)}
             </li>
-            <li>第 2 章「第 j 欄 = 位置 j 被哪幾盞燈盯著」在這裡證明</li>
-            <li>
-              第 2 章 H 的設計 ①②：{N} 欄非零、互不相同 → 看燈就分得出是哪一位
-            </li>
+            <li>H 的設計 ①②：{N} 欄非零、互不相同 → 看燈就分得出是哪一位</li>
           </ul>
         </li>
       </ul>
@@ -579,35 +613,25 @@ export const CH3_SLIDES: DeckSlide<null>[] = [
           知道「亮的燈 = 第 j 欄」，還要找出是哪一欄
           <ul className={NOTES_SUB}>
             <li>
-              一般的 H：拿燈號和 {N} 欄逐一比對，或存一張 {TABLE_ROWS} 格的「燈號 → 位置」對照表
-            </li>
-            <li>
-              例：{lampText(EXAMPLE_COL)} → 比到第 {EXAMPLE_POS} 欄才找到
+              一般的 <M>{'\\tilde H'}</M>（同樣 {N} 欄，資料位元排前面）：{binText(EXAMPLE_COL)} = {EXAMPLE_POS}，第 {EXAMPLE_POS} 欄卻是 {SYS_LABELS[EXAMPLE_POS - 1]} → 只能逐欄比對，或存 {TABLE_ROWS} 格對照表
             </li>
           </ul>
         </li>
         <li>
-          → Hamming 的 H：第 2 章 H 的設計 ④，第 j 欄 = j 的二進位
+          → Hamming 的 H：H 的設計 ④，第 j 欄 = j 的二進位
           <ul className={NOTES_SUB}>
             <li>
-              燈號讀成二進位（{READ.map((i) => LAMP[i]).join(' ')}）就是位置：{binText(EXAMPLE_COL)} = {syndromeToPosition(EXAMPLE_COL)}
+              燈照 {READ.map((i) => LAMP[i]).join(' ')} 排，由左讀到右就是位置：{binText(EXAMPLE_COL)} = {syndromeToPosition(EXAMPLE_COL)}，不用存表
             </li>
-            <li>對照表變成「燈號 j → 位置 j」，不用存</li>
           </ul>
         </li>
         <li>
           → 解碼電路：全部組合邏輯，r 一進來一次算完
           <ul className={NOTES_SUB}>
             <li>
-              {R} 個檢查器 = {R} 棵 XOR 樹，共 {SYNDROME_XORS} 個 XOR 閘 → {R} 盞燈
+              {SYNDROME_XORS} 個 XOR 閘算燈號 → {R}-to-{STATES} 解碼器：第 j 條線翻第 j 位，第 0 條不接 → {FLIP_XORS} 個 XOR 閘翻轉
             </li>
-            <li>
-              {R}-to-{STATES} 解碼器：{STATES} 條輸出線，第 j 條接去翻轉第 j 位，第 0 條（燈全暗）不接
-            </li>
-            <li>
-              翻轉：每個位置一個 XOR 閘，共 {FLIP_XORS} 個；那條線是 1，rⱼ ⊕ 1 就翻過來
-            </li>
-            <li>結果：r + eⱼ = c + eⱼ + eⱼ = c</li>
+            <li>可以點燈切換燈號，亮的輸出線跟著換</li>
           </ul>
         </li>
       </ul>
@@ -634,12 +658,11 @@ export const CH3_SLIDES: DeckSlide<null>[] = [
         </li>
         <li>→ 算燈號：s = Hrᵀ = Heᵀ，codeword 的部分全部消掉</li>
         <li>
-          → 解碼：燈號 = H 的某一欄，讀成二進位就是位置，翻回來
+          → 解碼：燈號讀成二進位就是位置，翻回來
           <ul className={NOTES_SUB}>
             <li>
-              只錯一位：一定修好（{ONE.ok}/{ONE.total}）
+              只錯一位一定修好（{ONE.ok}/{ONE.total}）；錯兩位以上：燈號指錯位置，甚至全暗（下一頁）
             </li>
-            <li>錯兩位以上：燈號指錯位置，甚至全暗（下一頁）</li>
           </ul>
         </li>
       </ul>
@@ -652,7 +675,7 @@ export const CH3_SLIDES: DeckSlide<null>[] = [
     render: (s) => <BeyondSlide s={s} />,
     takeaway: (
       <>
-        <Ph>錯兩位會修錯，</Ph>
+        <Ph>錯兩位會誤更正，</Ph>
         <Ph>錯三位可能全暗：</Ph>
         <Ph>保證只到 {T} 位</Ph>
       </>
@@ -660,18 +683,13 @@ export const CH3_SLIDES: DeckSlide<null>[] = [
     notes: (
       <ul className={NOTES_UL}>
         <li>
-          錯兩位：前提 ② 不成立，燈號是兩欄之和 hᵢ + hⱼ
+          錯兩位（位置 j、j′）：燈號是兩欄之和 hⱼ + hⱼ′
           <ul className={NOTES_SUB}>
-            <li>兩欄不同 → 和不是 0，燈一定會亮</li>
             <li>
-              {PATTERNS} 種非零亮法全用上 → 和一定是 H 的某一欄
-            </li>
-            <li>也不會是 hᵢ 或 hⱼ 本身（那樣另一欄就是 0，違反設計 ①）→ 是第三欄</li>
-            <li>
-              例：位置 {PAIR[0]}、{PAIR[1]} → 第 {PAIR_POS} 欄（{PAIR[0]} ⊕ {PAIR[1]} = {PAIR[0] ^ PAIR[1]}）→ 翻掉正確的位置 {PAIR_POS} → {PAIR_AFTER} 個錯：誤更正
+              兩欄不同 → 和不是 0；{PATTERNS} 種非零亮法全用上 → 和是某一欄，又不是 hⱼ、hⱼ′ → 第三欄
             </li>
             <li>
-              全部 {TWO.total} 種雙錯都如此（{TWO.mis}/{TWO.total}）
+              例：位置 {PAIR[0]}、{PAIR[1]} → 第 {PAIR_POS} 欄（{PAIR[0]} ⊕ {PAIR[1]} = {PAIR[0] ^ PAIR[1]}）→ 把原本沒錯的位置 {PAIR_POS} 也翻掉 → {PAIR_AFTER} 個錯：誤更正（{TWO.mis}/{TWO.total}）
             </li>
           </ul>
         </li>
@@ -679,20 +697,16 @@ export const CH3_SLIDES: DeckSlide<null>[] = [
           → 錯三位：燈可能全暗
           <ul className={NOTES_SUB}>
             <li>
-              錯誤本身是 codeword（例：{bits(TRIPLE_WORD)}）→ Heᵀ = 0 → 燈全暗：未偵測錯誤（{THREE.undetected} 種）
-            </li>
-            <li>
-              其餘 {THREE.mis} 種：燈號指向某一位 → 誤更正
+              錯誤本身是 codeword（例：{bits(TRIPLE_WORD)}）→ Heᵀ = 0：未偵測錯誤（{THREE.undetected} 種）；其餘 {THREE.mis} 種誤更正
             </li>
           </ul>
         </li>
         <li>
-          → 解碼器永遠假設「最多翻了一位」（燈亮就翻一位，燈暗就不動），保證只到 {T} 位
+          → 解碼器永遠假設最多翻了一位，保證只到 {T} 位
           <ul className={NOTES_SUB}>
             <li>
-              第 4 章：為什麼極限剛好是 {T} 位（d_min = {D_MIN}）
+              第 4 章：極限剛好是 {T} 位的原因（<M>{`d_{\\min} = ${D_MIN}`}</M>）；第 5 章：SECDED，錯兩位時能偵測
             </li>
-            <li>第 5 章：SECDED，多一個同位位元，錯兩位時能偵測</li>
           </ul>
         </li>
       </ul>

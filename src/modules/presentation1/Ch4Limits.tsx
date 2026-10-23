@@ -6,7 +6,6 @@ import {
   K4,
   N7,
   PARITY_CHECKS,
-  allVectors,
   codewords74,
   correctionCapability,
   decode74,
@@ -20,10 +19,7 @@ import {
   matchingColumn,
   minimumDistance,
   partitionByNearest,
-  simulate74,
   vecEquals,
-  weight,
-  zeroVector,
 } from '../../core';
 import { M, Tex } from '../../components/Tex';
 import type { DeckSlide } from '../../components/Deck';
@@ -34,12 +30,12 @@ import { Box, NOTES_SUB, NOTES_UL, Reveal } from './parts';
 /* Numbers used on the slides and in the notes (computed, never typed) */
 /* ------------------------------------------------------------------ */
 
-/** 7 positions, 4 data bits, 3 checkers = 3 warning lamps */
+/** 7 positions, 4 data bits, ℓ = 3 parity bits = 3 warning lamps */
 const N = N7;
 const K = K4;
-const R = H74.length;
+const L = H74.length;
 /** 3 lamps: 2³ states, all dark = nothing to flip, the other 7 each name a position */
-const STATES = 2 ** R;
+const STATES = 2 ** L;
 const PATTERNS = STATES - 1;
 
 const CODE = codewords74();
@@ -51,14 +47,6 @@ const T = correctionCapability(D_MIN);
 /** the bound for Hamming(7,4): 16 codewords × 8 received words = 128 = 2⁷, every word exactly once */
 const HB = hammingBound(N, K, T);
 const IS_PARTITION = partitionByNearest(WORDS, N).isPartition;
-
-/** what the decoder does with every double error (the sent codeword does not matter: s = Heᵀ) */
-const TWO = (() => {
-  const runs = allVectors(N)
-    .filter((e) => weight(e) === 2)
-    .map((e) => simulate74(zeroVector(N), e));
-  return { total: runs.length, mis: runs.filter((o) => o.miscorrection).length };
-})();
 
 /** chapter 3's running example: the noise flips position 5 first */
 const EXAMPLE_POS = 5;
@@ -78,18 +66,13 @@ const STEP2 = PATH[2];
 const STEP1_TO_A = vecEquals(STEP1.dec.corrected, A);
 const STEP2_TO_B = vecEquals(STEP2.dec.corrected, B);
 
-/** the Hamming family in lamp language, the same rows as the web page */
-const FAMILY = [2, 3, 4, 5, 6, 7].map((r) => {
-  const n = hammingN(r);
-  const k = hammingK(r);
-  return { r, states: 2 ** r, n, k, full: hammingBound(n, k, 1).equality };
-});
-const LONG = FAMILY[FAMILY.length - 1];
+/** the Hamming family in lamp language (ℓ lamps → n = 2^ℓ − 1 positions), the same rows as the web page */
+const FAMILY = [2, 3, 4, 5, 6, 7].map((l) => ({ l, n: hammingN(l), k: hammingK(l) }));
 
 const LAMP = PARITY_CHECKS.map((pc) => pc.name);
 const lampText = (bits: readonly Bit[]) => (isZeroVector(bits) ? '全暗' : `${LAMP.filter((_, i) => bits[i]).join('、')} 亮`);
 /** a lamp state as bits in H's row order (P1 first) from its binary value */
-const lampBits = (v: number): Bit[] => Array.from({ length: R }, (_, i) => ((v >> i) & 1) as Bit);
+const lampBits = (v: number): Bit[] => Array.from({ length: L }, (_, i) => ((v >> i) & 1) as Bit);
 const posList = (idx: readonly number[]) => idx.map((i) => i + 1).join('、');
 const bits = (v: readonly Bit[]) => v.join('');
 
@@ -129,19 +112,20 @@ function Word({ bits: b, flipped = [] }: { bits: readonly Bit[]; flipped?: reado
 const Ph = ({ children }: { children: ReactNode }) => <span className="whitespace-nowrap">{children}</span>;
 
 /* ------------------------------------------------------------------ */
-/* 1. d_min = 3：A 走到 B 要 3 步                                       */
+/* 1. 最小距離 3：A 走到 B 要 3 步                                       */
 /* ------------------------------------------------------------------ */
 
-/** The walk A → B, split into the half nearer A and the half nearer B. */
-function PathFigure() {
+/** The walk A → B, split into the half nearer A and the half nearer B; the in-between words appear one step at a time. */
+function PathFigure({ step }: { step: number }) {
   const node = (k: number) => {
     const st = PATH[k];
     const isA = k === 0;
     const isB = k === D_AB;
+    const shown = isA || isB || k <= step;
     const circle = isA ? 'bg-data-500 text-white' : isB ? 'bg-overall-500 text-white' : 'border-2 border-rose-500 bg-white text-rose-600';
     const label = isA ? '送出 A' : isB ? `B（翻 ${k} 位）` : `翻 ${k} 位（位置 ${posList(st.flipped)}）`;
     return (
-      <div key={k} className="relative z-10 flex flex-col items-center gap-1">
+      <div key={k} aria-hidden={!shown} className={`relative z-10 flex flex-col items-center gap-1 transition-opacity duration-500 ${shown ? 'opacity-100' : 'invisible opacity-0'}`}>
         <span className={`grid h-9 w-9 place-items-center rounded-full text-lg font-bold ${circle}`}>{isA ? 'A' : isB ? 'B' : k}</span>
         <span className="text-lg font-semibold text-slate-700">{label}</span>
         <Word bits={st.word} flipped={st.flipped} />
@@ -171,7 +155,7 @@ function PathFigure() {
 function PathSlide({ s }: { s: Stepper }) {
   return (
     <div className="space-y-4 text-lg">
-      <PathFigure />
+      <PathFigure step={s.step} />
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Reveal on={s.step >= 1}>
           <Box tone="bg-emerald-50 text-emerald-950" title={`翻 ${T} 位：仍離 A 最近`}>
@@ -187,9 +171,9 @@ function PathSlide({ s }: { s: Stepper }) {
           </Box>
         </Reveal>
         <Reveal on={s.step >= 2}>
-          <Box tone="bg-rose-50 text-rose-950" title="翻 2 位：可能跑到 B 那邊">
+          <Box tone="bg-rose-50 text-rose-950" title="翻 2 位：過了中線">
             <p>
-              離 A {STEP2.dA}、離 B {STEP2.dB} → 燈亮，<strong>偵測得到</strong>；硬要更正就改錯。
+              離 A {STEP2.dA}、離 B {STEP2.dB} → 燈會亮，<strong>只能偵測</strong>；硬要更正就改成 B。
             </p>
             <div className="mt-2 flex flex-wrap items-center gap-3">
               <Lamps bits={STEP2.dec.syndrome} size="sm" />
@@ -213,115 +197,65 @@ function PathSlide({ s }: { s: Stepper }) {
 }
 
 /* ------------------------------------------------------------------ */
-/* 2. 2ʳ ≥ n + 1                                                       */
-/* ------------------------------------------------------------------ */
-
-function BoundSlide({ s }: { s: Stepper }) {
-  return (
-    <div className="grid grid-cols-1 gap-4 text-lg lg:grid-cols-3">
-      <Reveal on={s.step >= 0}>
-        <Box tone="bg-sky-50 text-sky-950" title="燈號要分出幾種情況？">
-          <p>更正 1 個錯，接收端只看燈號就要分出：</p>
-          <ul className="mt-1 space-y-1 text-slate-700">
-            <li>· 沒有錯：1 種（不動）</li>
-            <li>· 錯在 n 個位置之一：n 種（翻那一位）</li>
-          </ul>
-          <p className="mt-2">r 盞燈只有 2ʳ 種燈號：</p>
-          <div className="text-2xl">
-            <Tex block>{'2^{r} \\ge n + 1'}</Tex>
-          </div>
-          <p className="text-slate-600">這是「更正 1 個錯」的極限。</p>
-        </Box>
-      </Reveal>
-      <Reveal on={s.step >= 1}>
-        <Box tone="bg-amber-50 text-amber-950" title="就是 Hamming Bound（t = 1）">
-          <Tex block>{'2^{k}(1 + n) \\le 2^{n}'}</Tex>
-          <p>兩邊同除以 2ᵏ：</p>
-          <Tex block>{'1 + n \\le 2^{n-k} = 2^{r}'}</Tex>
-          <p className="text-slate-600">n − k = 同位位元的個數 = 燈的盞數 r。</p>
-          <p className="mt-2">
-            Hamming({N},{K})：<M>{`2^{${R}} = ${STATES} = ${N} + 1`}</M>
-          </p>
-        </Box>
-      </Reveal>
-      <Reveal on={s.step >= 2}>
-        <Box tone="bg-emerald-50 text-emerald-950" title="第 1 章、第 2 章 ③ 見過了">
-          <ul className="space-y-1 text-slate-700">
-            <li>· 第 1 章：訊息為什麼是 {K} 個位元</li>
-            <li>
-              · 第 2 章 H 的設計 ③：{R} 盞燈最多分辨 {PATTERNS} 個位置
-            </li>
-          </ul>
-          <table className="mt-2 w-full text-center font-mono">
-            <thead>
-              <tr className="text-base text-slate-500">
-                <th className="py-0.5 font-sans font-normal">r 盞燈</th>
-                <th className="font-normal">2ʳ</th>
-                <th className="font-normal">n</th>
-                <th className="font-normal">k</th>
-              </tr>
-            </thead>
-            <tbody>
-              {FAMILY.map((f) => (
-                <tr key={f.r} className={`border-t border-emerald-200 ${f.r === R ? 'bg-emerald-100 font-bold' : ''}`}>
-                  <td className="py-0.5">{f.r}</td>
-                  <td>{f.states}</td>
-                  <td>{f.n}</td>
-                  <td>{f.k}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </Box>
-      </Reveal>
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* 3. 完美碼：每一種燈號都用到                                          */
+/* 2. 2^ℓ ≥ n + 1 與完美碼                                              */
 /* ------------------------------------------------------------------ */
 
 function PerfectSlide({ s }: { s: Stepper }) {
   return (
     <div className="space-y-4 text-lg">
-      <Reveal on={s.step >= 0}>
-        <Box tone="bg-sky-50 text-sky-950" title={<>Hamming({N},{K})：<M>{`2^{${R}} = ${STATES} = ${N} + 1`}</M></>}>
-          <div className="mt-2 grid grid-cols-4 gap-2 lg:grid-cols-8">
-            {Array.from({ length: STATES }, (_, v) => {
-              const b = lampBits(v);
-              const owner = matchingColumn(b) + 1;
-              return (
-                <div key={v} className={`flex flex-col items-center gap-1.5 rounded-xl border-2 bg-white px-1 py-2 ${owner === 0 ? 'border-emerald-300' : 'border-slate-200'}`}>
-                  <Lamps bits={b} size="sm" />
-                  <span className="text-base font-semibold text-slate-700">{owner === 0 ? '不動' : `翻位置 ${owner}`}</span>
-                </div>
-              );
-            })}
-          </div>
-        </Box>
-      </Reveal>
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)]">
+        <Reveal on={s.step >= 0}>
+          <Box tone="bg-sky-50 text-sky-950" title="燈號要分出 n + 1 種情況">
+            <p>更正 1 個錯，接收端只看燈號就要分出：</p>
+            <ul className="mt-1 space-y-1 text-slate-700">
+              <li>· 沒有錯：1 種（不動）</li>
+              <li>· 錯在 n 個位置之一：n 種（翻那一位）</li>
+            </ul>
+            <p className="mt-2">
+              ℓ 個同位位元 = ℓ 盞警示燈，只有 <M>{'2^{\\ell}'}</M> 種亮法：
+            </p>
+            <div className="text-2xl">
+              <Tex block>{'2^{\\ell} \\ge n + 1'}</Tex>
+            </div>
+            <p className="text-slate-600">這是「更正 1 個錯」的極限。</p>
+          </Box>
+        </Reveal>
         <Reveal on={s.step >= 1}>
-          <Box tone="bg-emerald-50 text-emerald-950" title="等號成立 = 完美碼">
-            <p>
-              等號成立：全暗 = 不動，其餘 {PATTERNS} 種各翻一個位置，<strong>沒有一種浪費</strong>。
+          <Box
+            tone="bg-emerald-50 text-emerald-950"
+            title={
+              <>
+                Hamming({N},{K})：<M>{`2^{${L}} = ${STATES} = ${N} + 1`}</M>，等號成立
+              </>
+            }
+          >
+            <div className="mt-2 grid grid-cols-4 gap-2">
+              {Array.from({ length: STATES }, (_, v) => {
+                const b = lampBits(v);
+                const owner = matchingColumn(b) + 1;
+                return (
+                  <div key={v} className={`flex flex-col items-center gap-1.5 rounded-xl border-2 bg-white px-1 py-2 ${owner === 0 ? 'border-emerald-300' : 'border-slate-200'}`}>
+                    <Lamps bits={b} size="sm" />
+                    <span className="text-base font-semibold text-slate-700">{owner === 0 ? '不動' : `翻位置 ${owner}`}</span>
+                  </div>
+                );
+              })}
+            </div>
+            <p className="mt-2">
+              {STATES} 種燈號全部用到，沒有一種浪費：<strong>完美碼</strong>。
             </p>
             <p className="mt-1 text-slate-600">
               {HB.codewords} 個 codeword × {HB.volume} 種接收結果 = {HB.lhs} = 2<sup>{N}</sup>
-              {IS_PARTITION ? '' : ' ✗'}：收到任何 {N} 位元字串，燈號都有明確的動作。
+              {IS_PARTITION ? '' : ' ✗'}：收到任何 {N} 位元字串，燈號都有明確的動作（教科書的 Hamming Bound <M>{'2^{k}(1 + n) \\le 2^{n}'}</M> 取等號）。
             </p>
-          </Box>
-        </Reveal>
-        <Reveal on={s.step >= 2}>
-          <Box tone="bg-rose-50 text-rose-950" title="代價：沒有燈號能說「錯了兩個」">
-            <p>
-              翻 2 位：亮的是兩欄之和，不是全暗，就是某個「翻位置 j」→ 照著翻 → 改錯（{TWO.mis}/{TWO.total}）。
-            </p>
-            <p className="mt-1 font-semibold text-rose-800">→ 第 5 章 SECDED：多 1 個整體同位位元，接收端就能回報「錯了兩個」。</p>
           </Box>
         </Reveal>
       </div>
+      <Reveal on={s.step >= 2}>
+        <p className="rounded-2xl bg-rose-50 px-4 py-3 font-semibold text-rose-900">
+          → 代價：{STATES} 種燈號都有主人，沒有一種留給「錯了兩個」。第 5 章多一盞燈。
+        </p>
+      </Reveal>
     </div>
   );
 }
@@ -332,14 +266,15 @@ function PerfectSlide({ s }: { s: Stepper }) {
 
 export const CH4_SLIDES: DeckSlide<null>[] = [
   {
-    title: `第 4 章：d_min = ${D_MIN}：A 走到 B 要 ${D_AB} 步`,
+    title: `第 4 章：最小距離 ${D_MIN}：A 走到 B 要 ${D_AB} 步`,
     sub: '雜訊每翻一位，收到的字就往前推一步',
     steps: () => 4,
     render: (s) => <PathSlide s={s} />,
     takeaway: (
       <>
-        <Ph>翻 {T} 位仍離 A 最近，修得回來；</Ph>
-        <Ph>翻 2 位只能偵測</Ph>
+        <Ph>翻 {T} 位修得回來；</Ph>
+        <Ph>翻 2 位燈會亮，</Ph>
+        <Ph>但一更正就改成 B</Ph>
       </>
     ),
     notes: (
@@ -348,83 +283,33 @@ export const CH4_SLIDES: DeckSlide<null>[] = [
           雜訊每翻一位，收到的字就往前推一步
           <ul className={NOTES_SUB}>
             <li>
-              A = m {bits(A_ENTRY.message)} 的 codeword {bits(A)}，B = m {bits(B_ENTRY.message)} 的 codeword {bits(B)}：差 {D_AB} 位（位置 {AB_DIFF.join('、')}）
-            </li>
-            <li>
-              從 A 走到 B：先翻位置 {EXAMPLE_POS}（第 3 章的例子），再翻 {posList(PATH[D_AB].flipped.slice(1))}
+              A = 訊息 {bits(A_ENTRY.message)} 的 codeword，B = 訊息 {bits(B_ENTRY.message)} 的 codeword：差 {D_AB} 位（位置 {AB_DIFF.join('、')}）
             </li>
             <li>接收端看不到雜訊，只能猜「離收到的字最近的 codeword」：翻得少比翻得多常見</li>
           </ul>
         </li>
         <li>
-          → 翻 {T} 位：離 A {STEP1.dA}、離 B {STEP1.dB} → 仍是 A 最近 → 修得回來
+          → 翻 {T} 位（位置 {EXAMPLE_POS}，第 3 章的例子）：離 A {STEP1.dA}、離 B {STEP1.dB} → 仍是 A 最近 → 修得回來
           <ul className={NOTES_SUB}>
             <li>
-              第 3 章的燈號做的就是這件事：燈{lampText(STEP1.dec.syndrome)}，指向位置 {STEP1.dec.position}，翻回來是 A
+              燈{lampText(STEP1.dec.syndrome)}，指向位置 {STEP1.dec.position}，翻回來是 A
             </li>
           </ul>
         </li>
         <li>
-          → 翻 2 位：離 A {STEP2.dA}、離 B {STEP2.dB} → 跑到 B 那邊
+          → 翻 2 位（再翻位置 {posList(STEP2.flipped.slice(1))}）：離 A {STEP2.dA}、離 B {STEP2.dB} → 過了中線
           <ul className={NOTES_SUB}>
-            <li>燈會亮：知道有錯（偵測）</li>
             <li>
-              硬要更正：燈號指向位置 {STEP2.dec.position} → 改成 B（誤更正）
+              只偵測：燈會亮，知道有錯；硬要更正：燈號指向位置 {STEP2.dec.position} → 改成 B（誤更正）
             </li>
-            <li>說「可能」：這條路上是 B；對 Hamming(7,4)，每一種雙錯其實都會落在別人旁邊（網頁進階）</li>
+            <li>對 Hamming({N},{K})，每一種雙錯都會落在別人旁邊（網頁進階）</li>
           </ul>
         </li>
         <li>
-          → d_min = {D_MIN}：窮舉 {MD.pairsChecked} 對，最近的一對也差 {D_MIN} 位
+          → 最小距離 {D_MIN}：窮舉 {MD.pairsChecked} 對，最近的一對也差 {D_MIN} 位
           <ul className={NOTES_SUB}>
             <li>
-              任何 codeword 翻 {T} 位都還在自己這一側：t = ⌊({D_MIN} − 1)/2⌋ = {T}
-            </li>
-            <li>第 2 章 H 的設計 ①② 保證 d_min ≥ 3：翻 1、2 位燈一定亮，不可能變成另一個 codeword</li>
-          </ul>
-        </li>
-      </ul>
-    ),
-  },
-  {
-    title: '第 4 章：2ʳ ≥ n + 1：r 盞燈要分辨 n + 1 種情況',
-    sub: `要更正 1 個錯，${R} 盞燈能保護多長？`,
-    steps: () => 3,
-    render: (s) => <BoundSlide s={s} />,
-    takeaway: (
-      <>
-        <Ph>更正 1 個錯：</Ph>
-        <Ph>r 盞燈的 2ʳ 種燈號 ≥ n + 1 種情況</Ph>
-      </>
-    ),
-    notes: (
-      <ul className={NOTES_UL}>
-        <li>
-          要更正 1 個錯，接收端得只看燈號，分出 n + 1 種情況
-          <ul className={NOTES_SUB}>
-            <li>沒錯 1 種（不動）＋錯在 n 個位置之一（翻那一位）</li>
-            <li>r 盞燈只有 2ʳ 種狀態 → 2ʳ ≥ n + 1</li>
-            <li>這只是「更正 1 個錯」的極限；要更正更多錯，情況更多（網頁進階）</li>
-          </ul>
-        </li>
-        <li>
-          → 和教科書的 Hamming Bound 是同一條
-          <ul className={NOTES_SUB}>
-            <li>2ᵏ(1 + n) ≤ 2ⁿ，兩邊同除以 2ᵏ → 1 + n ≤ 2ⁿ⁻ᵏ = 2ʳ</li>
-            <li>
-              Hamming({N},{K})：2<sup>{R}</sup> = {STATES} = {N} + 1，剛好相等
-            </li>
-          </ul>
-        </li>
-        <li>
-          → 不是新概念，前面已經講過兩次
-          <ul className={NOTES_SUB}>
-            <li>第 1 章「為什麼訊息是 {K} 個位元？」：{R} 個同位位元 {PATTERNS} 種結果剛好用滿</li>
-            <li>
-              第 2 章 H 的設計 ③：{R} 盞燈最多分辨 {PATTERNS} 個位置
-            </li>
-            <li>
-              多 1 盞燈 → {hammingN(R + 1)} 個位置；{LONG.r} 盞 → {LONG.n} 個
+              t = ⌊({D_MIN} − 1)/2⌋ = {T}；第 2 章 H 的設計 ①② 保證至少 {D_MIN} 步：翻 1、2 位燈一定亮
             </li>
           </ul>
         </li>
@@ -432,43 +317,47 @@ export const CH4_SLIDES: DeckSlide<null>[] = [
     ),
   },
   {
-    title: '第 4 章：完美碼：每一種燈號都用到',
-    sub: `Hamming(${N},${K})：${STATES} = ${N} + 1，等號成立`,
+    title: `第 4 章：完美碼：${STATES} 種燈號剛好用完`,
+    sub: '要更正 1 個錯，ℓ 盞燈要分辨 n + 1 種情況',
     steps: () => 3,
     render: (s) => <PerfectSlide s={s} />,
     takeaway: (
       <>
-        <Ph>{STATES} 種燈號全部用到：</Ph>
-        <Ph>沒有一種留給「錯了兩個」</Ph>
+        <Ph>
+          <M>{'2^{\\ell} \\ge n + 1'}</M>；
+        </Ph>
+        <Ph>
+          ({N},{K}) 等號成立，
+        </Ph>
+        <Ph>{STATES} 種燈號沒有浪費</Ph>
       </>
     ),
     notes: (
       <ul className={NOTES_UL}>
         <li>
-          Hamming({N},{K})：2<sup>{R}</sup> = {STATES} = {N} + 1，等號成立
+          要更正 1 個錯，接收端只看燈號就要分出 n + 1 種情況
           <ul className={NOTES_SUB}>
+            <li>沒錯 1 種（不動）＋錯在 n 個位置之一（翻那一位）</li>
             <li>
-              {STATES} 種燈號：全暗 = 不動，其餘 {PATTERNS} 種各翻一個位置
+              ℓ 個同位位元 = ℓ 盞燈，只有 2<sup>ℓ</sup> 種狀態 → 2<sup>ℓ</sup> ≥ n + 1（ℓ = n − k）
+            </li>
+            <li>
+              導論（要幾個同位位元）、第 2 章 H 的設計 ③ 見過同一件事：ℓ = {FAMILY.map((f) => f.l).join(', ')} → n = {FAMILY.map((f) => f.n).join(', ')}（k = {FAMILY.map((f) => f.k).join(', ')}）
             </li>
           </ul>
         </li>
         <li>
-          → 完美碼：每一種燈號都用到，沒有浪費
+          → Hamming({N},{K})：2<sup>{L}</sup> = {STATES} = {N} + 1，等號成立 = 完美碼
           <ul className={NOTES_SUB}>
             <li>
-              {HB.codewords} 個 codeword × {HB.volume} 種接收結果 = {HB.lhs} = 2<sup>{N}</sup>：收到任何字串都有明確動作
+              全暗 = 不動，其餘 {PATTERNS} 種各翻一個位置
+            </li>
+            <li>
+              {HB.codewords} × {HB.volume} = {HB.lhs} = 2<sup>{N}</sup>：教科書的 Hamming Bound 2<sup>k</sup>(1 + n) ≤ 2<sup>n</sup> 取等號
             </li>
           </ul>
         </li>
-        <li>
-          → 代價：沒有一種燈號能說「錯了兩個」
-          <ul className={NOTES_SUB}>
-            <li>
-              翻 2 位：燈號 = 兩欄之和，一定是某個「翻位置 j」→ 照翻 → 改錯（{TWO.mis}/{TWO.total}）
-            </li>
-            <li>第 5 章 SECDED：多 1 個整體同位位元，接收端就能回報「錯了兩個」</li>
-          </ul>
-        </li>
+        <li>→ 代價：沒有一種燈號留給「錯了兩個」→ 第 5 章多一盞燈</li>
       </ul>
     ),
   },

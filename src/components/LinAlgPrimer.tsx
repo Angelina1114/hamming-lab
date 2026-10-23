@@ -71,7 +71,7 @@ function MatVecExample() {
         ))}
       </div>
       <div className="flex flex-wrap items-center gap-3">
-        <MatrixView matrix={A_MV} name="A" size="sm" highlightCols={picked} />
+        <MatrixView matrix={A_MV} name="M" size="sm" highlightCols={picked} />
         <span>·</span>
         <ColumnVector bits={x} size="sm" label={<M>{'x^T ='}</M>} />
         <span>=</span>
@@ -175,7 +175,7 @@ function KernelExample() {
   const xs = allVectors(3);
   return (
     <div className="space-y-2">
-      <MatrixView matrix={A_KER} name="A =" size="sm" />
+      <MatrixView matrix={A_KER} name="M =" size="sm" />
       <div className="grid grid-cols-4 gap-1.5 text-center font-mono text-xs">
         {xs.map((x) => {
           const y = matVec(A_KER, x);
@@ -183,13 +183,13 @@ function KernelExample() {
           return (
             <div key={x.join('')} className={`rounded-md border px-1 py-1 ${zero ? 'border-emerald-300 bg-emerald-50 text-emerald-800' : 'border-slate-200 text-slate-500'}`}>
               <div>x = {x.join('')}</div>
-              <div>Axᵀ = {y.join('')}</div>
+              <div>Mxᵀ = {y.join('')}</div>
             </div>
           );
         })}
       </div>
       <p className="text-xs text-slate-600">
-        綠色的就是 ker A = {'{'}
+        綠色的就是 ker M = {'{'}
         {xs.filter((x) => isZeroVector(matVec(A_KER, x))).map((x) => x.join('')).join(', ')}
         {'}'}：把 {xs.length} 個向量全部代進去，只有它們讓 {A_KER.length} 條方程都成立。
       </p>
@@ -203,7 +203,7 @@ const pivotCell = (pivotCols: number[]) => (i: number, j: number) =>
 
 function RankExample() {
   const res = rref(A_KER);
-  const n = A_KER[0].length;
+  const cols = A_KER[0].length;
   const free = res.freeCols;
   const x = (j: number) => `x_${j + 1}`;
   // each nonzero RREF row r: x_{pivot} + Σ_{free f with a 1} x_f = 0  ⇒  x_{pivot} = Σ x_f
@@ -211,13 +211,13 @@ function RankExample() {
     const fs = free.filter((f) => res.rref[r][f] === 1);
     return { lhs: [pcol, ...fs].map(x).join(' + '), solved: `${x(pcol)} = ${fs.length ? fs.map(x).join(' + ') : '0'}` };
   });
-  const ker = allVectors(n).filter((v) => isZeroVector(matVec(A_KER, v)));
+  const ker = allVectors(cols).filter((v) => isZeroVector(matVec(A_KER, v)));
   return (
     <div className="space-y-3 text-xs text-slate-600">
       <div>
         <div className="mb-1 font-semibold text-slate-700">① 高斯消去，化成 RREF</div>
         <div className="flex flex-wrap items-center gap-2">
-          <MatrixView matrix={A_KER} name="A =" size="sm" />
+          <MatrixView matrix={A_KER} name="M =" size="sm" />
           {res.steps.map((st, k) => (
             <span key={k} className="inline-flex items-center gap-2">
               <span className="text-slate-500">
@@ -244,14 +244,14 @@ function RankExample() {
           ))}
         </div>
         <p className="mt-1">
-          自由變數 <M>{free.map(x).join(', ')}</M> 各自選 0 或 1，其他的就被決定：ker A = {'{'}
+          自由變數 <M>{free.map(x).join(', ')}</M> 各自選 0 或 1，其他的就被決定：ker M = {'{'}
           {ker.map((v) => v.join('')).join(', ')}
           {'}'}，和工具箱「核空間」那一頁逐一代入的結果一樣。
         </p>
       </div>
       <div className="rounded-lg bg-white p-2">
         <div className="mb-1 font-semibold text-slate-700">④ 數一數</div>
-        <M>{`\\operatorname{rank} A = ${res.rank}\\ (\\text{樞紐}),\\quad \\operatorname{nullity} A = ${free.length}\\ (\\text{自由變數}),\\quad ${res.rank} + ${free.length} = ${n} = n`}</M>
+        <M>{`\\operatorname{rank} M = ${res.rank}\\ (\\text{樞紐}),\\quad \\operatorname{nullity} M = ${free.length}\\ (\\text{自由變數}),\\quad ${res.rank} + ${free.length} = ${cols} = \\text{欄數}`}</M>
       </div>
     </div>
   );
@@ -266,10 +266,14 @@ const CONCEPTS: Concept[] = [
     def: (
       <>
         <p>
-          向量就是一串 0/1（例如 7 個位元的 codeword），兩個向量相加是<strong>逐位 mod 2</strong>（導論的 GF(2)），不進位；每個向量加自己都是 0。長度 n 的 0/1 向量一共 <M>{'2^n'}</M> 個。
+          向量就是一串 0/1（例如 {N7} 個位元的 codeword），兩個向量相加是<strong>逐位 mod 2</strong>（
+          <a href="#/intro" className="font-semibold text-overall-700 hover:underline">
+            導論
+          </a>
+          的 GF(2)），不進位；每個向量加自己都是 0。長度 {N7} 的 0/1 向量一共 <M>{`2^{${N7}} = ${2 ** N7}`}</M> 個。
         </p>
         <p>
-          <M>{'Ax^{T}'}</M> 的結果，就是<strong>把 <M>{'x_j = 1'}</M> 的那些欄加起來</strong>。反過來，列向量放左邊的 <M>{'xA'}</M> 是把 <M>{'x_i = 1'}</M> 的那些<strong>列</strong>加起來。
+          <M>{'Mx^{T}'}</M> 的結果，就是<strong>把 <M>{'x_j = 1'}</M> 的那些欄加起來</strong>。反過來，列向量放左邊的 <M>{'xM'}</M> 是把 <M>{'x_i = 1'}</M> 的那些<strong>列</strong>加起來。
         </p>
         <p>
           <M>{'x^{T}'}</M>（轉置）只是把橫的列向量立起來，變成直的行向量。
@@ -291,13 +295,13 @@ const CONCEPTS: Concept[] = [
     def: (
       <>
         <p>
-          <M>{'a_1v_1 + \\cdots + a_kv_k'}</M>（每個 <M>{'a_i \\in \\{0,1\\}'}</M>）叫做<strong>線性組合</strong>：在 <M>{'\\mathbb{F}_2'}</M> 裡就是<strong>挑一些向量加起來</strong>。所有線性組合的集合叫 <M>{'\\operatorname{span}\\{v_1,\\dots,v_k\\}'}</M>；一個矩陣所有列的 span 叫做它的<strong>列空間</strong>（row space）。
+          <M>{'a_1v_1 + a_2v_2 + \\cdots'}</M>（每個係數 <M>{'a_i \\in \\{0,1\\}'}</M>）叫做<strong>線性組合</strong>：在 <M>{'\\mathbb{F}_2'}</M> 裡就是<strong>挑一些向量加起來</strong>。所有線性組合的集合叫 <M>{'\\operatorname{span}\\{v_1, v_2, \\dots\\}'}</M>；一個矩陣所有列的 span 叫做它的<strong>列空間</strong>（row space）。
         </p>
         <p>
-          如果只有「全部係數都是 0」才能組出零向量，這組向量就<strong>線性獨立</strong>；否則某個向量是其他向量的和，它是多餘的。能生成整個空間、又線性獨立的一組向量叫<strong>基底</strong>，基底的向量個數叫<strong>維度</strong> dim。
+          如果只有「全部係數都是 0」才能組出零向量，這組向量就<strong>線性獨立</strong>；否則某個向量是其他向量的和，它是多餘的。能生成整個空間、又線性獨立的一組向量叫<strong>基底</strong>，基底的向量個數叫<strong>維度</strong>，空間 <M>V</M> 的維度記作 <M>{'\\dim V'}</M>。
         </p>
         <p>
-          在 <M>{'\\mathbb{F}_2'}</M> 上，d 維空間<strong>恰有 <M>{'2^d'}</M> 個向量</strong>：每個係數 2 種選法，而且不同係數給不同向量。
+          在 <M>{'\\mathbb{F}_2'}</M> 上，空間 <M>V</M> <strong>恰有 <M>{'2^{\\dim V}'}</M> 個向量</strong>：基底的每個係數 2 種選法，而且不同係數給不同向量。
         </p>
       </>
     ),
@@ -316,10 +320,10 @@ const CONCEPTS: Concept[] = [
     def: (
       <>
         <p>
-          <M>{'\\ker A = \\{\\, x : Ax^{T} = 0 \\,\\}'}</M>：讓 A 乘出零向量的所有 x，也就是<strong>齊次方程組 <M>{'Ax^{T} = 0'}</M> 的全部解</strong>。A 的每一列就是一條方程。它一定包含 0，而且兩個解相加還是解，所以 ker A 是一個子空間。
+          <M>{'\\ker M = \\{\\, x : Mx^{T} = 0 \\,\\}'}</M>：讓 M 乘出零向量的所有 x，也就是<strong>齊次方程組 <M>{'Mx^{T} = 0'}</M> 的全部解</strong>。M 的每一列就是一條方程。它一定包含 0，而且兩個解相加還是解，所以 ker M 是一個子空間。
         </p>
         <p>
-          <strong>Rank–Nullity Theorem</strong> 一句話：<M>{'\\operatorname{rank} A + \\dim \\ker A = n'}</M>（n = 欄數）。rank A 是互相獨立的方程有幾條，每多一條，解的維度就少 1。
+          <strong>Rank–Nullity Theorem</strong> 一句話：<M>{'\\operatorname{rank} M + \\dim \\ker M = \\text{M 的欄數}'}</M>。rank M 是互相獨立的方程有幾條，每多一條，解的維度就少 1。
         </p>
       </>
     ),
@@ -344,7 +348,7 @@ export function RankNullityPrimer() {
             ['樞紐', 'pivot', <>RREF 每一個非零列的第一個 1。它所在的欄叫樞紐欄。</>],
             ['自由變數', 'free variable', <>沒有樞紐的欄對應的未知數，可以任意選 0 或 1。</>],
             ['秩', 'rank', <>樞紐的個數（= 線性獨立的列數）。</>],
-            ['零度', 'nullity', <>自由變數的個數（= <M>{'\\dim \\ker A'}</M>）。</>],
+            ['零度', 'nullity', <>自由變數的個數（= <M>{'\\dim \\ker M'}</M>）。</>],
           ].map(([zh, en, d]) => (
             <div key={zh as string} className="contents">
               <dt className="font-semibold">
@@ -358,10 +362,10 @@ export function RankNullityPrimer() {
         <p>
           <strong>Rank–Nullity Theorem</strong>：每一欄要嘛有樞紐、要嘛對應一個自由變數，所以
         </p>
-        <Tex block>{'\\operatorname{rank} A + \\operatorname{nullity} A = n \\quad (n = \\text{欄數})'}</Tex>
+        <Tex block>{'\\operatorname{rank} M + \\operatorname{nullity} M = \\text{M 的欄數}'}</Tex>
         <p className="rounded-lg border border-sky-200 bg-sky-50/60 p-2">
           <span className="mr-1 font-semibold text-sky-800">在 Hamming(7,4) 裡：</span>H 本身就是 RREF：樞紐在 P1、P2、P4，自由變數是 D1–D4。所以 rank H = {RANK_H}、nullity H = {NULLITY_H}，ker H 有{' '}
-          <M>{`2^{${NULLITY_H}} = ${2 ** NULLITY_H}`}</M> 個向量。資訊位元自由選、同位位元被決定：這正是編碼。
+          <M>{`2^{${NULLITY_H}} = ${2 ** NULLITY_H}`}</M> 個向量。資料位元自由選、同位位元被決定：這正是編碼。
         </p>
       </div>
       <div className="min-w-0 rounded-xl border border-slate-200 bg-slate-50/60 p-3">
@@ -373,14 +377,14 @@ export function RankNullityPrimer() {
 }
 
 /** One card, a tab menu on top: pick which linear-algebra concept to read. */
-export function LinAlgPrimer({ tab, onTab }: { tab?: number; onTab?: (i: number) => void } = {}) {
+export function LinAlgPrimer({ tab, onTab, framed = true }: { tab?: number; onTab?: (i: number) => void; framed?: boolean } = {}) {
   const [own, setOwn] = useState(0);
   const i = tab ?? own;
   const setI = onTab ?? setOwn;
   const c = CONCEPTS[i];
   return (
-    <div className="card min-w-0 p-4 sm:p-5">
-      <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">線性代數工具箱</div>
+    <div className={framed ? 'card min-w-0 p-4 sm:p-5' : 'min-w-0'}>
+      {framed && <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">線性代數工具箱</div>}
       <div className="mb-4 flex flex-wrap gap-1.5" role="tablist" aria-label="線性代數工具箱">
         {CONCEPTS.map((x, k) => (
           <button

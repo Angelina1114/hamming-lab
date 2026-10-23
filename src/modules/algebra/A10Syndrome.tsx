@@ -94,7 +94,7 @@ export default function A10Syndrome() {
               先回到接收端的實際情況：{L2_N} 個 bit 從通道一個接一個進來（串列傳輸，serial transmission），其中可能有一個被雜訊翻轉。解碼器在把 {L2_K} 個資料位元交出去之前，必須回答兩件事：有沒有錯？錯在哪一個 bit？
             </p>
             <p>
-              第一課用查表：Syndrome 等於 H 的哪一欄。有了 GF(8) 之後可以換個說法：Syndrome 是一個「數」 <M>{'S_1 = r(\\alpha)'}</M>，錯誤位置 <M>{'x^i'}</M> 滿足 <M>{'\\alpha^i = S_1'}</M>。把「找位置」寫成「解方程」，就能用 Chien Search 這種可以推廣到多錯誤 BCH Code 的通用演算法。
+              第一課把燈號讀成二進位直接當位置（H 的第 j 欄 = j 的二進位），不用查表；換成循環碼的欄順序，這個捷徑就沒了。有了 GF(8) 之後可以換個說法：Syndrome 是一個「數」 <M>{'S_1 = r(\\alpha)'}</M>，錯誤位置 <M>{'x^i'}</M> 滿足 <M>{'\\alpha^i = S_1'}</M>。把「找位置」寫成「解方程」，就能用 Chien Search 這種可以推廣到多錯誤 BCH Code 的通用演算法。
             </p>
             <p>
               這個寫法也改變了電路的做法。第一課的平行電路要等 {L2_N} 個 bit 全部到齊，再用 {PARALLEL_XORS} 個 XOR 閘一次算出 Syndrome；改用 Horner 法（Horner&apos;s Rule）可以邊收邊算：每個時脈把暫存器內容乘 α、再加上剛收到的 bit，只需要 {HORNER.flipFlops} 個暫存器和 {HORNER.xors} 個 XOR 閘（乘 α 的回授 {ALPHA_XORS} 個、把新 bit 加進來 {HORNER.xors - ALPHA_XORS} 個），{CLOCKS} 個時脈後暫存器裡就是 S₁。它和 A6、第二課 2-4 的除法 LFSR 是同一個電路（同樣 {DIVIDER.flipFlops} 個暫存器、{DIVIDER.xors} 個 XOR 閘）：「乘 α 再加入新 bit」就是「左移再回授」。

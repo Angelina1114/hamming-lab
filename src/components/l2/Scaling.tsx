@@ -139,10 +139,10 @@ export function ShortenedCalc() {
     <Card title="長度對不上：縮短碼（Shortened Hamming Code）">
       <div className="space-y-2 text-sm text-slate-700">
         <p>
-          Hamming Code 的資料長度只能是 <M>{'k = 2^m - m - 1'}</M>（4、11、26、57、120、247…）。要送剛好 <M>k</M> 個位元時，取最小的 <M>m</M> 使 <M>{'2^m - m - 1 \\ge k'}</M>，把多出來的 <M>{'\\ell'}</M> 個資訊位元<strong>固定成 0、不送出去</strong>：兩邊都知道它們是 0，所以不必傳。
+          Hamming Code 的資料長度只能是 <M>{'k = 2^m - m - 1'}</M>（4、11、26、57、120、247…）。要送剛好 <M>k</M> 個位元時，取最小的 <M>m</M> 使 <M>{'2^m - m - 1 \\ge k'}</M>，把多出來的 <M>{'\\Delta'}</M> 個資訊位元<strong>固定成 0、不送出去</strong>：兩邊都知道它們是 0，所以不必傳。
         </p>
         <p>
-          在 H 裡，這等於<strong>刪掉那 <M>{'\\ell'}</M> 欄</strong>。剩下的欄仍然非零、兩兩相異，所以任一個單一錯誤仍然對應到唯一的一欄：縮短碼一樣能修 1 個錯（<M>{'d_{\\min} \\ge 3'}</M>），參數從 <M>{'(2^m - 1,\\ 2^m - m - 1)'}</M> 變成 <M>{'(2^m - 1 - \\ell,\\ 2^m - m - 1 - \\ell)'}</M>。
+          在 H 裡，這等於<strong>刪掉那 <M>{'\\Delta'}</M> 欄</strong>。剩下的欄仍然非零、兩兩相異，所以任一個單一錯誤仍然對應到唯一的一欄：縮短碼一樣能修 1 個錯（<M>{'d_{\\min} \\ge 3'}</M>），參數從 <M>{'(2^m - 1,\\ 2^m - m - 1)'}</M> 變成 <M>{'(2^m - 1 - \\Delta,\\ 2^m - m - 1 - \\Delta)'}</M>。
         </p>
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -159,7 +159,7 @@ export function ShortenedCalc() {
         </div>
         <div className="rounded-xl border border-slate-200 p-3">
           <div className="text-xs text-slate-500">
-            從 ({sp.parentN}, {sp.parentK}) 刪掉 ℓ = {sp.shortenedBy} 個資訊位元
+            從 ({sp.parentN}, {sp.parentK}) 刪掉 Δ = {sp.shortenedBy} 個資訊位元
           </div>
           <div className="text-xl font-bold">
             ({sp.n}, {k})
@@ -167,7 +167,9 @@ export function ShortenedCalc() {
           <div className="text-xs text-slate-500">碼率 {(sp.rate * 100).toFixed(1)}%</div>
         </div>
         <div className="rounded-xl border border-orange-200 bg-orange-50/60 p-3">
-          <div className="text-xs text-slate-500">再加 1 個整體同位位元（SECDED，第一課第 5 章；第二課 2-11）</div>
+          <div className="text-xs text-slate-500">
+            再加 1 個整體同位位元（SECDED，<a href="#/secded" className="underline">第一課第 5 章</a>；第二課 2-11）
+          </div>
           <div className="text-xl font-bold">
             ({sp.nSecded}, {k})
           </div>
@@ -180,7 +182,7 @@ export function ShortenedCalc() {
           H 的 {sp.parentN} 欄（第 j 欄 = j 的二進位，最低位在上）：<span className="text-parity-600">橘色</span> = 同位位元，<span className="text-data-600">藍色</span> = 資訊位元，<span className="text-slate-400">灰色</span> = 縮短時刪掉的欄
         </div>
         <p className="mb-2 text-xs text-slate-500">
-          這裡用<a href="#/matrix" className="underline">第一課第 2 章</a>的標準排列（同位位元在 1, 2, 4, … 的位置），刪掉的是編號最大的 ℓ 個資訊位元欄。下面互動範例的循環 Hamming(127,120) 用第二課的排列（同位位元在最後 {sp.r} 位，位置 p 的欄是 <M>{'\\alpha^{n-p}'}</M>）。兩者只差在欄的順序，是等價的 code；在循環碼的排列裡，縮短 = 把最左邊、最高次的 ℓ 個資訊位元固定為 0。
+          這裡用<a href="#/matrix" className="underline">第一課第 2 章</a>的標準排列（同位位元在 1, 2, 4, … 的位置），刪掉的是編號最大的 Δ 個資訊位元欄。下面互動範例的循環 Hamming(127,120) 用第二課的排列（同位位元在最後 {sp.r} 位，位置 p 的欄是 <M>{'\\alpha^{n-p}'}</M>）。兩者只差在欄的順序，是等價的 code；在循環碼的排列裡，縮短 = 把最左邊、最高次的 Δ 個資訊位元固定為 0。
         </p>
         <div className="overflow-x-auto rounded-lg border border-slate-200 p-2">
           <div className="grid w-max gap-[2px]" style={{ gridTemplateColumns: `repeat(${sp.parentN}, ${small ? 18 : 7}px)` }}>
