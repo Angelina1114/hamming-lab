@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import { type Bit, H74, K4, LAYOUT_74, N7, PARITY_CHECKS, column, decode74, encode74, encode74ByParity, hammingN } from '../../core';
+import { type Bit, H74, K4, LAYOUT_74, N7, PARITY_CHECKS, column, encode74ByParity } from '../../core';
 import { useMessage } from '../../lib/store';
 import { M, Tex } from '../../components/Tex';
 import { MessageInput } from '../../components/Bits';
@@ -37,95 +37,79 @@ const ERR_COL = column(H74, ERR_POS - 1);
 const READ = [...PARITY_CHECKS.keys()].reverse();
 const FAILED = READ.filter((i) => ERR_COL[i]).map((i) => PARITY_CHECKS[i].name);
 const LAMP_ORDER = READ.map((i) => PARITY_CHECKS[i].name).join('');
-/** the 3-fold repetition code also corrects 1 error: rate 1/3 */
-const N_REPEAT = hammingN(L - 1);
+/** which check computes the parity bit at codeword index i (−1 for a data bit) */
+const checkAt = (i: number) => PARITY_CHECKS.findIndex((pc) => pc.parityIndex === i);
 
 /* ------------------------------------------------------------------ */
 /* 第 1 章：Hamming(7,4) 編碼                                          */
 /* ------------------------------------------------------------------ */
 
-function OverlapIdeaSlide({ s }: { s: Stepper }) {
-  const eqs = PARITY_CHECKS.map((pc) => `${sub(pc.name)} = ${pc.dataTerms.map(sub).join(' \\oplus ')}`);
-  const hot = s.step >= 1; // the worked column lights up with the coverage table
+function CoverageSlide({ s }: { s: Stepper }) {
+  const hot = s.step >= 1; // the worked column lights up with its example
   return (
-    <div className="space-y-4 text-xl">
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[0.8fr_1.5fr]">
-        <Reveal on={s.step >= 0}>
-          <Box tone="bg-sky-50 text-sky-950" title="想法：多個重疊的檢查">
-            <p>
-              發送端多算 {L} 個 parity bit，各管一組位置；接收端把這 {L} 組重算一次。
-            </p>
-            <p className="mt-2 text-lg text-slate-600">各組互相重疊：每個位置對到一種專屬的失敗組合，「全部通過」留給「沒有錯」。</p>
-          </Box>
-        </Reveal>
-        <Reveal on={s.step >= 1}>
-          <Box tone="bg-amber-50 text-amber-950" title="怎麼重疊：位置寫成二進位">
-            <table className="w-full text-center text-lg">
-              <thead>
-                <tr className="text-base text-slate-500">
-                  <th className="pr-2 text-left font-normal">位置</th>
-                  {LAYOUT_74.map((p) => (
-                    <th key={p.index} className={`rounded-t-md ${p.position === ERR_POS && hot ? 'bg-rose-100' : ''} ${p.role === 'parity' ? 'text-parity-600' : 'text-data-600'}`}>
-                      {p.position}
-                      <div className="text-sm font-normal leading-none">{p.label}</div>
-                    </th>
-                  ))}
-                </tr>
-                <tr className="font-mono text-base text-slate-500">
-                  <th className="pr-2 text-left font-sans font-normal leading-tight">
-                    二進位
-                    <div className="font-mono text-xs leading-none">{LAMP_ORDER}</div>
-                  </th>
-                  {LAYOUT_74.map((p) => (
-                    <th key={p.index} className={`font-normal ${p.position === ERR_POS && hot ? 'bg-rose-100 font-bold text-rose-700' : ''}`}>
-                      {bin(p.position)}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {PARITY_CHECKS.map((pc) => (
-                  <tr key={pc.name} className="border-t border-amber-100">
-                    <td className="py-1 pr-2 text-left font-semibold text-parity-700">{pc.name}</td>
-                    {LAYOUT_74.map((p) => {
-                      const on = pc.covered.includes(p.index);
-                      const err = p.position === ERR_POS && hot;
-                      return (
-                        <td key={p.index} className={err ? 'bg-rose-100' : ''}>
-                          {on ? <span className={`inline-block h-4 w-4 rounded-full ${err ? 'bg-rose-500' : 'bg-parity-500'}`} /> : <span className="text-slate-300">·</span>}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <p className="mt-2 text-lg">
-              <M>{'P_b'}</M> 管二進位含有 <M>b</M> 的位置。位置 {ERR_POS} 錯 → {FAILED.join('、')} 失敗 → <span className="font-semibold text-rose-700">{LAMP_ORDER} = {bin(ERR_POS)}₂ = {ERR_POS}</span>
-            </p>
-          </Box>
-        </Reveal>
-      </div>
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.8fr_1fr]">
-        <Reveal on={s.step >= 2}>
-          <Box tone="bg-parity-50" title={<span className="text-parity-700">Parity bit 放在位置 {PARITY_POS}（2 的冪次）</span>}>
-            <p className="text-lg">二進位只有一個 1 → 每個 parity bit 只在一組檢查裡，直接用 data bit 算出：</p>
-            <div className="mt-1 flex flex-wrap gap-x-5 gap-y-1">
-              {eqs.map((e) => (
-                <Tex key={e}>{e}</Tex>
+    <div className="grid grid-cols-1 gap-4 text-xl lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
+      <Box
+        tone="bg-amber-50 text-amber-950"
+        title={
+          <>
+            <M>{'P_b'}</M> 管二進位含有 <M>b</M> 的位置（<M>{`b = ${PARITY_CHECKS.map((pc) => pc.bitValue).join(', ')}`}</M>）
+          </>
+        }
+      >
+        <table className="mt-3 w-full text-center text-xl">
+          <thead>
+            <tr className="text-lg text-slate-500">
+              <th className="pr-2 text-left font-normal">位置</th>
+              {LAYOUT_74.map((p) => (
+                <th key={p.index} className={`rounded-t-md ${p.position === ERR_POS && hot ? 'bg-rose-100' : ''} ${p.role === 'parity' ? 'text-parity-600' : 'text-data-600'}`}>
+                  {p.position}
+                  <div className="text-sm font-normal leading-none">{p.label}</div>
+                </th>
               ))}
-            </div>
+            </tr>
+            <tr className="font-mono text-lg text-slate-500">
+              <th className="pr-2 text-left font-sans font-normal leading-tight">
+                二進位
+                <div className="font-mono text-xs leading-none">{LAMP_ORDER}</div>
+              </th>
+              {LAYOUT_74.map((p) => (
+                <th key={p.index} className={`font-normal ${p.position === ERR_POS && hot ? 'bg-rose-100 font-bold text-rose-700' : ''}`}>
+                  {bin(p.position)}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {PARITY_CHECKS.map((pc) => (
+              <tr key={pc.name} className="border-t border-amber-100">
+                <td className="py-3 pr-2 text-left font-semibold text-parity-700">{pc.name}</td>
+                {LAYOUT_74.map((p) => {
+                  const on = pc.covered.includes(p.index);
+                  const err = p.position === ERR_POS && hot;
+                  return (
+                    <td key={p.index} className={err ? 'bg-rose-100' : ''}>
+                      {on ? <span className={`inline-block h-5 w-5 rounded-full ${err ? 'bg-rose-500' : 'bg-parity-500'}`} /> : <span className="text-slate-300">·</span>}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </Box>
+      <div className="space-y-4">
+        <Reveal on={s.step >= 1}>
+          <Box tone="bg-rose-50 text-rose-950" title={`位置 ${ERR_POS} 錯`}>
+            <p>
+              {FAILED.join('、')} 失敗 → 讀成 {LAMP_ORDER} = <span className="font-semibold text-rose-700">{bin(ERR_POS)}₂ = {ERR_POS}</span>
+            </p>
+            <p className="mt-1 text-lg font-semibold">失敗的檢查拼出位置編號</p>
           </Box>
         </Reveal>
-        <Reveal on={s.step >= 3}>
-          {/* the two glosses below take a second line, so the claim moved up into the title to keep the slide on one screen at 16:9 */}
-          <Box tone="bg-emerald-50 text-emerald-950" title={`Hamming(${N},${K})：修正任何 1 個錯誤`}>
-            <p>
-              <span className="font-semibold text-data-700">{K} 個 data bit</span> + <span className="font-semibold text-parity-700">{L} 個 parity bit</span>
-            </p>
-            <p className="text-lg text-slate-600">
-              code rate（碼率）<M>{`${K}/${N} \\approx ${(K / N).toFixed(2)}`}</M>；3-fold repetition code（重複碼）只有 <M>{`1/${N_REPEAT}`}</M>
-            </p>
+        <Reveal on={s.step >= 2}>
+          <Box tone="bg-parity-50" title={<span className="text-parity-700">Parity bit 放在 {PARITY_POS}（2 的冪次）</span>}>
+            <p className="text-lg">二進位只有一個 1 → 只在自己那組檢查裡，直接用 data bit 算（下一頁）</p>
+            <p className="mt-1 text-lg">data bit 原封不動放在 {DATA_POS}</p>
           </Box>
         </Reveal>
       </div>
@@ -136,71 +120,51 @@ function OverlapIdeaSlide({ s }: { s: Stepper }) {
 function EncodeSlide({ s }: { s: Stepper }) {
   const { message, toggleBit } = useMessage();
   const enc = encode74ByParity(message);
-  const shown = (i: number) => LAYOUT_74[i].role === 'data' || PARITY_CHECKS.findIndex((pc) => pc.parityIndex === i) < s.step;
+  const done = s.step === L + 1;
+  // bits flipped on the Venn diagram: only once the codeword is complete
+  const [e, setE] = useState<number[]>([]);
+  const flips = done ? e : [];
+  const shown = (i: number) => LAYOUT_74[i].role === 'data' || checkAt(i) < s.step;
+  const word: (Bit | null)[] = enc.codeword.map((b, i) => (!shown(i) ? null : flips.includes(i) ? ((b ^ 1) as Bit) : b));
   const eq = (k: number) => {
     const p = enc.parities[k];
     return `${sub(p.name)} = ${p.terms.map((t) => sub(t.label)).join(' \\oplus ')} = ${p.terms.map((t) => t.value).join(' \\oplus ')} = ${p.value}`;
   };
   return (
-    <div className="space-y-5 text-xl">
-      <div className="flex flex-wrap items-end gap-6">
+    <div className="grid grid-cols-1 items-start gap-6 text-xl lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
+      <div className="space-y-4">
         <MessageInput message={message} onToggle={toggleBit} />
-        <span className="text-3xl text-slate-300">→</span>
-        <div className="flex gap-1.5">
-          {enc.codeword.map((b, i) => (
-            <div key={i} className={`flex w-12 flex-col items-center rounded-lg border-2 py-1 ${LAYOUT_74[i].role === 'parity' ? 'border-parity-300 bg-parity-50' : 'border-data-300 bg-data-50'}`}>
-              <span className={`text-xs font-semibold ${LAYOUT_74[i].role === 'parity' ? 'text-parity-700' : 'text-data-700'}`}>{LAYOUT_74[i].label}</span>
-              <span className="font-mono text-2xl font-bold">{shown(i) ? b : '?'}</span>
-            </div>
-          ))}
+        <div className="flex items-end gap-3">
+          <span className="pb-2 text-3xl text-slate-300">→</span>
+          <div className="flex gap-1.5">
+            {enc.codeword.map((b, i) => (
+              <div key={i} className={`flex w-12 flex-col items-center rounded-lg border-2 py-1 ${LAYOUT_74[i].role === 'parity' ? 'border-parity-300 bg-parity-50' : 'border-data-300 bg-data-50'}`}>
+                <span className={`text-xs font-semibold ${LAYOUT_74[i].role === 'parity' ? 'text-parity-700' : 'text-data-700'}`}>{LAYOUT_74[i].label}</span>
+                <span className="font-mono text-2xl font-bold">{shown(i) ? b : '?'}</span>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
-      <div className="space-y-2">
-        {PARITY_CHECKS.map((_, k) =>
-          k < s.step ? (
-            <div key={k} className="rounded-xl bg-parity-50 px-4 py-2">
-              <Tex>{eq(k)}</Tex>
-            </div>
-          ) : null,
-        )}
-      </div>
-      <p className="text-lg text-slate-600">
-        {s.step === 0 && `先把 ${K} 個 data bit 放進位置 ${DATA_POS}，再逐一算出 ${PARITY_CHECKS.map((pc) => pc.name).join('、')}：每個檢查管到的位元要有偶數個 1。`}
-        {s.step > 0 && s.step <= L && `算出 ${PARITY_CHECKS[s.step - 1].name}：讓它管的 ${COVER} 個位置有偶數個 1。`}
-        {s.step === L + 1 && (
-          <>
-            完成！訊息 {message.join('')} 編成 codeword（碼字）<strong className="mono">{enc.codeword.join('')}</strong>。
-          </>
-        )}
-      </p>
-    </div>
-  );
-}
-
-function VennSlide() {
-  const { message } = useMessage();
-  const c = encode74(message);
-  // the slide opens with one flipped bit (position 5, as in chapter 3), so the red circles are there to read
-  const [e, setE] = useState<number[]>([ERR_POS - 1]);
-  const r = c.map((b, i) => (e.includes(i) ? ((b ^ 1) as Bit) : b));
-  const d = decode74(r);
-  return (
-    <div className="grid grid-cols-1 items-center gap-6 lg:grid-cols-2">
-      <Venn word={r} errorIdx={e} onToggle={(i) => setE(e.includes(i) ? e.filter((j) => j !== i) : [...e, i])} />
-      <div className="space-y-4 text-xl">
-        <p>每個圓圈是一個檢查：圈裡必須有偶數個 1。</p>
-        <div className="rounded-2xl bg-slate-50 p-4">
-          {e.length === 0 && <>{L} 個圓圈都是偶數個 1（綠色）：沒有錯。</>}
-          {e.length > 0 && d.position > 0 && (
+        <div className="space-y-2">
+          {PARITY_CHECKS.map((_, k) =>
+            k < s.step ? (
+              <div key={k} className="rounded-xl bg-parity-50 px-4 py-2">
+                <Tex>{eq(k)}</Tex>
+              </div>
+            ) : null,
+          )}
+        </div>
+        <p className="text-lg text-slate-600">
+          {s.step === 0 && `先把 ${K} 個 data bit 放進位置 ${DATA_POS}，再逐一算出 ${PARITY_NAMES}。`}
+          {s.step > 0 && s.step <= L && `算出 ${PARITY_CHECKS[s.step - 1].name}：圓 ${PARITY_CHECKS[s.step - 1].name} 的 ${COVER} 個位置湊成偶數個 1。`}
+          {done && (
             <>
-              只有位置 <strong>{d.position}（{LAYOUT_74[d.position - 1].label}）</strong>落在所有失敗的圓圈裡、又不在任何通過的圓圈裡：把它翻回來就修好了
-              {e.length > 1 && <span className="text-rose-700">（但其實錯了 {e.length} 個：miscorrection）</span>}。
+              完成！訊息 {message.join('')} 編成 codeword（碼字）<strong className="mono">{enc.codeword.join('')}</strong>。
             </>
           )}
-          {e.length > 0 && d.position === 0 && <>{L} 個圓圈又都變回偶數：錯誤剛好互相抵銷，看不出來（undetected error）。</>}
-        </div>
-        <p className="text-lg text-slate-600">紅色圓圈 = 奇數個 1（檢查失敗）。哪幾個圈失敗，就像座標一樣指出錯在哪裡。</p>
+        </p>
       </div>
+      <Venn word={word} errorIdx={flips} maxWidth="max-w-[460px]" onToggle={done ? (i) => setE(e.includes(i) ? e.filter((j) => j !== i) : [...e, i]) : undefined} />
     </div>
   );
 }
@@ -215,42 +179,34 @@ const Ph = ({ children }: { children: ReactNode }) => <span className="whitespac
 export const CH1_SLIDES: DeckSlide<null>[] = [
   {
     title: '第 1 章：Hamming(7,4) 編碼',
-    sub: `一個檢查只說「有沒有錯」：改用 ${L} 個互相重疊的檢查`,
-    steps: () => 4,
-    render: (s) => <OverlapIdeaSlide s={s} />,
+    sub: `導論的 ${L} 個檢查，各管哪些位置？`,
+    steps: () => 3,
+    render: (s) => <CoverageSlide s={s} />,
     takeaway: (
       <>
-        <Ph>{L} 個互相重疊的檢查，</Ph>
-        <Ph>讓每個位置各有一種專屬的失敗組合</Ph>
+        <Ph>位置寫成二進位：</Ph>
+        <Ph>失敗的檢查讀成二進位，</Ph>
+        <Ph>就是出錯位置的編號</Ph>
       </>
     ),
     notes: (
       <ul className={NOTES_UL}>
         <li>
-          情境：一個檢查只回答「有沒有錯」→ 發送端多算 {L} 個 parity bit，接收端重算 {L} 組檢查
+          覆蓋表：位置 1–{N} 寫成二進位，{PARITY_NAMES} 各管二進位含 {BIT_VALUES} 的位置
           <ul className={NOTES_SUB}>
-            <li>各組互相重疊：每個位置對到一種專屬的失敗組合；「全部通過」留給「沒有錯」</li>
+            <li>每一欄的圓點 = 那個位置的二進位；{N} 欄兩兩不同、沒有空欄：導論說的「每個位置一種失敗組合」就是這樣分出來的</li>
           </ul>
         </li>
         <li>
-          → 怎麼重疊：位置 1–{N} 寫成二進位，{PARITY_NAMES} 各管二進位含 {BIT_VALUES} 的位置
+          → 例：位置 {ERR_POS} 錯 → {FAILED.join('、')} 失敗 → 讀成 {LAMP_ORDER} = {bin(ERR_POS)}₂ = {ERR_POS}
           <ul className={NOTES_SUB}>
-            <li>每一欄的圓點 = 那個位置的二進位；{N} 欄兩兩不同、沒有空欄</li>
-            <li>
-              例：位置 {ERR_POS} 錯 → {FAILED.join('、')} 失敗 → {bin(ERR_POS)}₂ = {ERR_POS}；這 {L} 組檢查就是接收端的 {L} 盞警示燈（第 2 章）
-            </li>
+            <li>每一欄都一樣：失敗的檢查拼出位置編號，接收端不用查表；這 {L} 組檢查就是接收端的 {L} 盞警示燈（第 2 章）</li>
           </ul>
         </li>
         <li>
-          → parity bit 放在 {PARITY_POS}：二進位只有一個 1，每個只在一組檢查裡
+          → parity bit 放在 {PARITY_POS}：二進位只有一個 1，每個只在自己那組檢查裡
           <ul className={NOTES_SUB}>
-            <li>直接用 data bit 算出，{L} 個 XOR 互不依賴、可以同時算</li>
-          </ul>
-        </li>
-        <li>
-          → 結果：Hamming({N},{K})，能修任何 1 個錯；code rate {K}/{N} ≈ {(K / N).toFixed(2)}，3-fold repetition code 只有 1/{N_REPEAT}
-          <ul className={NOTES_SUB}>
-            <li>代價：錯 2 個就會造成 miscorrection（第 3、4 章）</li>
+            <li>直接用 data bit 算出（下一頁）；data bit 原封不動放在 {DATA_POS}，接收端拿掉 parity bit 就是原訊息</li>
           </ul>
         </li>
       </ul>
@@ -258,7 +214,7 @@ export const CH1_SLIDES: DeckSlide<null>[] = [
   },
   {
     title: '第 1 章：一步一步編碼',
-    sub: '每個檢查管到的位元要有偶數個 1',
+    sub: '每個圓圈（每個檢查）都要有偶數個 1',
     steps: () => L + 2,
     render: (s) => <EncodeSlide s={s} />,
     takeaway: (
@@ -270,10 +226,18 @@ export const CH1_SLIDES: DeckSlide<null>[] = [
     ),
     notes: (
       <ul className={NOTES_UL}>
-        <li>先把 {K} 個 data bit 原封不動放進位置 {DATA_POS}，parity bit 先空著；接收端拿掉 parity bit 就是原訊息</li>
-        {PARITY_CHECKS.map((_, k) => (
-          <li key={k}>
-            → {eqText(k)}：讓位置 {coveredText(k)} 湊成偶數個 1
+        <li>
+          先把 {K} 個 data bit 原封不動放進位置 {DATA_POS}，parity bit 先空著（?）
+          <ul className={NOTES_SUB}>
+            <li>
+              右邊：{L} 個圓 = {L} 組檢查，圓圈切出的 {N} 個區域 = {N} 個位置；一個區域在哪幾個圓裡 ⇔ 那個位置的二進位含 {BIT_VALUES} 的哪幾個
+            </li>
+            <li>圓裡還有 ? 的時候保持橘色：這組檢查還不能判斷</li>
+          </ul>
+        </li>
+        {PARITY_CHECKS.map((pc, k) => (
+          <li key={pc.name}>
+            → {eqText(k)}：讓位置 {coveredText(k)} 湊成偶數個 1，圓 {pc.name} 變綠
             {k === L - 1 && (
               <ul className={NOTES_SUB}>
                 <li>
@@ -283,38 +247,12 @@ export const CH1_SLIDES: DeckSlide<null>[] = [
             )}
           </li>
         ))}
-        <li>→ 完成：{N} 個位元送出去，每組檢查都是偶數個 1；發送端只有 XOR，沒有乘法、沒有查表</li>
-      </ul>
-    ),
-  },
-  {
-    title: '第 1 章：Venn 圖',
-    sub: '每個圓圈都要有偶數個 1',
-    steps: () => 1,
-    render: () => <VennSlide />,
-    takeaway: (
-      <>
-        <Ph>哪幾個圓圈變奇數，</Ph>
-        <Ph>就像座標一樣圈出錯的那一格</Ph>
-      </>
-    ),
-    notes: (
-      <ul className={NOTES_UL}>
         <li>
-          {L} 個圓 = {L} 組檢查；圓圈切出的 {N} 個區域 = {N} 個位置
+          → 完成：{N} 個位元送出去，{L} 個圓都是綠的 = 合法 codeword；發送端只有 XOR，沒有乘法、沒有查表
           <ul className={NOTES_SUB}>
-            <li>一個區域在哪幾個圓裡 ⇔ 那個位置的二進位含 {BIT_VALUES} 的哪幾個</li>
+            <li>這時可以點圓裡的格子翻一位：包含它的圓變紅；怎麼從紅圈找出錯的位置，是第 3 章的事</li>
           </ul>
         </li>
-        <li>規則：每個圓裡要有偶數個 1；全部綠色 = 合法 codeword</li>
-        <li>
-          開場已翻了位置 {ERR_POS}：包含它的圓變紅
-          <ul className={NOTES_SUB}>
-            <li>只有一格「在所有紅圈裡、又不在任何綠圈裡」：就是錯的位置，翻回來就修好</li>
-          </ul>
-        </li>
-        <li>現場再翻第二個：紅圈的組合會指向第三個位置 → miscorrection（第 3、4 章）</li>
-        <li>接收端做的就是這件事：看 {L} 盞警示燈亮哪幾盞，就知道錯在哪（第 3 章）</li>
       </ul>
     ),
   },

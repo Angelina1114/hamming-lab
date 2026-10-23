@@ -35,15 +35,17 @@ interface VennProps {
   showStatus?: boolean;
   focusCircle?: number | null;
   onFocusCircle?: (c: number | null) => void;
+  /** width cap of the drawing (a slide draws it larger) */
+  maxWidth?: string;
 }
 
-export function Venn({ word, errorIdx = [], correctedIdx = [], onToggle, showStatus = true, focusCircle = null, onFocusCircle }: VennProps) {
+export function Venn({ word, errorIdx = [], correctedIdx = [], onToggle, showStatus = true, focusCircle = null, onFocusCircle, maxWidth = 'max-w-[380px]' }: VennProps) {
   const circleParity = PARITY_CHECKS.map((pc) => {
     if (pc.covered.some((i) => word[i] === null)) return null;
     return pc.covered.reduce<number>((a, i) => a ^ (word[i] as number), 0);
   });
   return (
-    <svg viewBox="0 0 360 300" className="mx-auto w-full max-w-[380px] select-none" role="img" aria-label="三個 parity check 的 Venn 圖">
+    <svg viewBox="0 0 360 300" className={`mx-auto w-full select-none ${maxWidth}`} role="img" aria-label="三個 parity check 的 Venn 圖">
       {CIRCLES.map((c, k) => {
         const par = circleParity[k];
         const bad = showStatus && par === 1;
