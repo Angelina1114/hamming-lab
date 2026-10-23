@@ -80,10 +80,10 @@ export default function A10Syndrome() {
     <AlgebraUnit
       id={ID}
       convention
-      lead={<p>本章最後一步：把代數用在解碼上。因為每個 codeword 都滿足 <M>{'c(\\alpha) = 0'}</M>，接收字在 α 的值只剩下錯誤的貢獻——錯誤的位置就寫在它的指數裡。σ(z)、Chien Search 與 XOR 更正的完整操作在第二課 2-6 ~ 2-8。</p>}
+      lead={<p>本章最後一步：把代數用在解碼上。因為每個 codeword 都滿足 <M>{'c(\\alpha) = 0'}</M>，received word 在 α 的值只剩下錯誤的貢獻——錯誤的位置就寫在它的指數裡。σ(z)、Chien search 與 XOR 更正的完整操作在第二課 2-6 ~ 2-8。</p>}
       takeaway={
         <>
-          接收端用 {HORNER.flipFlops} 個暫存器邊收邊算 <M>{'S_1 = r(\\alpha)'}</M>；S₁ 是 α 的幾次方，就指出哪個 bit 被翻轉。
+          接收端用 {HORNER.flipFlops} 個 register 邊收邊算 <M>{'S_1 = r(\\alpha)'}</M>；S₁ 是 α 的幾次方，就指出哪個 bit 被翻轉。
         </>
       }
       why={{
@@ -91,16 +91,16 @@ export default function A10Syndrome() {
         body: (
           <Plain>
             <p>
-              先回到接收端的實際情況：{L2_N} 個 bit 從通道一個接一個進來（串列傳輸，serial transmission），其中可能有一個被雜訊翻轉。解碼器在把 {L2_K} 個資料位元交出去之前，必須回答兩件事：有沒有錯？錯在哪一個 bit？
+              先回到接收端的實際情況：{L2_N} 個 bit 從通道一個接一個進來（serial 傳輸），其中可能有一個被雜訊翻轉。decoder 在把 {L2_K} 個 data bit 交出去之前，必須回答兩件事：有沒有錯？錯在哪一個 bit？
             </p>
             <p>
-              第一課把燈號讀成二進位直接當位置（H 的第 j 欄 = j 的二進位），不用查表；換成循環碼的欄順序，這個捷徑就沒了。有了 GF(8) 之後可以換個說法：Syndrome 是一個「數」 <M>{'S_1 = r(\\alpha)'}</M>，錯誤位置 <M>{'x^i'}</M> 滿足 <M>{'\\alpha^i = S_1'}</M>。把「找位置」寫成「解方程」，就能用 Chien Search 這種可以推廣到多錯誤 BCH Code 的通用演算法。
+              第一課把燈號讀成二進位直接當位置（H 的第 j 欄 = j 的二進位），不用查表；換成 cyclic code 的欄順序，這個捷徑就沒了。有了 GF(8) 之後可以換個說法：syndrome 是一個「數」 <M>{'S_1 = r(\\alpha)'}</M>，錯誤位置 <M>{'x^i'}</M> 滿足 <M>{'\\alpha^i = S_1'}</M>。把「找位置」寫成「解方程」，就能用 Chien search 這種可以推廣到多錯誤 BCH code 的通用演算法。
             </p>
             <p>
-              這個寫法也改變了電路的做法。第一課的平行電路要等 {L2_N} 個 bit 全部到齊，再用 {PARALLEL_XORS} 個 XOR 閘一次算出 Syndrome；改用 Horner 法（Horner&apos;s Rule）可以邊收邊算：每個時脈把暫存器內容乘 α、再加上剛收到的 bit，只需要 {HORNER.flipFlops} 個暫存器和 {HORNER.xors} 個 XOR 閘（乘 α 的回授 {ALPHA_XORS} 個、把新 bit 加進來 {HORNER.xors - ALPHA_XORS} 個），{CLOCKS} 個時脈後暫存器裡就是 S₁。它和 A6、第二課 2-4 的除法 LFSR 是同一個電路（同樣 {DIVIDER.flipFlops} 個暫存器、{DIVIDER.xors} 個 XOR 閘）：「乘 α 再加入新 bit」就是「左移再回授」。
+              這個寫法也改變了電路的做法。第一課的 parallel 電路要等 {L2_N} 個 bit 全部到齊，再用 {PARALLEL_XORS} 個 XOR 閘一次算出 syndrome；改用 Horner&apos;s rule（Horner 法）可以邊收邊算：每個時脈把 register 內容乘 α、再加上剛收到的 bit，只需要 {HORNER.flipFlops} 個 register 和 {HORNER.xors} 個 XOR 閘（乘 α 的 feedback {ALPHA_XORS} 個、把新 bit 加進來 {HORNER.xors - ALPHA_XORS} 個），{CLOCKS} 個時脈後 register 裡就是 S₁。它和 A6、第二課 2-4 的除法 LFSR 是同一個電路（同樣 {DIVIDER.flipFlops} 個 register、{DIVIDER.xors} 個 XOR 閘）：「乘 α 再加入新 bit」就是「左移再經 feedback 送回」。
             </p>
             <p>
-              代價是 S₁ 要 {CLOCKS} 個時脈才算完；不過資料本來就一拍一拍進來，平行電路同樣得等最後一個 bit 到齊，所以 S₁ 並沒有比較晚算好。換來的是硬體幾乎不隨碼長變大：長度 127 的 Hamming Code 選用只有 {G127_TERMS} 項的 <M>{`g(x) = ${msbToTex(G127_MSB)}`}</M>，平行電路要 {PARALLEL_127} 個 XOR 閘，串列電路只要 {HORNER_127.flipFlops} 個暫存器、{HORNER_127.xors} 個 XOR 閘。暫存器個數只等於檢查位元數，XOR 閘數只看 g(x) 有幾項。
+              代價是 S₁ 要 {CLOCKS} 個時脈才算完；不過資料本來就一拍一拍進來，parallel 電路同樣得等最後一個 bit 到齊，所以 S₁ 並沒有比較晚算好。換來的是硬體幾乎不隨 code length 變大：長度 127 的 Hamming code 選用只有 {G127_TERMS} 項的 <M>{`g(x) = ${msbToTex(G127_MSB)}`}</M>，parallel 電路要 {PARALLEL_127} 個 XOR 閘，serial 電路只要 {HORNER_127.flipFlops} 個 register、{HORNER_127.xors} 個 XOR 閘。register 個數只等於 parity bit 數，XOR 閘數只看 g(x) 有幾項。
             </p>
           </Plain>
         ),
@@ -111,11 +111,10 @@ export default function A10Syndrome() {
           <>
             <Terms
               items={[
-                { zh: 'GF(8) 版 Syndrome：S₁ = r(α)', def: <>把接收字當多項式，代入 α。因為 <M>{'g(\\alpha) = 0'}</M>，它也等於 <M>{'r(x) \\bmod g(x)'}</M> 的 3 位元餘數（第二課 2-4）讀成 GF(8) 元素。</> },
-                { zh: '錯誤定位數 X', en: 'Error Locator', def: <>單一錯誤 <M>{'e(x) = x^i'}</M> 時 <M>{'S_1 = \\alpha^i =: X'}</M>。指數 i 就是錯誤的次方，位置 = 7 − i。</> },
+                { term: 'GF(8) 版 syndrome：S₁ = r(α)', def: <>把 received word 當多項式，代入 α。因為 <M>{'g(\\alpha) = 0'}</M>，它也等於 <M>{'r(x) \\bmod g(x)'}</M> 的 3 位元餘數（第二課 2-4）讀成 GF(8) 元素。</> },
+                { term: 'Error-location number X', gloss: '錯誤定位數', def: <>單一錯誤 <M>{'e(x) = x^i'}</M> 時 <M>{'S_1 = \\alpha^i =: X'}</M>。指數 i 就是錯誤的次方，位置 = 7 − i。</> },
                 {
-                  zh: 'Horner 法',
-                  en: "Horner's Rule",
+                  term: "Horner's rule",
                   def: (
                     <>
                       <M>{'r(\\alpha) = (\\cdots((r_6\\alpha + r_5)\\alpha + r_4)\\alpha + \\cdots)\\alpha + r_0'}</M>：每讀進一個 bit 就做一次 <M>{'S \\leftarrow S\\alpha + r_k'}</M>，最先到的 <M>{'r_6'}</M> 被乘了最多次 α。
@@ -128,7 +127,7 @@ export default function A10Syndrome() {
               defaultOpen
               title="完整推導"
               steps={[
-                { title: '接收字', body: <Tex block>{'r(x) = c(x) + e(x)'}</Tex> },
+                { title: 'Received word', body: <Tex block>{'r(x) = c(x) + e(x)'}</Tex> },
                 { title: '代入 α', body: <Tex block>{'S_1 = r(\\alpha) = \\underbrace{c(\\alpha)}_{0\\ (\\text{A5, A9})} + e(\\alpha) = e(\\alpha)'}</Tex> },
                 { title: '單一錯誤', body: <Tex block>{'e(x) = x^i \\Rightarrow S_1 = \\alpha^i'}</Tex> },
                 {
@@ -136,13 +135,13 @@ export default function A10Syndrome() {
                   body: (
                     <>
                       <Tex block>{'i = \\log_\\alpha S_1,\\quad \\text{位置} = 7 - i\\quad(\\alpha^0,\\dots,\\alpha^6 \\text{ 兩兩相異，A4})'}</Tex>
-                      <p className="text-sm text-slate-600">硬體上可以是一張 {LOG_ENTRIES} 格的對數表，每個非零 Syndrome 一格。</p>
+                      <p className="text-sm text-slate-600">硬體上可以是一張 {LOG_ENTRIES} 格的對數表，每個非零 syndrome 一格。</p>
                     </>
                   ),
                 },
                 {
                   title: '下一步（第二課）',
-                  body: <p>寫成錯誤定位多項式 <M>{'\\sigma(z) = 1 + S_1 z'}</M>，用 Chien Search 找根（2-6、2-7），再用 XOR 更正（2-8）。</p>,
+                  body: <p>寫成 error-locator polynomial（錯誤定位多項式）<M>{'\\sigma(z) = 1 + S_1 z'}</M>，用 Chien search 找根（2-6、2-7），再用 XOR 更正（2-8）。</p>,
                 },
               ]}
             />
@@ -207,7 +206,7 @@ export default function A10Syndrome() {
                               錯在 <M>{`x^{${i}}`}</M>，即從左數第 <strong>{located}</strong> 個 bit
                             </div>
                             <div className="text-xs text-slate-500">
-                              跟著資料流找：每送出一個 bit 就把暫存器乘一次 α，第 {streamPos} 個時脈內容等於 <M>{'\\alpha^6'}</M> = {gf8Bits(STREAM_MATCH)}，那時送出的 bit 就是錯的。
+                              跟著資料流找：每送出一個 bit 就把 register 乘一次 α，第 {streamPos} 個時脈內容等於 <M>{'\\alpha^6'}</M> = {gf8Bits(STREAM_MATCH)}，那時送出的 bit 就是錯的。
                             </div>
                           </>
                         ) : (
@@ -220,7 +219,7 @@ export default function A10Syndrome() {
                         { label: <>c(α) = 0（選的是合法 codeword）</>, pass: wordAtAlpha(c) === 0 },
                         { label: <>S₁ = r(α) = e(α)</>, pass: S1 === wordAtAlpha(e) },
                         { label: <>S₁ 等於餘數 r(x) mod g(x) 讀成 GF(8) 元素</>, pass: S1 === bitsToField(syndromeL2(r)) },
-                        { label: <>{CLOCKS} 個時脈後，Horner 暫存器 = r(α)</>, pass: trace[trace.length - 1].state === S1 },
+                        { label: <>{CLOCKS} 個時脈後，Horner register = r(α)</>, pass: trace[trace.length - 1].state === S1 },
                         { label: <>由指數找到的位置 = 實際錯誤位置</>, pass: located === pos },
                         { label: <>逐時脈乘 α 找到的位置 = 實際錯誤位置</>, pass: streamPos === pos },
                       ]}
@@ -252,7 +251,7 @@ export default function A10Syndrome() {
                         ))}
                       </tr>
                       <tr className="border-t border-slate-100">
-                        <td className="py-1 text-left text-xs text-slate-500">暫存器 S</td>
+                        <td className="py-1 text-left text-xs text-slate-500">Register S</td>
                         {trace.map((t, k) => (
                           <td key={t.clock} className={`font-mono ${k === trace.length - 1 ? 'font-bold text-emerald-700' : ''}`}>
                             {gf8Bits(t.state)}
@@ -262,12 +261,12 @@ export default function A10Syndrome() {
                     </tbody>
                   </table>
                 </div>
-                <p className="mt-2 text-xs text-slate-500">每一拍的暫存器內容，都和第二課 2-4 除法電路的暫存器相同；最後一拍就是上面逐項相加得到的 S₁。</p>
+                <p className="mt-2 text-xs text-slate-500">每一拍的 register 內容，都和第二課 2-4 除法電路的 register 相同；最後一拍就是上面逐項相加得到的 S₁。</p>
               </div>
             </Card>
             <Plain>
               <p>
-                S₁ 算出來之後，「找位置」在硬體上有兩種做法。一種是查一張 {LOG_ENTRIES} 格的對數表，一步就得到 i；另一種是把 S₁ 留在暫存器裡，收到的 {L2_N} 個 bit 一邊依序送出，一邊每個時脈把暫存器乘一次 α（還是同一個乘 α 電路，{ALPHA_XORS} 個 XOR 閘），內容等於固定樣式 <M>{'\\alpha^6'}</M> 的那一拍，正在送出的 bit 就是錯的，用 XOR 把它翻回來。後者不需要任何表，碼長變長時也不必存更大的表，只是要走的時脈數跟著碼長變多；第二課 2-7 的 Chien Search 用的是同一個想法。
+                S₁ 算出來之後，「找位置」在硬體上有兩種做法。一種是查一張 {LOG_ENTRIES} 格的對數表，一步就得到 i；另一種是把 S₁ 留在 register 裡，收到的 {L2_N} 個 bit 一邊依序送出，一邊每個時脈把 register 乘一次 α（還是同一個乘 α 電路，{ALPHA_XORS} 個 XOR 閘），內容等於固定樣式 <M>{'\\alpha^6'}</M> 的那一拍，正在送出的 bit 就是錯的，用 XOR 把它翻回來。後者不需要任何表，code length 變長時也不必存更大的表，只是要走的時脈數跟著 code length 變多；第二課 2-7 的 Chien search 用的是同一個想法。
               </p>
             </Plain>
           </>
@@ -281,10 +280,10 @@ export default function A10Syndrome() {
               <Tex block>{'r = 1101110,\\quad S_1 = r(\\alpha) = \\alpha^6 + \\alpha^5 + \\alpha^3 + \\alpha^2 + \\alpha'}</Tex>
               <Tex block>{`= ${[6, 5, 3, 2, 1].map((x) => gf8Bits(alphaPow(x))).join(' \\oplus ')} = ${gf8Bits(teacherS)} = \\alpha^{${LOG[teacherS]}}`}</Tex>
               <p>
-                所以錯在 <M>{`x^{${LOG[teacherS]}}`}</M>，從左數第 {7 - LOG[teacherS]} 個 bit。上面的計算器預設就是這個例子。接下來在第二課：<M>{`\\sigma(z) = 1 + \\alpha^{${LOG[teacherS]}}z`}</M> 的 Chien Search（2-7）、XOR 更正為 1001110（2-8）。
+                所以錯在 <M>{`x^{${LOG[teacherS]}}`}</M>，從左數第 {7 - LOG[teacherS]} 個 bit。上面的計算器預設就是這個例子。接下來在第二課：<M>{`\\sigma(z) = 1 + \\alpha^{${LOG[teacherS]}}z`}</M> 的 Chien search（2-7）、XOR 更正為 1001110（2-8）。
               </p>
               <p>
-                放到接收端上，這個例子是這樣跑的：{L2_N} 個 bit 依序進入 {HORNER.flipFlops} 個暫存器，第 {CLOCKS} 個時脈結束時暫存器停在 {gf8Bits(teacherS)}；讀成 <M>{`\\alpha^{${LOG[teacherS]}}`}</M> 之後，在第 {streamLocate(teacherS)} 個 bit 送出時把它翻回來，交出 <span className="mono">{TEACHER_DEC.corrected.join('')}</span>，前 {L2_K} 位 <span className="mono">{TEACHER_DEC.message.join('')}</span> 就是原本的資料。
+                放到接收端上，這個例子是這樣跑的：{L2_N} 個 bit 依序進入 {HORNER.flipFlops} 個 register，第 {CLOCKS} 個時脈結束時 register 停在 {gf8Bits(teacherS)}；讀成 <M>{`\\alpha^{${LOG[teacherS]}}`}</M> 之後，在第 {streamLocate(teacherS)} 個 bit 送出時把它翻回來，交出 <span className="mono">{TEACHER_DEC.corrected.join('')}</span>，前 {L2_K} 位 <span className="mono">{TEACHER_DEC.message.join('')}</span> 就是原本的資料。
               </p>
             </div>
           </Card>
@@ -296,28 +295,28 @@ export default function A10Syndrome() {
           <Card>
             <div className="space-y-3 text-sm leading-relaxed text-slate-700">
               <p>
-                同一個 Syndrome 有三種寫法：矩陣 <M>{'s = Hr^T'}</M>（第一課）、多項式 <M>{'S(x) = r(x) \\bmod g(x)'}</M>（第二課 2-4）、有限體 <M>{'S_1 = r(\\alpha)'}</M>（本單元）。三者的對照表在 2-4。在電路上它們分別是平行的 XOR 網路、除法 LFSR、Horner 暫存器，後兩者其實是同一個電路。
+                同一個 syndrome 有三種寫法：矩陣 <M>{'s = Hr^T'}</M>（第一課）、多項式 <M>{'S(x) = r(x) \\bmod g(x)'}</M>（第二課 2-4）、finite field <M>{'S_1 = r(\\alpha)'}</M>（本單元）。三者的對照表在 2-4。在電路上它們分別是 parallel 的 XOR 網路、除法 LFSR、Horner register，後兩者其實是同一個電路。
               </p>
               <p>
-                這套方法的極限也來自同一個式子。兩個 bit 同時被翻轉時，<M>{'S_1 = \\alpha^a + \\alpha^b'}</M> 不是 0，而且一定等於第三個位置的 α 次方，解碼器會毫不猶豫地再翻掉第三個 bit：長度 {L2_N} 的 {DOUBLE.pairs} 種雙錯誤裡，{DOUBLE.miscorrected} 種都被「更正」成 {DOUBLE.errorsAfter.join('、')} 個錯，這就是誤更正（Miscorrection，第二課 2-9）。在錯誤率 <M>{`p = 10^{${Math.round(Math.log10(P_BIT))}}`}</M> 的通道上，一個 {L2_N} 位元區塊出現兩個以上錯誤的機率約 <M>{sciTex(P_BLOCK)}</M>；不編碼直接送 {L2_K} 個資料位元，出錯機率約 <M>{sciTex(P_UNCODED)}</M>，所以單錯更正通常夠用。雜訊一大，雙錯變得常見，更正反而會製造錯誤。
+                這套方法的極限也來自同一個式子。兩個 bit 同時被翻轉時，<M>{'S_1 = \\alpha^a + \\alpha^b'}</M> 不是 0，而且一定等於第三個位置的 α 次方，decoder 會毫不猶豫地再翻掉第三個 bit：長度 {L2_N} 的 {DOUBLE.pairs} 種雙錯誤裡，{DOUBLE.miscorrected} 種都被「更正」成 {DOUBLE.errorsAfter.join('、')} 個錯，這就是 miscorrection（誤更正；第二課 2-9）。在 error rate <M>{`p = 10^{${Math.round(Math.log10(P_BIT))}}`}</M> 的通道上，一個 {L2_N} 位元區塊出現兩個以上錯誤的機率約 <M>{sciTex(P_BLOCK)}</M>；不編碼直接送 {L2_K} 個 data bit，出錯機率約 <M>{sciTex(P_UNCODED)}</M>，所以單錯更正通常夠用。雜訊一大，雙錯變得常見，更正反而會製造錯誤。
               </p>
               <p>
-                想更正兩個錯，g(x) 就得再多一組共軛根——這正是 A7、A8 的工具，也就是 BCH Code。長度 {L2_N} 時，檢查位元從 {BCH7[0]} 個增加到 {BCH7[1]} 個，只剩 {L2_N - BCH7[1]} 個資料位元，codeword 只有 <span className="mono">{'0'.repeat(L2_N)}</span> 和 <span className="mono">{'1'.repeat(L2_N)}</span>，等於重複碼；長度 127 時是從 {BCH127[0]} 個增加到 {BCH127[1]} 個，g(x) 多乘一個 {BCH127[1] - BCH127[0]} 次的最小多項式，LFSR 也多 {BCH127[1] - BCH127[0]} 個暫存器。
+                想更正兩個錯，g(x) 就得再多一組 conjugate roots——這正是 A7、A8 的工具，也就是 BCH code。長度 {L2_N} 時，parity bit 從 {BCH7[0]} 個增加到 {BCH7[1]} 個，只剩 {L2_N - BCH7[1]} 個 data bit，codeword 只有 <span className="mono">{'0'.repeat(L2_N)}</span> 和 <span className="mono">{'1'.repeat(L2_N)}</span>，等於 repetition code；長度 127 時是從 {BCH127[0]} 個增加到 {BCH127[1]} 個，g(x) 多乘一個 {BCH127[1] - BCH127[0]} 次的 minimal polynomial，LFSR 也多 {BCH127[1] - BCH127[0]} 個 register。
               </p>
-              <p>第二課從 2-1 開始，把這一章的編碼器、Syndrome 電路與錯誤定位接成一條從訊息到更正結果的完整流程。</p>
+              <p>第二課從 2-1 開始，把這一章的 encoder、syndrome 電路與錯誤定位接成一條從訊息到更正結果的完整流程。</p>
             </div>
           </Card>
         ),
         links: [
-          { to: 'l2-4', text: '第二課：S(x) = e(x) mod g(x) 與 Syndrome 三種寫法對照' },
-          { to: 'l2-6', text: '第二課：Key Equation σ(z) = 1 + S₁z' },
-          { to: 'l2-7', text: '第二課：Chien Search 與查表的成本比較' },
+          { to: 'l2-4', text: '第二課：S(x) = e(x) mod g(x) 與 syndrome 三種寫法對照' },
+          { to: 'l2-6', text: '第二課：key equation（關鍵方程式）σ(z) = 1 + S₁z' },
+          { to: 'l2-7', text: '第二課：Chien search 與查表的成本比較' },
           { to: 'l2-8', text: '第二課：XOR 更正與 ĉ(α) 驗證' },
         ],
         misconceptions: [
           { wrong: 'S₁ = 111 表示錯在第 7 個位置。', right: '111 = α²+α+1 = α⁵，表示錯在 x⁵（從左數第 2 個 bit）。要用 GF(8) 的對數，不是二進位數值。' },
-          { wrong: 'r(α) 和 r(x) mod g(x) 是兩個不同的 Syndrome。', right: '因為 g(α) = 0，兩者是同一個元素：餘數的 3 個位元就是 r(α) 的 (α², α, 1) 座標。' },
-          { wrong: '這個方法可以修正任意多個錯誤。', right: '只保證單一錯誤（Hamming Code t = 1）。兩個以上的錯誤見第二課 2-9、2-10。' },
+          { wrong: 'r(α) 和 r(x) mod g(x) 是兩個不同的 syndrome。', right: '因為 g(α) = 0，兩者是同一個元素：餘數的 3 個位元就是 r(α) 的 (α², α, 1) 座標。' },
+          { wrong: '這個方法可以修正任意多個錯誤。', right: '只保證單一錯誤（Hamming code t = 1）。兩個以上的錯誤見第二課 2-9、2-10。' },
         ],
       }}
     />

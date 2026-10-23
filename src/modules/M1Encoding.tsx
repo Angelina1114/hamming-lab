@@ -10,7 +10,7 @@ import { CodeSizeTable, MessageSizeLab } from '../components/WhySevenFour';
 import { Callout, Card, Derivation, Expandable, FlowBar, KeyPoint, LabGrid, Misconceptions, ModuleHeader, PrevNext, ResetButton, Stage, StatusBadge } from '../components/Lesson';
 
 const ID = 'encode';
-const BUILD_STEPS = ['放入資料位元', '計算 P1', '計算 P2', '計算 P4', '完成 codeword'];
+const BUILD_STEPS = ['放入 data bit', '計算 P1', '計算 P2', '計算 P4', '完成 codeword'];
 
 /** ℓ = 3 checks (P1, P2, P4) for n = 7 positions and k = 4 data bits */
 const L = PARITY_CHECKS.length;
@@ -63,11 +63,11 @@ export default function M1Encoding() {
     <div>
       <ModuleHeader moduleId={ID}>
         <p>
-          把 {K4} 個資料位元 <M>{'D_1D_2D_3D_4'}</M>（訊息 <M>m</M>）變成 {N7} 個位元的 codeword <M>c</M>。關鍵是：{L} 個同位位元各自檢查一組
+          把 {K4} 個 data bit <M>{'D_1D_2D_3D_4'}</M>（訊息 <M>m</M>）變成 {N7} 個位元的 codeword <M>c</M>。關鍵是：{L} 個 parity bit 各自檢查一組
           <strong>互相重疊</strong>的位置。
         </p>
       </ModuleHeader>
-      <KeyPoint>發送端只用 XOR 算出 {L} 個同位位元：{L} 組檢查互相重疊，讓每個位置都被一組獨一無二的檢查盯著，錯在哪裡，失敗的組合就不同。</KeyPoint>
+      <KeyPoint>發送端只用 XOR 算出 {L} 個 parity bit：{L} 組檢查互相重疊，讓每個位置都被一組獨一無二的檢查盯著，錯在哪裡，失敗的組合就不同。</KeyPoint>
       <FlowBar moduleId={ID} />
 
       <div className="space-y-12">
@@ -75,14 +75,14 @@ export default function M1Encoding() {
           <Card title={`發送端算 ${L} 個 XOR，接收端重算 ${L} 組檢查`}>
             <div className="grid grid-cols-1 gap-3 text-sm leading-relaxed text-slate-700 md:grid-cols-2">
               <div className="min-w-0 rounded-xl border border-data-300 bg-data-50/60 p-3">
-                <div className="mb-1 font-bold text-data-700">發送端：多算 {L} 個同位位元</div>
-                導論的一個同位位元只能說「有沒有奇數個錯」，說不出錯在哪。這一章讓發送端多算 {L} 個同位位元，每個都是幾個資料位元的 XOR：
+                <div className="mb-1 font-bold text-data-700">發送端：多算 {L} 個 parity bit</div>
+                導論的一個 parity bit 只能說「有沒有奇數個錯」，說不出錯在哪。這一章讓發送端多算 {L} 個 parity bit，每個都是幾個 data bit 的 XOR：
                 <div className="my-2 flex flex-wrap gap-x-5 gap-y-1">
                   {EQS.map((e) => (
                     <Tex key={e}>{e}</Tex>
                   ))}
                 </div>
-                {L} 個式子只用到資料位元、互不依賴，硬體上是 {L} 組 XOR 閘同時算完。
+                {L} 個式子只用到 data bit、互不依賴，硬體上是 {L} 組 XOR 閘同時算完。
               </div>
               <div className="min-w-0 rounded-xl border border-parity-300 bg-parity-50/60 p-3">
                 <div className="mb-1 font-bold text-parity-700">接收端：重算 {L} 組檢查</div>
@@ -136,7 +136,7 @@ export default function M1Encoding() {
           </Card>
         </Stage>
 
-        <Stage kind="definition" moduleId={ID} title={`位置寫成二進位，同位位元放在 ${PARITY_POS}`}>
+        <Stage kind="definition" moduleId={ID} title={`位置寫成二進位，parity bit 放在 ${PARITY_POS}`}>
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <Card title="位置排列（Positional layout）">
               <Tex block>{'[\\,P_1,\\ P_2,\\ D_1,\\ P_4,\\ D_2,\\ D_3,\\ D_4\\,]'}</Tex>
@@ -144,9 +144,9 @@ export default function M1Encoding() {
                 <li>
                   <M>{'P_b'}</M> 管二進位含有 <M>b</M> 的位置：每個位置被一組不同的檢查管到，錯在哪裡，失敗的組合就不同（第 2 章 H 的設計 ②）；而且失敗的組合讀成二進位，就直接是出錯位置的編號（H 的設計 ④）。
                 </li>
-                <li>位置 {PARITY_POS}（2 的冪次）放同位位元：它們的二進位只有一個 1，所以每個同位位元只在自己那一組檢查裡，可以直接用資料位元算出來（第 2 章 H 的設計 ⑤）。</li>
-                <li>位置 {DATA_POS} 依序放資料位元（Data bits）：資料原封不動，接收端拿掉同位位元就是原訊息（第 2 章 G 的設計 ②）。</li>
-                <li>偶同位（Even parity）：每組檢查涵蓋的位元（含同位位元本身）總和 mod 2 為 0，也就是有偶數個 1。沒有錯時每組都通過，所以「全部通過」留給「沒有錯」，接收端把它當作沒有錯（但錯誤剛好讓每組都回到偶數個 1 時，也會全部通過，見第 3 章）。</li>
+                <li>位置 {PARITY_POS}（2 的冪次）放 parity bit：它們的二進位只有一個 1，所以每個 parity bit 只在自己那一組檢查裡，可以直接用 data bit 算出來（第 2 章 H 的設計 ⑤）。</li>
+                <li>位置 {DATA_POS} 依序放 data bit：資料原封不動，接收端拿掉 parity bit 就是原訊息（第 2 章 G 的設計 ②）。</li>
+                <li>Even parity：每組檢查涵蓋的位元（含 parity bit 本身）總和 mod 2 為 0，也就是有偶數個 1。沒有錯時每組都通過，所以「全部通過」留給「沒有錯」，接收端把它當作沒有錯（但錯誤剛好讓每組都回到偶數個 1 時，也會全部通過，見第 3 章）。</li>
               </ul>
               <p className="mt-2 text-sm text-slate-500">
                 這幾個選擇在
@@ -219,7 +219,7 @@ export default function M1Encoding() {
           </div>
         </Stage>
 
-        <Stage kind="calculation" moduleId={ID} title={`用 mod 2 計算 ${L} 個同位位元`}>
+        <Stage kind="calculation" moduleId={ID} title={`用 mod 2 計算 ${L} 個 parity bit`}>
           <LabGrid
             main={
               <Card title="點擊 D1–D4 改變原始資料" actions={<ResetButton onClick={resetMessage} />}>
@@ -252,7 +252,7 @@ export default function M1Encoding() {
                 resetKey={message.join('')}
                 steps={[
                   {
-                    title: '寫下偶同位條件',
+                    title: '寫下 even parity 條件',
                     body: <Tex block>{'c_1 + c_3 + c_5 + c_7 = 0'}</Tex>,
                   },
                   {
@@ -292,7 +292,7 @@ export default function M1Encoding() {
         <Stage kind="visualization" moduleId={ID} title="Venn 圖：每個圓圈都必須有偶數個 1">
           <LabGrid
             main={
-              <Card title={`${L} 個同位檢查的集合關係`}>
+              <Card title={`${L} 個 parity check 的集合關係`}>
                 <Venn word={enc.codeword} focusCircle={focus} onFocusCircle={setFocus} />
                 <p className="mt-2 text-center text-xs text-slate-500">每個區域恰好對應一個位置：在哪些圓圈內 ⇔ 位置的二進位表示含哪些 1、2、4。</p>
               </Card>
@@ -328,7 +328,7 @@ export default function M1Encoding() {
                   })}
                 </div>
                 <motion.div key={build} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-3 min-h-[48px] text-sm text-slate-700">
-                  {build === 0 && <p>先把 D1–D4 放進位置 {DATA_POS}。同位位元暫時未知（?）。</p>}
+                  {build === 0 && <p>先把 D1–D4 放進位置 {DATA_POS}，parity bit 暫時未知（?）。</p>}
                   {build >= 1 && build <= 3 && <Tex>{pTex(build - 1)}</Tex>}
                   {build === 4 && (
                     <p>
@@ -349,7 +349,7 @@ export default function M1Encoding() {
           />
         </Stage>
 
-        <Stage kind="experiment" moduleId={ID} title="換你當編碼器">
+        <Stage kind="experiment" moduleId={ID} title="換你當 encoder（編碼器）">
           <LabGrid
             main={
               <Card
@@ -378,8 +378,8 @@ export default function M1Encoding() {
                 }
               >
                 <p className="mb-1 text-sm text-slate-600">
-                  資料位元已固定為 <span className="mono font-semibold text-data-600">{challengeMsg.join('')}</span>
-                  。只有同位位元可以點擊。
+                  這題的 data bit 固定為 <span className="mono font-semibold text-data-600">{challengeMsg.join('')}</span>
+                  ，只有 parity bit 可以點擊。
                 </p>
                 <Venn
                   word={challengeWord}
@@ -404,16 +404,16 @@ export default function M1Encoding() {
               <Misconceptions
                 items={[
                   {
-                    wrong: '同位位元只檢查資料位元，自己不算在內。',
-                    right: '偶同位的條件是「整個圓圈（含同位位元本身）有偶數個 1」，所以 P1 = D1⊕D2⊕D4。',
+                    wrong: '每個 parity bit 只檢查 data bit，自己不算在內。',
+                    right: '這裡 even parity 的條件是「整個圓圈（含 parity bit 本身）有偶數個 1」，所以 P1 = D1⊕D2⊕D4。',
                   },
                   {
                     wrong: '⊕ 就是一般加法，1⊕1 = 2。',
                     right: '這裡的加法是 mod 2：1 + 1 = 2 ≡ 0，不進位，只在乎奇偶。',
                   },
                   {
-                    wrong: '同位位元一定放在資料後面。',
-                    right: `不一定。第一課把同位位元放在位置 ${PARITY_POS}，資料位元原封不動地放在 ${DATA_POS}：接收端拿掉同位位元就是原訊息，所以它本來就是系統碼（systematic code；第 2 章 G 的設計 ②）。第二課把資料位元排在前面、同位位元排在後面（[D | P]），兩者只差位置的排列，是等價的 code。`,
+                    wrong: '所有 parity bit 一定放在資料後面。',
+                    right: `不一定。第一課把 parity bit 放在位置 ${PARITY_POS}，data bit 原封不動地放在 ${DATA_POS}：接收端拿掉 parity bit 就是原訊息，所以它本來就是 systematic code（系統碼），見第 2 章 G 的設計 ②。第二課把 data bit 排在前面、parity bit 排在後面（[D | P]），兩者只差位置的排列，是 equivalent code（等價碼）。`,
                   },
                 ]}
               />

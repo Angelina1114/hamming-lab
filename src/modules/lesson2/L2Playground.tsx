@@ -55,15 +55,15 @@ export default function L2Playground() {
       lead={<p>這是第二課所有工具的整合版。每一個數字都由同一套演算法即時計算：改訊息、改錯誤、改解碼方法，整個畫面同步更新。</p>}
       goals={[
         '獨立完成一次完整的編碼 → 錯誤注入 → 解碼 → 驗證',
-        '比較 Syndrome Lookup 與 Key Equation + Chien Search',
-        '在 0、1、2、3 個錯誤下預測解碼器的行為',
+        '比較 syndrome lookup 與 key equation + Chien search',
+        '在 0、1、2、3 個錯誤下預測 decoder 的行為',
         '切換 SECDED，觀察雙錯如何被偵測',
       ]}
       intuition={{
         title: '先預測，再按下去',
         body: (
           <div className="prose-lab">
-            <p>建議的使用方式：每次改變錯誤之前，先寫下你預期的 Syndrome 與解碼結果，再對照右側摘要。預測錯了的地方，就是需要回頭複習的章節。</p>
+            <p>建議的使用方式：每次改變錯誤之前，先寫下你預期的 syndrome 與解碼結果，再對照右側摘要。預測錯了的地方，就是需要回頭複習的章節。</p>
           </div>
         ),
       }}
@@ -88,15 +88,15 @@ export default function L2Playground() {
           <AlgoSteps
             steps={[
               <>點擊四個位元輸入訊息，按「執行編碼」（或直接看 LFSR / 多項式除法分頁）。</>,
-              <>點擊接收字的位元注入錯誤（最多 3 個），或用 0/1/2/3 bits 快速範例。</>,
-              <>在分頁中逐步觀察：Syndrome 查表、Key Equation、Chien Search、XOR 更正。</>,
-              <>右側摘要即時顯示：是否正確、是否偵測到錯誤、是否誤更正；切換 SECDED 比較。</>,
+              <>點擊 received word 的位元注入錯誤（最多 3 個），或用 0/1/2/3 bits 快速範例。</>,
+              <>在分頁中逐步觀察：syndrome 查表、key equation、Chien search、XOR 更正。</>,
+              <>右側摘要即時顯示：是否正確、是否偵測到錯誤、是否發生 miscorrection；切換 SECDED 比較。</>,
             ]}
           />
         ),
       }}
       interactive={{
-        title: 'Hamming Code Playground',
+        title: 'Hamming code playground',
         body: (
           <LabGrid
             main={
@@ -141,7 +141,7 @@ export default function L2Playground() {
                       <>
                         <div className="mb-1 text-xs text-slate-500">
                           codeword c = u ‖ p，p = {enc.shifted.join('')} mod 1011 = {enc.parity.join('')}
-                          {secded && `，整體同位 P = ${so.c8[7]}`}
+                          {secded && `，overall parity bit P = ${so.c8[7]}`}
                         </div>
                         <BitStrip bits={secded ? so.c8 : enc.codeword} />
                       </>
@@ -163,10 +163,10 @@ export default function L2Playground() {
                     </>
                   }
                 >
-                  <div className="mb-1 text-xs text-slate-500">接收字 r（點擊任意位元翻轉，最多 3 個錯誤{secded ? '，含第 8 位 P' : ''}）</div>
+                  <div className="mb-1 text-xs text-slate-500">Received word r（點擊任意位元翻轉，最多 3 個錯誤{secded ? '，含第 8 位 P' : ''}）</div>
                   <BitStrip bits={recvBits} states={recvStates} onToggle={(i) => setErrors(toggleError(errors, i + 1, 3))} groups={false} />
                   <div className="mt-2 text-sm">
-                    錯誤向量 e = <span className="mono font-semibold text-rose-700">{(secded ? so.e : o.e).join('')}</span>
+                    Error vector e = <span className="mono font-semibold text-rose-700">{(secded ? so.e : o.e).join('')}</span>
                   </div>
                   <div className="mt-2">
                     <L2Legend overall={secded} />
@@ -184,7 +184,7 @@ export default function L2Playground() {
                       }}
                       options={[
                         { value: 'lookup', label: '查表' },
-                        { value: 'chien', label: 'Chien Search' },
+                        { value: 'chien', label: 'Chien search' },
                       ]}
                     />
                   }
@@ -241,8 +241,8 @@ export default function L2Playground() {
                         <thead>
                           <tr className="text-left text-xs text-slate-500">
                             <th className="py-1">項目</th>
-                            <th>Syndrome Lookup</th>
-                            <th>Key Equation + Chien</th>
+                            <th>Syndrome lookup</th>
+                            <th>Key equation + Chien</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -293,10 +293,10 @@ export default function L2Playground() {
                   <Row label="原始 codeword">
                     <span className="mono">{(secded ? so.c8 : o.c).join('')}</span>
                   </Row>
-                  <Row label="接收字 r">
+                  <Row label="Received word r">
                     <span className="mono">{recvBits.join('')}</span>
                   </Row>
-                  <Row label="錯誤向量">
+                  <Row label="Error vector">
                     <span className="mono text-rose-700">{(secded ? so.e : o.e).join('')}</span>
                   </Row>
                   <Row label="Syndrome">
@@ -308,12 +308,12 @@ export default function L2Playground() {
                     )}
                   </Row>
                   {secded && (
-                    <Row label="Overall Parity q">
+                    <Row label="Overall parity q">
                       {so.result.parity}（{so.result.parity ? '奇' : '偶'}）
                     </Row>
                   )}
                   <Row label="錯誤定位結果">{secded ? (so.result.uncorrectable ? '雙錯：不定位' : so.result.position ? `位置 ${so.result.position}` : '無') : d.position ? `位置 ${d.position}` : '無'}</Row>
-                  <Row label={secded && so.result.uncorrectable ? '解碼器輸出（未更正）' : '更正後 codeword'}>
+                  <Row label={secded && so.result.uncorrectable ? 'Decoder 輸出（未更正）' : '更正後 codeword'}>
                     <span className="mono">{(secded ? so.result.output : d.corrected).join('')}</span>
                   </Row>
                   <Row label="還原訊息">
@@ -321,7 +321,7 @@ export default function L2Playground() {
                   </Row>
                   <Row label="是否正確">{(secded ? so.success : o.success) ? '✓ 正確' : secded && so.result.uncorrectable ? '— 已標記不可信' : '✗ 錯誤'}</Row>
                   <Row label="是否偵測到錯誤">{(secded ? so.result.case !== 'no-error' : o.detected) ? '是' : '否'}</Row>
-                  <Row label="是否誤更正">{(secded ? so.wrongDecision && so.result.case !== 'no-error' : o.miscorrection) ? '是 ⚠' : '否'}</Row>
+                  <Row label="是否發生 miscorrection">{(secded ? so.wrongDecision && so.result.case !== 'no-error' : o.miscorrection) ? '是 ⚠' : '否'}</Row>
                   <div className="mt-3">
                     {secded ? (
                       so.result.uncorrectable ? (
@@ -329,10 +329,10 @@ export default function L2Playground() {
                       ) : so.success ? (
                         <StatusBadge status={so.errorCount ? 'corrected' : 'ok'} large />
                       ) : (
-                        <StatusBadge status="wrong" large zh={so.result.case === 'no-error' ? '未偵測錯誤' : '誤判 / 誤更正'} />
+                        <StatusBadge status="wrong" large zh={so.result.case === 'no-error' ? 'Undetected error' : '誤判 / miscorrection'} en="" />
                       )
                     ) : (
-                      <StatusBadge status={st.status} large zh={st.zh} />
+                      <StatusBadge status={st.status} large zh={st.zh} en={st.en} />
                     )}
                   </div>
                   {secded && (
@@ -359,7 +359,7 @@ export default function L2Playground() {
           <Checks
             items={[
               { label: <>LFSR 最後狀態 {runLfsr(u, 'encoder').final.join('')} = 長除法餘數 {enc.parity.join('')}</>, pass: runLfsr(u, 'encoder').final.join('') === enc.parity.join('') },
-              { label: <>Lookup 與 Chien Search 的更正結果相同</>, pass: o.decode.corrected.join('') === other.decode.corrected.join('') },
+              { label: <>Lookup 與 Chien search 的更正結果相同</>, pass: o.decode.corrected.join('') === other.decode.corrected.join('') },
               { label: <>錯誤數 ≤ 1 時一定還原正確</>, pass: o.errorCount > 1 || o.success },
               { label: <>SECDED：錯誤數 = 2 時一定設旗標</>, pass: so.errorCount !== 2 || so.result.uncorrectable },
               { label: <>更正後的字永遠是合法 codeword（ĉ(α) = 0）</>, pass: d.check === 0 },

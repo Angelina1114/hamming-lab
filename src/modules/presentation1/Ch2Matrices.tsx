@@ -85,6 +85,8 @@ const sciPlain = (x: number) => {
   return `${mantissa} × 10${sup(exponent)}`;
 };
 const lampText = (bits: readonly Bit[]) => (isZeroVector(bits) ? '全暗' : `${LAMP.filter((_, i) => bits[i]).join('、')} 亮`);
+/** a title phrase that wraps as a whole: no-break spaces, and a word joiner after each 、 */
+const nobreak = (s: string) => s.replace(/ /g, '\u00a0').replace(/、/g, '、\u2060');
 /** the message with only Dᵢ = 1, as a bit string: 「1000」 */
 const unitText = (i: number) => unitVector(K, i).join('');
 
@@ -187,9 +189,9 @@ function SenderReceiverSlide({ s }: { s: Stepper }) {
   return (
     <div className="space-y-4 text-xl">
       <div className="flex items-center justify-between gap-2 rounded-2xl bg-slate-50 px-4 py-3">
-        {stop(`${K} 個資料位元`, <Word bits={message} />)}
+        {stop(`${K} 個 data bit`, <Word bits={message} />)}
         {arrow()}
-        {machine('border-data-300 bg-data-50 text-data-700', '發送端：編碼器', <>接線圖 = G</>)}
+        {machine('border-data-300 bg-data-50 text-data-700', '發送端：encoder（編碼器）', <>接線圖 = G</>)}
         {arrow()}
         {stop(`送出 ${N} 個位元`, <Word bits={c} />)}
         {arrow('雜訊')}
@@ -204,7 +206,7 @@ function SenderReceiverSlide({ s }: { s: Stepper }) {
               <M>{'c = mG'}</M>
             </div>
             <p className="text-lg text-slate-700">
-              {K} 條資料線進、{N} 條線出，每條輸出線是幾個資料位元的 XOR。
+              {K} 條資料線進、{N} 條線出，每條輸出線是幾個 data bit 的 XOR。
             </p>
             <p className="text-lg text-slate-600">
               G（{G74.length} × {N}）= 這張接線圖
@@ -225,7 +227,7 @@ function SenderReceiverSlide({ s }: { s: Stepper }) {
           </Box>
         </Reveal>
         <Reveal on={s.step >= 2}>
-          <Box tone="bg-emerald-50 text-emerald-800" title="同一個碼的兩個視角">
+          <Box tone="bg-emerald-50 text-emerald-800" title="同一個 code（碼）的兩個視角">
             <div className="my-1 text-3xl font-bold">造得出的 = 放行的</div>
             <p className="text-lg text-slate-700">
               發送端造得出的 {CODEWORDS} 個 codeword，正好是接收端讓燈全暗、放行的全部字串。
@@ -327,7 +329,7 @@ function SuperpositionSlide({ s }: { s: Stepper }) {
         </Box>
       </Reveal>
       <Reveal on={s.step >= 1}>
-        <Box tone="bg-amber-50 text-amber-950" title="查表 vs. 生成矩陣">
+        <Box tone="bg-amber-50 text-amber-950" title="查表 vs. generator matrix（生成矩陣）">
           <table className="mt-2 w-full text-left text-lg">
             <thead>
               <tr className="text-base text-slate-500">
@@ -357,7 +359,7 @@ function SuperpositionSlide({ s }: { s: Stepper }) {
               </tr>
             </tbody>
           </table>
-          <p className="mt-3 text-lg text-slate-700">編碼器只是一組 XOR 接線，不用存表；碼越長，差別越大。</p>
+          <p className="mt-3 text-lg text-slate-700">encoder 只是一組 XOR 接線，不用存表；code 越長，差別越大。</p>
         </Box>
       </Reveal>
     </div>
@@ -387,7 +389,7 @@ function SystematicSlide({ s }: { s: Stepper }) {
       </div>
       <div className="space-y-4">
         <Reveal on={s.step >= 0}>
-          <Box tone="bg-data-50 text-data-700" title={`② 資料欄是 I${subs(K)}：系統碼（Systematic Code）`}>
+          <Box tone="bg-data-50 text-data-700" title={`② 資料欄是 I${subs(K)}：systematic code（系統碼）`}>
             <p className="text-lg text-slate-700">位置 {DATA_POS} 是直通的導線：codeword 原封不動帶著訊息。</p>
             <div className="mt-2 flex flex-wrap items-center gap-3 rounded-xl bg-white/80 px-3 py-2 text-lg text-slate-700">
               <span>
@@ -460,12 +462,12 @@ function HRowsSlide({ s }: { s: Stepper }) {
               ))}
             </tbody>
           </table>
-          <p className="mt-2 text-lg text-slate-600">盯著的位置（含同位位元自己）加起來：0 → 燈暗，1 → 燈亮。</p>
+          <p className="mt-2 text-lg text-slate-600">盯著的位置（含 parity bit 自己）加起來：0 → 燈暗，1 → 燈亮。</p>
         </Box>
       </Reveal>
       <div className="space-y-4">
         <Reveal on={s.step >= 1}>
-          <Box tone="bg-parity-50 text-parity-700" title={`${L} 盞燈 = Syndrome（徵狀）`}>
+          <Box tone="bg-parity-50 text-parity-700" title={`${L} 盞燈 = syndrome`}>
             <div className="flex flex-wrap items-center gap-4 text-slate-800">
               <Lamps bits={matVec(H74, c)} />
               <span className="text-lg">
@@ -473,7 +475,7 @@ function HRowsSlide({ s }: { s: Stepper }) {
               </span>
             </div>
             <p className="mt-1 text-lg text-slate-700">
-              r = 收到的字。收到合法 codeword：<M>{'Hc^{T} = 0'}</M>，燈全暗。
+              r = received word（收到的字）。收到合法 codeword：<M>{'Hc^{T} = 0'}</M>，燈全暗。
             </p>
           </Box>
         </Reveal>
@@ -566,7 +568,7 @@ function SevenSlide({ s }: { s: Stepper }) {
           </div>
           <p className="text-lg text-slate-700">要指出錯在哪一位，{L} 個檢查器能保護的長度已經到最大。</p>
           <p className="mt-1 text-lg text-slate-600">
-            {PATTERNS} 個位置扣掉 {L} 個同位位元，剩 {PATTERNS - L} 個資料位元：<M>{`{k = ${K}}`}</M>。
+            {PATTERNS} 個位置扣掉 {L} 個 parity bit，剩 {PATTERNS - L} 個 data bit：<M>{`{k = ${K}}`}</M>。
           </p>
           <table className="mt-2 w-full text-left text-lg">
             <tbody>
@@ -622,8 +624,8 @@ function BinarySlide({ s }: { s: Stepper }) {
               <span className="font-mono text-2xl font-bold">{binText(lamps)}</span> → 位置 {value}
             </span>
           </div>
-          <p className="mt-2 text-lg text-slate-700">欄的順序其實可以任意排：換順序只是位置重新編號，是等價的碼，能力一樣。</p>
-          <p className="mt-1 text-lg text-slate-600">選二進位順序，燈號直接就是位置，接收端不用查表（第 3 章接上解碼器）。</p>
+          <p className="mt-2 text-lg text-slate-700">欄的順序其實可以任意排：換順序只是位置重新編號，得到 equivalent code（等價碼），能力一樣。</p>
+          <p className="mt-1 text-lg text-slate-600">選二進位順序，燈號直接就是位置，接收端不用查表；第 3 章把燈號接上 decoder（解碼器）。</p>
         </Box>
       </Reveal>
     </div>
@@ -666,7 +668,7 @@ function ParityPositionSlide({ s }: { s: Stepper }) {
               </li>
             ))}
           </ul>
-          <p className="mt-1 text-lg text-slate-600">同位位元互相牽連：要先解聯立方程，才寫得出各自的公式。</p>
+          <p className="mt-1 text-lg text-slate-600">parity bit 互相牽連：要先解聯立方程，才寫得出各自的公式。</p>
         </Box>
       </Reveal>
     </div>
@@ -751,34 +753,34 @@ export const CH2_SLIDES: DeckSlide<null>[] = [
       <>
         <Ph>G 是發送端怎麼造，</Ph>
         <Ph>H 是接收端怎麼驗：</Ph>
-        <Ph>同一個碼的兩個視角</Ph>
+        <Ph>同一個 code 的兩個視角</Ph>
       </>
     ),
     notes: (
       <ul className={NOTES_UL}>
         <li>
-          第 1 章的 {L} 個 XOR 公式，做成硬體就是發送端的編碼器
+          第 1 章的 {L} 個 XOR 公式，做成硬體就是發送端的 encoder
           <ul className={NOTES_SUB}>
-            <li>「哪條資料線接到哪條輸出線」記成 0/1 表格 = 生成矩陣 G：c = mG 是「怎麼造」</li>
+            <li>「哪條資料線接到哪條輸出線」記成 0/1 表格 = generator matrix G：c = mG 是「怎麼造」</li>
           </ul>
         </li>
         <li>
           → 接收端不知道原本送了什麼，只能檢查
           <ul className={NOTES_SUB}>
             <li>
-              {L} 個檢查器各做一組 XOR、各接一盞警示燈 = 同位檢查矩陣 H；合法 codeword 讓燈全暗：Hcᵀ = 0 是「怎麼驗」
+              {L} 個檢查器各做一組 XOR、各接一盞警示燈 = parity-check matrix H；合法 codeword 讓燈全暗：Hcᵀ = 0 是「怎麼驗」
             </li>
           </ul>
         </li>
         <li>
-          → 兩者描述同一個碼：發送端造得出的 {CODEWORDS} 個，正好是接收端放行的 {CODEWORDS} 個（本章最後一頁證明）
+          → 兩者描述同一個 code：發送端造得出的 {CODEWORDS} 個，正好是接收端放行的 {CODEWORDS} 個（本章最後一頁證明）
         </li>
       </ul>
     ),
   },
   {
-    title: '第 2 章：發送端：G 是編碼器接線圖',
-    sub: `編碼器有 ${K} 條資料線、${N} 條輸出線：哪條接到哪條？`,
+    title: '第 2 章：發送端：G 是 encoder 接線圖',
+    sub: `encoder 有 ${K} 條資料線、${N} 條輸出線：哪條接到哪條？`,
     steps: () => 2,
     render: (s) => <GWiringSlide s={s} />,
     takeaway: (
@@ -798,7 +800,7 @@ export const CH2_SLIDES: DeckSlide<null>[] = [
           </ul>
         </li>
         <li>
-          → 按欄讀：第 j 欄 = 第 j 條輸出線是哪幾個資料位元的 XOR
+          → 按欄讀：第 j 欄 = 第 j 條輸出線是哪幾個 data bit 的 XOR
           <ul className={NOTES_SUB}>
             <li>
               例：第 {EX_COL + 1} 欄 → {LABELS[EX_COL]} = {G_COL_INPUTS[EX_COL].join(' ⊕ ')}，就是第 1 章的公式
@@ -811,7 +813,7 @@ export const CH2_SLIDES: DeckSlide<null>[] = [
   },
   {
     title: `第 2 章：G 的設計 ①：疊加，只記 ${G74.length} 列`,
-    sub: `${TABLE_ROWS} 種訊息，編碼器要存 ${TABLE_ROWS} 個 codeword 嗎？`,
+    sub: `${TABLE_ROWS} 種訊息，encoder 要存 ${TABLE_ROWS} 個 codeword 嗎？`,
     steps: () => 2,
     render: (s) => <SuperpositionSlide s={s} />,
     takeaway: (
@@ -824,7 +826,7 @@ export const CH2_SLIDES: DeckSlide<null>[] = [
     notes: (
       <ul className={NOTES_UL}>
         <li>
-          每個同位位元都是資料位元的 XOR → 疊加：(m + m′) 編出來 = 各自編好再相加
+          每個 parity bit 都是 data bit 的 XOR → 疊加：(m + m′) 編出來 = 各自編好再相加
           <ul className={NOTES_SUB}>
             <li>任何訊息都是幾個「只有一個 Dᵢ = 1」的訊息的和 → codeword 就是那幾個 gᵢ 的和：c = mG</li>
           </ul>
@@ -835,7 +837,7 @@ export const CH2_SLIDES: DeckSlide<null>[] = [
             <li>
               查表：每種訊息存一個 codeword → 2{sup(K)} = {TABLE_ROWS} 格；Hamming({LONG.n},{LONG.k}) 要 2{sup(LONG.k)} ≈ {sciPlain(2 ** LONG.k)} 格，G 只要 {LONG.k} 列
             </li>
-            <li>編碼器只是一組 XOR 接線，不用記憶體</li>
+            <li>encoder 只是一組 XOR 接線，不用記憶體</li>
           </ul>
         </li>
       </ul>
@@ -855,7 +857,7 @@ export const CH2_SLIDES: DeckSlide<null>[] = [
     notes: (
       <ul className={NOTES_UL}>
         <li>
-          ② 系統碼：G 的資料欄（位置 {DATA_POS}）合起來是 I{subs(K)}
+          ② systematic code：G 的資料欄（位置 {DATA_POS}）合起來是 I{subs(K)}
           <ul className={NOTES_SUB}>
             <li>這 {K} 條輸出線是直通導線 → 接收端更正後直接取出資料，不用反運算</li>
           </ul>
@@ -873,7 +875,7 @@ export const CH2_SLIDES: DeckSlide<null>[] = [
   },
   {
     title: '第 2 章：接收端：H 的每一列是一盞燈',
-    sub: `${L} 個檢查器 = ${L} 盞警示燈 = Syndrome（徵狀）`,
+    sub: `${L} 個檢查器 = ${L} 盞警示燈 = syndrome（徵狀）`,
     steps: () => 3,
     render: (s) => <HRowsSlide s={s} />,
     takeaway: (
@@ -891,7 +893,7 @@ export const CH2_SLIDES: DeckSlide<null>[] = [
           </ul>
         </li>
         <li>
-          → {L} 盞警示燈合起來叫 Syndrome（徵狀）s = Hrᵀ = {S_NAMES}ᵀ，r = 收到的字
+          → {L} 盞警示燈合起來叫 syndrome s = Hrᵀ = {S_NAMES}ᵀ，r = received word
           <ul className={NOTES_SUB}>
             <li>收到合法 codeword：每組都是偶數個 1 → Hcᵀ = 0，燈全暗</li>
           </ul>
@@ -966,12 +968,12 @@ export const CH2_SLIDES: DeckSlide<null>[] = [
           </ul>
         </li>
         <li>
-          → Hamming 把 {PATTERNS} 種全部用上：ℓ = {L} 個同位位元，n = 2{sup(L)} − 1 = {PATTERNS}，k = {PATTERNS} − {L} = {K}
+          → Hamming 把 {PATTERNS} 種全部用上：ℓ = {L} 個 parity bit，n = 2{sup(L)} − 1 = {PATTERNS}，k = {PATTERNS} − {L} = {K}
           <ul className={NOTES_SUB}>
             <li>
               多一盞燈 → {hammingN(L + 1)} 個位置；{LONG.m} 盞 → {LONG.n} 個（第 4 章寫成 <M>{'2^{\\ell} \\ge n + 1'}</M>）
             </li>
-            <li>這是「更正 1 個錯」的上限；只要偵測、不必指出位置，欄可以重複，碼可以更長</li>
+            <li>這是「更正 1 個錯」的上限；只要偵測、不必指出位置，欄可以重複，code 可以更長</li>
           </ul>
         </li>
       </ul>
@@ -1004,40 +1006,40 @@ export const CH2_SLIDES: DeckSlide<null>[] = [
             <li>
               例：{lampText(column(H74, DEC_POS - 1))} → {binText(column(H74, DEC_POS - 1))} → 位置 {DEC_POS}
             </li>
-            <li>換欄的順序 = 位置重新編號 → 等價的碼（Equivalent Code），能力一樣，只是要多一張「燈號 → 位置」對照表</li>
-            <li>二進位順序是工程上的選擇：不用查表；第 3 章把燈直接接上解碼器</li>
+            <li>換欄的順序 = 位置重新編號 → equivalent code，能力一樣，只是要多一張「燈號 → 位置」對照表</li>
+            <li>二進位順序是工程上的選擇：不用查表；第 3 章把燈直接接上 decoder</li>
           </ul>
         </li>
       </ul>
     ),
   },
   {
-    title: `第 2 章：H 的設計 ⑤：同位位元在 ${PARITY_POS}`,
-    sub: '每個同位位元只出現在一條檢查裡',
+    title: `第 2 章：H 的設計 ⑤：${nobreak(`parity bit 在 ${PARITY_POS}`)}`,
+    sub: '每個 parity bit 只出現在一條檢查裡',
     steps: () => 2,
     render: (s) => <ParityPositionSlide s={s} />,
     takeaway: (
       <>
-        <Ph>每條檢查只含一個同位位元：</Ph>
+        <Ph>每條檢查只含一個 parity bit：</Ph>
         <Ph>{L} 組 XOR 各算各的</Ph>
       </>
     ),
     notes: (
       <ul className={NOTES_UL}>
         <li>
-          位置 {PARITY_POS} 的二進位只有一個 1 → H 的這 {L} 欄是單位欄
+          位置 {PARITY_POS} 的二進位只有一個 1 → H 的這 {L} 欄是 identity column
           <ul className={NOTES_SUB}>
-            <li>每條方程只有一個未知數 → 移項就用資料位元算出，公式直接從 H 的那一列讀：第 1 章的 {L} 個公式</li>
-            <li>編碼器 = {L} 組獨立的 XOR，同時算完，彼此不用等</li>
+            <li>每條方程只有一個未知數 → 移項就用 data bit 算出，公式直接從 H 的那一列讀：第 1 章的 {L} 個公式</li>
+            <li>encoder = {L} 組獨立的 XOR，同時算完，彼此不用等</li>
           </ul>
         </li>
         <li>
-          → 對照：同位位元改放在最後的 {ALT_PARITY.join('、')}（不是錯，只是比較麻煩）
+          → 對照：parity bit 改放在最後的 {ALT_PARITY.join('、')}（不是錯，只是比較麻煩）
           <ul className={NOTES_SUB}>
             <li>
-              {L} 條方程分別有 {unknownsPerRow(ALT_PARITY).join('、')} 個未知數 → 同位位元互相牽連，要等彼此算完
+              {L} 條方程分別有 {unknownsPerRow(ALT_PARITY).join('、')} 個未知數 → parity bit 互相牽連，要等彼此算完
             </li>
-            <li>想同時算，得先解一次聯立方程（高斯消去）：做得到，但公式不能再從 H 直接讀出來</li>
+            <li>想同時算，得先解一次聯立方程（Gaussian elimination）：做得到，但公式不能再從 H 直接讀出來</li>
           </ul>
         </li>
       </ul>

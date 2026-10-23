@@ -31,7 +31,7 @@ export default function L2Syndrome() {
           用長除法計算 <M>{'S(x) = r(x) \\bmod g(x)'}</M>
         </>,
         <>
-          證明 <M>{'S(x) = e(x) \\bmod g(x)'}</M>：Syndrome 只取決於錯誤
+          證明 <M>{'S(x) = e(x) \\bmod g(x)'}</M>：syndrome 只取決於錯誤
         </>,
         '理解 S = 0 與 S ≠ 0 各代表什麼（以及不代表什麼）',
       ]}
@@ -43,7 +43,7 @@ export default function L2Syndrome() {
               醫生看到發燒（症狀）時不知道病人原本的體溫，但知道「正常人的體溫在某個範圍」。同樣地，接收端不知道 <M>c</M>，但知道「所有合法 codeword 除以 <M>{'g(x)'}</M> 的餘數都是 0」。
             </p>
             <p>
-              所以接收字的餘數完全是錯誤造成的：<strong>Syndrome 是錯誤的指紋</strong>，和送了哪個 codeword 無關。
+              所以 received word 的餘數完全是錯誤造成的：<strong>syndrome 是錯誤的指紋</strong>，和送了哪個 codeword 無關。
             </p>
           </div>
         ),
@@ -83,7 +83,7 @@ export default function L2Syndrome() {
               },
             ]}
           />
-          <Card title="同一個 Syndrome，三種寫法">
+          <Card title="同一個 syndrome，三種寫法">
             <div className="overflow-x-auto">
               <table className="w-full min-w-[560px] text-sm">
                 <thead>
@@ -108,7 +108,7 @@ export default function L2Syndrome() {
                     <td>2-4（這裡）</td>
                   </tr>
                   <tr className="border-t border-slate-100">
-                    <td className="py-1.5 font-semibold">有限體 GF(8)</td>
+                    <td className="py-1.5 font-semibold">Finite field GF(8)</td>
                     <td><M>{'S_1 = r(\\alpha)'}</M></td>
                     <td><M>{'c(\\alpha) = 0 \\Rightarrow S_1 = e(\\alpha)'}</M></td>
                     <td><a className="text-indigo-700 underline" href="#/a-10">代數章 A10</a></td>
@@ -128,8 +128,8 @@ export default function L2Syndrome() {
         body: (
           <AlgoSteps
             steps={[
-              <>把接收字 r 的 7 個位元依序送入除法器 LFSR（或做長除法）。</>,
-              <>7 個時脈後，暫存器內容就是 <M>{'S(x) = r(x) \\bmod g(x)'}</M>（3 位元）。</>,
+              <>把 received word r 的 7 個位元依序送入除法器 LFSR（或做長除法）。</>,
+              <>7 個時脈後，register 內容就是 <M>{'S(x) = r(x) \\bmod g(x)'}</M>（3 位元）。</>,
               <>S = 000：r 是合法 codeword，判定「沒有偵測到錯誤」。</>,
               <>S ≠ 000：一定有錯誤；下一章用 S 找出錯誤位置。</>,
             ]}
@@ -140,7 +140,7 @@ export default function L2Syndrome() {
         title: '計算 r(x) mod g(x) 與 e(x) mod g(x)',
         body: (
           <Card
-            title="點擊接收字的位元可修改；切換觀察 r 或 e 的除法"
+            title="點擊 received word 的位元可修改；切換觀察 r 或 e 的除法"
             actions={
               <>
                 <Segmented
@@ -207,22 +207,22 @@ export default function L2Syndrome() {
                 { label: <>c(x) mod g(x) = {Sc.join('')}</>, pass: Sc.every((b) => b === 0), detail: '合法 codeword 的餘數為 0' },
                 { label: <>r(x) mod g(x) = {Sr.join('')}，與除法器 LFSR 獨立計算的結果相同</>, pass: runLfsr(r, 'divider').final.join('') === Sr.join('') },
                 { label: <>e(x) mod g(x) = {Se.join('')}，與 r 的餘數相同</>, pass: Sr.join('') === Se.join('') },
-                { label: <>預設例子 r = 1101110 的 Syndrome = 111</>, pass: longDivision(DEFAULT_R, G_MSB).remainder.join('') === '111' },
+                { label: <>預設例子 r = 1101110 的 syndrome = 111</>, pass: longDivision(DEFAULT_R, G_MSB).remainder.join('') === '111' },
               ]}
             />
             <Misconceptions
               items={[
                 { wrong: 'S = 000 代表傳輸完全正確。', right: 'S = 000 只代表 r 是某個合法 codeword。若錯誤 e(x) 本身被 g(x) 整除（例如 e = 0001011），錯誤就看不見（2-10）。' },
-                { wrong: '要知道送出的 c 才能算 Syndrome。', right: 'S 只用到 r。我們在畫面上顯示 c 和 e，只是為了驗證 S(r) = S(e)。' },
+                { wrong: '要知道送出的 c 才能算 syndrome。', right: 'S 只用到 r。我們在畫面上顯示 c 和 e，只是為了驗證 S(r) = S(e)。' },
               ]}
             />
           </>
         ),
       }}
-      related={[{ to: 'a-10', text: 'S₁ = r(α)：Syndrome 的 GF(8) 觀點' }, { to: 'a-9', text: '為什麼 r(x) mod g(x) 就是 H_cyc rᵀ' }]}
+      related={[{ to: 'a-10', text: 'S₁ = r(α)：syndrome 的 GF(8) 觀點' }, { to: 'a-9', text: '為什麼 r(x) mod g(x) 就是 H_cyc rᵀ' }]}
       next={
         <p>
-          我們得到 <span className="mono">S = 111</span>。但「111」要怎麼變成「錯在第 2 個 bit」？它不是二進位的 7，也不是 2。下一章逐一列出 7 種單一錯誤的 Syndrome，建立查表。
+          我們得到 <span className="mono">S = 111</span>。但「111」要怎麼變成「錯在第 2 個 bit」？它不是二進位的 7，也不是 2。下一章逐一列出 7 種單一錯誤的 syndrome，建立查表。
         </p>
       }
     />

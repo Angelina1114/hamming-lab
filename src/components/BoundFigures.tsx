@@ -60,10 +60,10 @@ export function BallDiagram() {
   return (
     <div className="min-w-0">
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-        <div className="text-sm font-semibold text-slate-800">② 一顆球有多大（n = 7）</div>
-        <Segmented ariaLabel="球的半徑 t" value={t} onChange={setT} options={[{ value: '1', label: 't = 1' }, { value: '2', label: 't = 2' }]} />
+        <div className="text-sm font-semibold text-slate-800">② 一顆 ball 有多大（n = 7）</div>
+        <Segmented ariaLabel="Ball 的半徑 t" value={t} onChange={setT} options={[{ value: '1', label: 't = 1' }, { value: '2', label: 't = 2' }]} />
       </div>
-      <svg viewBox={`0 0 ${W} ${H}`} className="mx-auto w-full max-w-[380px]" role="img" aria-label={`以 codeword ${CENTER.join('')} 為中心、半徑 ${t} 的漢明球`}>
+      <svg viewBox={`0 0 ${W} ${H}`} className="mx-auto w-full max-w-[380px]" role="img" aria-label={`以 codeword ${CENTER.join('')} 為中心、半徑 ${t} 的 Hamming ball`}>
         {ring1.map((v) => (
           <line key={`l1-${v.j}`} x1={cx} y1={cy} x2={v.x} y2={v.y} className="stroke-indigo-200" strokeWidth={2} />
         ))}
@@ -101,12 +101,12 @@ export function BallDiagram() {
           )}
         </div>
         <p>
-          球的體積 <M>{`V_2(${n},${tt}) = ${terms.join(' + ')} = ${V}`}</M>：中心的 codeword，加上「錯 {tt === 1 ? '1 個' : '1 或 2 個'}位元」能變成的所有字串。
+          ball 的 volume <M>{`V_2(${n},${tt}) = ${terms.join(' + ')} = ${V}`}</M>：中心的 codeword，加上「錯 {tt === 1 ? '1 個' : '1 或 2 個'}位元」能變成的所有字串。
         </p>
-        <p className="text-slate-500">排成同心圈只是依「翻了幾位」分層，圈上的位置和角度沒有意義：例如第 1 圈任兩個字串，彼此的距離都是 2。</p>
+        <p className="text-slate-500">排成同心圈只是依「翻了幾位」分層，圈上的位置和角度沒有意義：例如第 1 圈任兩個字串，彼此的 distance 都是 2。</p>
         {tt >= 2 && (
           <p className="rounded-lg bg-rose-50 p-2 text-rose-800">
-            對 Hamming(7,4) 來說，這 {ring2.length} 個點全都落在另外 {ownerIds.length} 個 codeword 的半徑 1 球裡（同色的 {ring2.length / ownerIds.length} 個點屬於同一個 codeword），所以錯 2 位一定會被誤更正。16 × {V} = {16 * V} &gt; 128：半徑 2 的球不可能互不重疊。這裡的 t = 2 只是示範體積公式怎麼長。
+            對 Hamming(7,4) 來說，這 {ring2.length} 個點全都落在另外 {ownerIds.length} 個 codeword 的半徑 1 ball 裡（同色的 {ring2.length / ownerIds.length} 個點屬於同一個 codeword），所以錯 2 位一定會造成 miscorrection。16 × {V} = {16 * V} &gt; 128：半徑 2 的 ball 不可能互不重疊。這裡的 t = 2 只是示範 volume 公式怎麼長。
           </p>
         )}
       </div>
@@ -165,11 +165,11 @@ export function PackingDiagram() {
   return (
     <div className="min-w-0">
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-        <div className="text-sm font-semibold text-slate-800">③ 空間裝得下幾顆球</div>
+        <div className="text-sm font-semibold text-slate-800">③ 空間裝得下幾顆 ball</div>
         <Segmented ariaLabel="選擇 code" value={key} onChange={setKey} options={(Object.keys(PACKS) as PackKey[]).map((k) => ({ value: k, label: PACKS[k].tab }))} />
       </div>
       <div className="overflow-x-auto">
-        <svg viewBox={`0 0 ${W} ${H}`} className="mx-auto block w-full max-w-[300px]" role="img" aria-label={`${p.label}：${balls} 顆球、每顆 ${hb.volume} 格，空間共 ${hb.rhs} 格`}>
+        <svg viewBox={`0 0 ${W} ${H}`} className="mx-auto block w-full max-w-[300px]" role="img" aria-label={`${p.label}：${balls} 顆 ball、每顆 ${hb.volume} 格，空間共 ${hb.rhs} 格`}>
           {/* empty cells of the box */}
           {Array.from({ length: p.rows }, (_, y) =>
             Array.from({ length: p.cols }, (_, x) => (used.has(`${x},${y}`) ? null : <rect key={`e${x},${y}`} x={cx(x)} y={cyIn(y)} width={cell} height={cell} rx={2} className="fill-slate-100" />)),
@@ -180,7 +180,7 @@ export function PackingDiagram() {
             const hue = (b + Math.floor(b / p.perRow)) % 4; // shift each row so stacked balls differ
             return (
               <g key={b}>
-                <title>{`第 ${b + 1} 顆球（${hb.volume} 個字串）${out ? '：放不進空間' : ''}`}</title>
+                <title>{`第 ${b + 1} 顆 ball（${hb.volume} 個字串）${out ? '：放不進空間' : ''}`}</title>
                 {Array.from({ length: p.bh }, (_, dy) =>
                   Array.from({ length: p.bw }, (_, dx) => {
                     const center = dx === 0 && dy === 0;
@@ -197,7 +197,7 @@ export function PackingDiagram() {
           {overflow > 0 && (
             <>
               <text x={pad} y={pad + boxH + 18} fontSize={10} className="fill-rose-600" fontWeight={700}>
-                ↓ 還有 {overflow} 顆球，盒子裡已經沒有位置
+                ↓ 還有 {overflow} 顆 ball，盒子裡已經沒有位置
               </text>
               <rect x={pad - 3} y={cyOut(0) - 3} width={boxW + 6} height={overflowRows * step - gap + 6} rx={5} className="fill-none stroke-rose-400" strokeWidth={1.5} strokeDasharray="5 4" />
             </>
@@ -206,19 +206,19 @@ export function PackingDiagram() {
       </div>
       <div className="mt-2 space-y-1 text-xs text-slate-600">
         <p>
-          <strong className="text-slate-800">{p.label}</strong>（{hb.codewords} 個 codeword，每個要修 {p.t} 個錯）。黑框 = 全部 <M>{`2^{${p.n}} = ${hb.rhs}`}</M> 個 {p.n} 位元字串，一格一個。每個色塊是一顆球（{hb.volume} 格，深色那格是 codeword）。
+          <strong className="text-slate-800">{p.label}</strong>（{hb.codewords} 個 codeword，每個要修 {p.t} 個錯）。黑框 = 全部 <M>{`2^{${p.n}} = ${hb.rhs}`}</M> 個 {p.n} 位元字串，一格一個。每個色塊是一顆 ball（{hb.volume} 格，深色那格是 codeword）。
         </p>
         <p className="text-sm text-slate-800">
           <M>{`2^{${p.k}} \\times ${hb.volume} = ${hb.lhs} \\;${hb.equality ? '=' : hb.satisfied ? '<' : '>'}\\; ${hb.rhs}`}</M>：
-          {hb.equality && <strong className="text-emerald-700">剛好鋪滿，一格都不剩——完美碼。</strong>}
+          {hb.equality && <strong className="text-emerald-700">剛好鋪滿，一格都不剩——perfect code。</strong>}
           {!hb.equality && hb.satisfied && (
             <strong className="text-sky-700">
-              裝得下，但剩 {leftover} 格（灰色）不屬於任何球：收到這些字串時無法確定原本是哪個 codeword。
+              裝得下，但剩 {leftover} 格（灰色）不屬於任何 ball：收到這些字串時無法確定原本是哪個 codeword。
             </strong>
           )}
           {!hb.satisfied && <strong className="text-rose-700">裝不下！所以 n = {p.n}、要修 {p.t} 個錯時，k 最多只能是 {hb.maxK}。</strong>}
         </p>
-        <p className="text-slate-500">格子怎麼排只是為了好數；真正同一顆球的字串在數值上分散各處{!presenting && '（見下方「真正的 2ⁿ 個字串分組」）'}。</p>
+        <p className="text-slate-500">格子怎麼排只是為了好數；真正同一顆 ball 的字串在數值上分散各處{!presenting && '（見下方「真正的 2ⁿ 個字串分組」）'}。</p>
       </div>
     </div>
   );
@@ -255,8 +255,8 @@ export function CubeBall() {
   return (
     <div className="min-w-0">
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-        <div className="text-sm font-semibold text-slate-800">① n = 3 的漢明球（真正的結構）</div>
-        <Segmented ariaLabel="顯示一顆或兩顆球" value={mode} onChange={setMode} options={[{ value: 'one', label: '一顆球' }, { value: 'rep', label: '兩顆球' }]} />
+        <div className="text-sm font-semibold text-slate-800">① n = 3 的 Hamming ball（真正的結構）</div>
+        <Segmented ariaLabel="顯示一顆或兩顆 ball" value={mode} onChange={setMode} options={[{ value: 'one', label: '一顆 ball' }, { value: 'rep', label: '兩顆 ball' }]} />
       </div>
       {mode === 'one' && (
         <div className="mb-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
@@ -288,7 +288,7 @@ export function CubeBall() {
                 setCenter(v);
               }}
             >
-              <title>{`${vkey(v)}${ball ? `：離 ${vkey(ball.c)} 的距離 ${d}` : ''}`}</title>
+              <title>{`${vkey(v)}${ball ? `：離 ${vkey(ball.c)} 的 distance ${d}` : ''}`}</title>
               <circle cx={x} cy={y} r={20} className={isC ? ball!.dark : ball ? ball.fill : 'fill-white stroke-slate-300'} strokeWidth={1.5} />
               <text x={x} y={y + 4} textAnchor="middle" fontSize={12} fontWeight={700} fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace" className={isC ? 'fill-white' : ball ? ball.text : 'fill-slate-400'}>
                 {vkey(v)}
@@ -312,7 +312,7 @@ export function CubeBall() {
           </p>
         ) : (
           <p className="text-sm text-slate-800">
-            code {'{'}000, 111{'}'}（<M>{'d_{\\min} = 3'}</M>，t = 1）：兩顆半徑 1 的球 {'{'}000, 001, 010, 100{'}'} 與 {'{'}111, 110, 101, 011{'}'} 互不重疊，<M>{'2 \\times 4 = 8 = 2^3'}</M>，剛好分完整個立方體——迷你版的完美碼。它就是 <M>{'\\ell = 2'}</M> 個同位位元的 Hamming Code，即 Hamming(3,1)。
+            code {'{'}000, 111{'}'}（<M>{'d_{\\min} = 3'}</M>，t = 1）：兩顆半徑 1 的 ball {'{'}000, 001, 010, 100{'}'} 與 {'{'}111, 110, 101, 011{'}'} 互不重疊，<M>{'2 \\times 4 = 8 = 2^3'}</M>，剛好分完整個立方體——迷你版的 perfect code。它就是 <M>{'\\ell = 2'}</M> 個 parity bit 的 Hamming code，即 Hamming(3,1)。
           </p>
         )}
       </div>

@@ -33,7 +33,7 @@ export function SyncLfsrDivision({ u, large = false }: { u: Bit[]; large?: boole
 
   return (
     <div className="space-y-4">
-      <StepControls s={s} label={cur ? `第 ${k} 步：輸入 u = ${cur.input}` : 'Step 0：暫存器 000'} />
+      <StepControls s={s} label={cur ? `第 ${k} 步：輸入 u = ${cur.input}` : 'Step 0：register 000'} />
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
         <div className="min-w-0 rounded-2xl border border-slate-200 bg-white p-3">
           <div className="mb-2 text-sm font-bold text-slate-700">左：GF(2) 多項式長除法（一次帶下一個位元）</div>
@@ -49,7 +49,7 @@ export function SyncLfsrDivision({ u, large = false }: { u: Bit[]; large?: boole
               return (
                 <motion.div key={idx} initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} className="space-y-1 rounded-xl bg-amber-50/70 p-2">
                   <Row4 label="× x（左移）" bits={st.shifted} cls={(i) => (i === 0 ? 'text-fuchsia-700' : 'text-slate-800')} note="舊餘數升一次方" />
-                  <Row4 label={`+ u${['₁', '₂', '₃', '₄'][idx]}·x³`} bits={[st.input, 0, 0, 0]} cls={(i) => (i === 0 ? 'text-data-700' : 'text-slate-300')} note="帶下一個訊息位元" />
+                  <Row4 label={`+ u${['₁', '₂', '₃', '₄'][idx]}·x³`} bits={[st.input, 0, 0, 0]} cls={(i) => (i === 0 ? 'text-data-700' : 'text-slate-300')} note="帶下一個 data bit" />
                   <Row4 label="=" bits={st.broughtDown} cls={(i) => `border-t border-slate-300 ${i === 0 ? 'bg-fuchsia-100 text-fuchsia-800' : ''}`} note={`最高位 = feedback = ${st.feedback}`} />
                   <Row4 label={`− ${st.feedback}·g(x)`} bits={st.subtract} cls={() => (st.feedback ? 'text-fuchsia-700' : 'text-slate-300')} note={st.feedback ? '消去 x³（減 = 加 = XOR）' : '最高位已是 0，不必減'} />
                   <Row4 label={`Step ${st.k} 餘數`} bits={[null, ...st.next]} cls={() => 'border-t border-slate-300 bg-emerald-100 text-emerald-800'} />
@@ -64,7 +64,7 @@ export function SyncLfsrDivision({ u, large = false }: { u: Bit[]; large?: boole
           )}
         </div>
         <div className="min-w-0 rounded-2xl border border-slate-200 bg-white p-3">
-          <div className="mb-2 text-sm font-bold text-slate-700">右：LFSR 暫存器（預乘式，輸入 u）</div>
+          <div className="mb-2 text-sm font-bold text-slate-700">右：LFSR register（預乘式，輸入 u）</div>
           <LfsrSim kind="encoder" input={u} stepper={s} detailed={false} large={large} />
         </div>
       </div>
@@ -85,7 +85,7 @@ export function SyncLfsrDivision({ u, large = false }: { u: Bit[]; large?: boole
         </motion.div>
       )}
       <p className="text-xs text-slate-500">
-        兩邊每一步都相同：左邊「最高位」= 右邊 feedback；左邊減去的 g(x) 去掉首項 = 右邊的 XOR mask <span className="mono">011</span>；左邊的新餘數 = 右邊的新暫存器。（由 lfsrDivisionSync 與 runLfsr 分別計算，並有自動測試比對。）
+        兩邊每一步都相同：左邊「最高位」= 右邊 feedback；左邊減去的 g(x) 去掉首項 = 右邊的 XOR mask <span className="mono">011</span>；左邊的新餘數 = 右邊的新 register。（由 lfsrDivisionSync 與 runLfsr 分別計算，並有自動測試比對。）
       </p>
     </div>
   );

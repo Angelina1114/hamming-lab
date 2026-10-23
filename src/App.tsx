@@ -92,7 +92,7 @@ function Sidebar({ route, onNavigate }: { route: string; onNavigate?: () => void
         </div>
         <div>
           <div className="text-base font-extrabold tracking-tight text-white">Hamming Lab</div>
-          <div className="text-[11px] text-slate-400">錯誤更正碼互動實驗室</div>
+          <div className="text-[11px] text-slate-400">Error-correcting code 互動實驗室</div>
         </div>
       </a>
       <nav className="flex-1 overflow-y-auto px-3 pb-4" aria-label="章節導覽">
@@ -102,7 +102,7 @@ function Sidebar({ route, onNavigate }: { route: string; onNavigate?: () => void
             <NavItem key={m.id} m={m} active={route === m.id} onNavigate={onNavigate} />
           ))}
         </ul>
-        <div className="mt-4 px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-slate-500">代數基礎與循環碼 Algebra & Cyclic Codes</div>
+        <div className="mt-4 px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-slate-500">代數基礎與 cyclic codes</div>
         <ul className="space-y-0.5">
           {MODULES.filter((m) => m.group === 'algebra').map((m) => (
             <NavItem key={m.id} m={m} active={route === m.id} onNavigate={onNavigate} />

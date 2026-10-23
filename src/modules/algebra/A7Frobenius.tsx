@@ -68,28 +68,28 @@ export default function A7Frobenius() {
     <AlgebraUnit
       id={ID}
       lead={<p>每個 codeword 都滿足 <M>{'c(\\alpha) = 0'}</M>。這一單元發現：只要係數在 GF(2)，就<strong>自動</strong>還有 <M>{'c(\\alpha^2) = 0'}</M>、<M>{'c(\\alpha^4) = 0'}</M>。找出這些「免費附送」的根，就是設計 g(x) 的關鍵。</p>}
-      takeaway={<>在二元碼裡，要一個根就得連它的共軛元素一起收下：陪集有幾個元素，就得付幾個同位位元。</>}
+      takeaway={<>在 binary code 裡，要一個根就得連它的 conjugates 一起收下：cyclotomic coset 有幾個元素，就得付幾個 parity bit。</>}
       why={{
         title: '一個根會帶出其他的根',
         body: (
           <Plain>
             <p>
-              線路上傳的是一串 bit，所以 codeword 多項式 <M>{'c(x)'}</M> 的每個係數只能是 0 或 1；<M>{'g(x)'}</M> 的係數則是 A5 那個 LFSR 的接線：最高次項以外，1 代表接一條回授線，0 代表不接。兩者都必須是 GF(2) 多項式。
+              線路上傳的是一串 bit，所以 codeword 多項式 <M>{'c(x)'}</M> 的每個係數只能是 0 或 1；<M>{'g(x)'}</M> 的係數則是 A5 那個 LFSR 的接線：最高次項以外，1 代表接一條 feedback 線，0 代表不接。兩者都必須是 GF(2) 多項式。
             </p>
             <p>
               要知道 <M>{'g(x)'}</M> 應該長什麼樣子，我們需要知道「所有 codeword 共同的根」有哪些。A5 告訴我們 α 是根。但如果 α 是根而 α² 不是，那麼我們想要的 <M>{'g(x)'}</M> 就必須有係數在 GF(8) 中的因式 <M>{'(x + \\alpha)'}</M>——不是 GF(2) 多項式，無法用 0/1 位元表示。
             </p>
             <p>
-              也可以反過來，乾脆允許 GF(8) 係數：把每 {BITS} 個 bit 當成一個「符號（symbol）」，以符號為單位編碼。Reed–Solomon Code 就是這樣做的（CD、QR code 用的就是這類碼，只是符號更大），代價是編碼器的每個暫存器都變成 {BITS} 位元寬，回授線還要經過 GF(8) 的常數乘法器。Hamming、BCH 這類二元碼（binary code）堅持「一個位置就是 1 個 bit」，電路只剩 1 位元的暫存器和 XOR 閘；這一單元要看的，是這個選擇在代數上的代價。
+              也可以反過來，乾脆允許 GF(8) 係數：把每 {BITS} 個 bit 當成一個 symbol，以 symbol 為單位編碼。Reed–Solomon code 就是這樣做的（CD、QR code 用的就是這類 code，只是 symbol 更大），代價是 encoder 的每個 register 都變成 {BITS} 位元寬，feedback 線還要經過 GF(8) 的常數乘法器。Hamming、BCH 這類 binary code（二元碼）堅持「一個位置就是 1 個 bit」，電路只剩 1 位元的 register 和 XOR 閘；這一單元要看的，是這個選擇在代數上的代價。
             </p>
             <p>
-              答案來自 GF(2) 係數多項式的一個特性：如果 β 是根，β² 也一定是根。這個「平方」叫 Frobenius 映射（Frobenius Map），它把根分成一組一組的「共軛元素」。Frobenius 映射與共軛元素是純代數的分類，電路裡沒有哪個元件「就是」一組共軛元素；工程師在意它們，是因為它們決定兩件實際的事：要求一個根得付多少同位位元，以及解碼器裡的「平方」能不能只用幾條 XOR 接線完成。
+              答案來自 GF(2) 係數多項式的一個特性：如果 β 是根，β² 也一定是根。這個「平方」叫 Frobenius map（Frobenius 映射），它把根分成一組一組的 conjugates。Frobenius map 與 conjugates 是純代數的分類，電路裡沒有哪個元件「就是」一組 conjugates；工程師在意它們，是因為它們決定兩件實際的事：要求一個根得付多少 parity bit，以及 decoder 裡的「平方」能不能只用幾條 XOR 接線完成。
             </p>
           </Plain>
         ),
       }}
       what={{
-        title: 'Frobenius 自同構、共軛元素與 Cyclotomic Cosets',
+        title: 'Frobenius automorphism、conjugates 與 cyclotomic cosets',
         body: (
           <>
             <Derivation
@@ -97,16 +97,16 @@ export default function A7Frobenius() {
               title="為什麼 (a + b)² = a² + b²？"
               steps={[
                 { title: '照常展開', body: <Tex block>{'(a+b)^2 = a^2 + ab + ba + b^2 = a^2 + 2ab + b^2'}</Tex> },
-                { title: '特徵 2：任何元素加兩次都是 0', body: <Tex block>{'2ab = ab + ab = 0'}</Tex> },
-                { title: '結論：新生的夢（Freshman’s Dream）', body: <Tex block>{'(a+b)^2 = a^2 + b^2'}</Tex> },
+                { title: 'Characteristic 2：任何元素加兩次都是 0', body: <Tex block>{'2ab = ab + ab = 0'}</Tex> },
+                { title: '結論：freshman’s dream（新生的夢）', body: <Tex block>{'(a+b)^2 = a^2 + b^2'}</Tex> },
               ]}
             />
             <Terms
               items={[
-                { zh: 'Frobenius 映射 φ(a) = a²', en: 'Frobenius Map', def: <>保持加法 <M>{'\\varphi(a+b) = \\varphi(a)+\\varphi(b)'}</M>、保持乘法 <M>{'\\varphi(ab) = \\varphi(a)\\varphi(b)'}</M>，而且一對一。</> },
-                { zh: '自同構', en: 'Automorphism', def: <>從一個體到自己、保持加法和乘法的一對一映成。可以想成「重新命名元素但不改變運算結構」。</> },
-                { zh: '共軛元素', en: 'Conjugates', def: <>β, β², β⁴, … 一直平方直到回到 β。它們在 GF(2) 多項式的眼中「無法區分」：是根就一起是根。</> },
-                { zh: '分圓陪集', en: 'Cyclotomic Coset', def: <>只看指數：<M>{'\\alpha^i \\mapsto \\alpha^{2i}'}</M>，指數做 <M>{'i \\to 2i \\bmod 7'}</M>。例如 <M>{'C_1 = \\{1, 2, 4\\}'}</M>。</> },
+                { term: 'Frobenius map φ(a) = a²', def: <>保持加法 <M>{'\\varphi(a+b) = \\varphi(a)+\\varphi(b)'}</M>、保持乘法 <M>{'\\varphi(ab) = \\varphi(a)\\varphi(b)'}</M>，而且一對一。</> },
+                { term: 'Automorphism', gloss: '自同構', def: <>從一個 field 到自己、保持加法和乘法的一對一映成。可以想成「重新命名元素但不改變運算結構」。</> },
+                { term: 'Conjugates', def: <>β, β², β⁴, … 一直平方直到回到 β。它們在 GF(2) 多項式的眼中「無法區分」：是根就一起是根。</> },
+                { term: 'Cyclotomic coset', gloss: '分圓陪集', def: <>只看指數：<M>{'\\alpha^i \\mapsto \\alpha^{2i}'}</M>，指數做 <M>{'i \\to 2i \\bmod 7'}</M>。例如 <M>{'C_1 = \\{1, 2, 4\\}'}</M>。</> },
               ]}
             />
             <LabGrid
@@ -145,7 +145,7 @@ export default function A7Frobenius() {
               }
               aside={
                 <Checks
-                  title="Frobenius 是自同構（窮舉 64 組）"
+                  title="Frobenius 是 automorphism（窮舉 64 組）"
                   items={[
                     { label: '保持加法 φ(a+b) = φ(a)+φ(b)', pass: frobAdd },
                     { label: '保持乘法 φ(ab) = φ(a)φ(b)', pass: frobMul },
@@ -157,14 +157,14 @@ export default function A7Frobenius() {
             <Card title="平方電路：a ↦ a² 只要 XOR 接線">
               <div className="text-sm leading-relaxed text-slate-700">
                 <p>
-                  Frobenius 保持加法，代表「平方」是 GF(2) 上的線性運算：輸出的每個 bit 都是輸入 bit 的固定 XOR。只要知道三個基底平方後變成什麼，接線就定了。寫 <M>{'a = a_2\\alpha^2 + a_1\\alpha + a_0'}</M>（就是表中的三個 bit）：
+                  Frobenius 保持加法，代表「平方」是 GF(2) 上的線性運算：輸出的每個 bit 都是輸入 bit 的固定 XOR。只要知道 basis（基底）的三個元素平方後變成什麼，接線就定了。寫 <M>{'a = a_2\\alpha^2 + a_1\\alpha + a_0'}</M>（就是表中的三個 bit）：
                 </p>
               </div>
               <Tex block>{`1 \\mapsto 1,\\quad \\alpha \\mapsto \\alpha^2,\\quad \\alpha^2 \\mapsto \\alpha^4 = ${gf8PolyTex(alphaPow(4))}`}</Tex>
               <Tex block>{`a^2:\\quad ${[2, 1, 0].map(sqTex).join(',\\qquad ')}`}</Tex>
               <div className="text-sm leading-relaxed text-slate-700">
                 <p>
-                  整個平方電路只有 {SQ_XORS} 個 XOR 閘，其餘都是直接接過去的導線。如果拿 A3 的通用乘法電路算 <M>{'a \\cdot a'}</M>，要 {MUL.ands} 個 AND 閘加 {MUL.xors} 個 XOR 閘。「新生的夢」在硬體上的意思就是：在 GF(2<sup>m</sup>) 裡平方幾乎免費。
+                  整個平方電路只有 {SQ_XORS} 個 XOR 閘，其餘都是直接接過去的導線。如果拿 A3 的通用乘法電路算 <M>{'a \\cdot a'}</M>，要 {MUL.ands} 個 AND 閘加 {MUL.xors} 個 XOR 閘。「freshman’s dream」在硬體上的意思就是：在 GF(2<sup>m</sup>) 裡平方幾乎免費。
                 </p>
               </div>
             </Card>
@@ -172,7 +172,7 @@ export default function A7Frobenius() {
         ),
       }}
       how={{
-        title: 'Cyclotomic Cosets 互動圖：i → 2i mod 7',
+        title: 'Cyclotomic cosets 互動圖：i → 2i mod 7',
         body: (
           <LabGrid
             main={
@@ -201,7 +201,7 @@ export default function A7Frobenius() {
                     </button>
                   ))}
                 </div>
-                <StepControls s={steps} label={closed ? '回到起點，陪集完成' : `目前指數 ${visited[visited.length - 1]}`} />
+                <StepControls s={steps} label={closed ? '回到起點，coset 完成' : `目前指數 ${visited[visited.length - 1]}`} />
                 <svg viewBox="0 0 300 300" className="mx-auto mt-2 w-full max-w-[320px]">
                   <defs>
                     <marker id="cc-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
@@ -246,7 +246,7 @@ export default function A7Frobenius() {
               </Card>
             }
             aside={
-              <Card title="所有陪集（程式計算）">
+              <Card title="所有 cosets（程式計算）">
                 <div className="space-y-2">
                   {cyclotomicCosets().map((cs) => (
                     <div key={cs[0]} className={`rounded-lg border p-2 text-sm ${cs.includes(start) ? 'border-overall-400 bg-overall-50' : 'border-slate-200'}`}>
@@ -261,7 +261,7 @@ export default function A7Frobenius() {
                   注意：<M>{'C_0 = \\{0\\}'}</M> 是指數 0，代表元素 <M>{'\\alpha^0 = 1'}</M>，不是零元素。
                 </p>
                 <p className="mt-3 text-sm leading-relaxed text-slate-700">
-                  陪集大小依序是 {cosetSizes(3).join('、')}。在二元碼裡，要求某個根就得收下它整個陪集；<M>{'g(x)'}</M> 的次數，也就是同位位元數與 LFSR 的暫存器個數，就增加那個陪集的大小。
+                  各個 coset 的大小依序是 {cosetSizes(3).join('、')}。在 binary code 裡，要求某個根就得收下它整個 coset；<M>{'g(x)'}</M> 的次數，也就是 parity bit 數與 LFSR 的 register 個數，就增加那個 coset 的大小。
                 </p>
               </Card>
             }
@@ -289,7 +289,7 @@ export default function A7Frobenius() {
                     <tr className="text-left text-xs text-slate-500">
                       <th className="py-1">j</th>
                       <th>c(αʲ)</th>
-                      <th>陪集</th>
+                      <th>Coset</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -309,7 +309,7 @@ export default function A7Frobenius() {
                 </table>
                 <div className="mt-3 space-y-2 text-sm leading-relaxed text-slate-700">
                   <p>
-                    不管選哪個 codeword，j = 1, 2, 4 那三列一定同時是 0。對接收端來說，這代表只要檢查 <M>{'c(\\alpha) = 0'}</M> 就夠了：它是一條 GF(8) 方程，攤開成 {BITS} 條 GF(2) 方程（A9），也就是 {cosetOrbit(1).length} 個同位位元；<M>{'c(\\alpha^2) = 0'}</M>、<M>{'c(\\alpha^4) = 0'}</M> 是自動成立的結果，不會多出任何檢查，也不必多付任何位元。
+                    不管選哪個 codeword，j = 1, 2, 4 那三列一定同時是 0。對接收端來說，這代表只要檢查 <M>{'c(\\alpha) = 0'}</M> 就夠了：它是一條 GF(8) 方程，攤開成 {BITS} 條 GF(2) 方程（A9），也就是 {cosetOrbit(1).length} 個 parity bit；<M>{'c(\\alpha^2) = 0'}</M>、<M>{'c(\\alpha^4) = 0'}</M> 是自動成立的結果，不會多出任何檢查，也不必多付任何位元。
                   </p>
                 </div>
               </Card>
@@ -337,7 +337,7 @@ export default function A7Frobenius() {
                 </Card>
                 <Card title="接收端：r(α²) 不必重算">
                   <p className="text-sm leading-relaxed text-slate-700">
-                    上面的推導只用到「係數是 0 或 1」，所以對接收字 <M>{'r(x)'}</M> 也成立：<M>{'r(\\alpha^2) = r(\\alpha)^2'}</M>。解碼器若需要 <M>{'r(\\alpha^2)'}</M>，不必另接一組代入 α² 的計算電路，也不必再花 {syndromeClocks(7)} 個時脈把整個接收字重讀一遍，把 <M>{'r(\\alpha)'}</M> 送進前面那個只有 {SQ_XORS} 個 XOR 閘的平方電路就好。可更正多個錯誤的二元 BCH 解碼器常這樣做：只直接計算奇數次方的 Syndrome，偶數次方用平方得到。
+                    上面的推導只用到「係數是 0 或 1」，所以對 received word <M>{'r(x)'}</M> 也成立：<M>{'r(\\alpha^2) = r(\\alpha)^2'}</M>。decoder 若需要 <M>{'r(\\alpha^2)'}</M>，不必另接一組代入 α² 的計算電路，也不必再花 {syndromeClocks(7)} 個時脈把整個 received word 重讀一遍，把 <M>{'r(\\alpha)'}</M> 送進前面那個只有 {SQ_XORS} 個 XOR 閘的平方電路就好。可更正多個錯誤的 binary BCH decoder 常這樣做：只直接計算奇數次方的 syndrome，偶數次方用平方得到。
                   </p>
                 </Card>
               </>
@@ -346,29 +346,29 @@ export default function A7Frobenius() {
         ),
       }}
       connection={{
-        title: '共軛元素決定了 g(x) 的次數',
+        title: 'Conjugates 決定了 g(x) 的次數',
         body: (
           <Card>
             <div className="space-y-2 text-sm leading-relaxed text-slate-700">
               <p>
-                任何 GF(2) 係數、以 α 為根的多項式，也必須以 α²、α⁴ 為根，所以至少有三個因式 <M>{'(x+\\alpha)(x+\\alpha^2)(x+\\alpha^4)'}</M>——次數至少 {cosetOrbit(1).length}，也就是至少 {cosetOrbit(1).length} 個同位位元、{cosetOrbit(1).length} 個暫存器。
+                任何 GF(2) 係數、以 α 為根的多項式，也必須以 α²、α⁴ 為根，所以至少有三個因式 <M>{'(x+\\alpha)(x+\\alpha^2)(x+\\alpha^4)'}</M>——次數至少 {cosetOrbit(1).length}，也就是至少 {cosetOrbit(1).length} 個 parity bit、{cosetOrbit(1).length} 個 register。
               </p>
               <p>
-                這也是設計更強的二元碼的方法：BCH Code 想更正 t 個錯，就要求 <M>{'\\alpha, \\alpha^2, \\dots, \\alpha^{2t}'}</M> 都是根。以長度 {2 ** BCH_M - 1}、t = {BCH_T} 為例，要 {BCH.roots} 個根；如果每個根各付一個 GF({2 ** BCH_M}) 元素的 {BCH_M} 個位元，要 {BCH.naiveBits} 個同位位元，但 α²、α⁴ 都在 α 的陪集裡，是免費附送的；真正要付的只有 α 與 α³ 兩個陪集，實際只需要 {BCH.bits} 個。Hamming Code 就是 t = 1 的情形：要 α、α² 共 {HAM.roots} 個根，α² 本來就免費，所以只付 {HAM.bits} 個，而不是 {HAM.naiveBits} 個。
+                這也是設計更強的 binary code 的方法：BCH code 想更正 t 個錯，就要求 <M>{'\\alpha, \\alpha^2, \\dots, \\alpha^{2t}'}</M> 都是根。以長度 {2 ** BCH_M - 1}、t = {BCH_T} 為例，要 {BCH.roots} 個根；如果每個根各付一個 GF({2 ** BCH_M}) 元素的 {BCH_M} 個位元，要 {BCH.naiveBits} 個 parity bit，但 α²、α⁴ 都在 α 的 coset 裡，是免費附送的；真正要付的只有 α 與 α³ 兩個 coset，實際只需要 {BCH.bits} 個。Hamming code 就是 t = 1 的情形：要 α、α² 共 {HAM.roots} 個根，α² 本來就免費，所以只付 {HAM.bits} 個，而不是 {HAM.naiveBits} 個。
               </p>
               <p>下一單元 A8 把這三個因式乘開，看會得到哪一個 GF(2) 多項式。</p>
             </div>
           </Card>
         ),
         links: [
-          { to: 'a-6', text: '上一步：循環碼是 R₇ 的理想' },
-          { to: 'a-8', text: '下一步：用共軛元素算出最小多項式' },
+          { to: 'a-6', text: '上一步：cyclic code 是 R₇ 的 ideal' },
+          { to: 'a-8', text: '下一步：用 conjugates 算出 minimal polynomial' },
           { to: 'a-4', text: '回顧：α 的次方循環' },
         ],
         misconceptions: [
-          { wrong: '(a + b)² = a² + 2ab + b² 永遠成立，所以平方不保持加法。', right: '在特徵 2 中 2ab = 0，所以 (a+b)² = a² + b²。' },
-          { wrong: 'C₀ = {0} 表示 GF(8) 的零元素。', right: '陪集是指數的集合；C₀ 代表 α⁰ = 1。零元素不是 α 的任何次方。' },
-          { wrong: '任何多項式的根平方後都還是根。', right: '只有係數在 GF(2)（Frobenius 不動點）時才成立；x + α 就是反例。' },
+          { wrong: '(a + b)² = a² + 2ab + b² 永遠成立，所以平方不保持加法。', right: '在 characteristic 2 中 2ab = 0，所以 (a+b)² = a² + b²。' },
+          { wrong: 'C₀ = {0} 表示 GF(8) 的零元素。', right: 'coset 是指數的集合；C₀ 代表 α⁰ = 1。零元素不是 α 的任何次方。' },
+          { wrong: '任何多項式的根平方後都還是根。', right: '只有係數在 GF(2) 時才成立：GF(2) 的元素正是 Frobenius 的 fixed point（不動點）。x + α 就是反例。' },
         ],
       }}
     />

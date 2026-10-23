@@ -42,61 +42,60 @@ export default function A6Cyclic() {
     <AlgebraUnit
       id={ID}
       convention
-      lead={<p>A5 中 G_cyc 的四列都是 g(x) 的左移。這暗示一個更強的性質：<strong>任何 codeword 循環位移後仍然是 codeword</strong>。這一單元說明這件事為什麼成立，以及它在代數上叫什麼名字。</p>}
-      takeaway={<>循環碼就是 g(x) 的倍數，接收端只要一個除以 g(x) 的 LFSR，讀完看餘數是否為 0。</>}
+      lead={<p>A5 中 G_cyc 的四列都是 g(x) 的左移。這暗示一個更強的性質：<strong>任何 codeword 做 cyclic shift 後仍然是 codeword</strong>。這一單元說明這件事為什麼成立，以及它在代數上叫什麼名字。</p>}
+      takeaway={<>cyclic code 就是 g(x) 的倍數，接收端只要一個除以 g(x) 的 LFSR，讀完看餘數是否為 0。</>}
       why={{
         title: '移位 = 乘以 x，但 x⁷ 要去哪裡？',
         body: (
           <Plain>
             <p>
-              接收端拿到 7 個 bit，第一件事是判斷「這是不是 codeword」。第一課的做法是平行計算 <M>{'Hr^T'}</M>：每個 Syndrome 位元是一條同位檢查，把它盯著的那些位置全部 XOR 起來，一個時脈就算完。(7,4) 要 {hammingSyndromeXors(3)} 個 XOR 閘，第二課的 Hamming(127,120) 要 {hammingSyndromeXors(7)} 個；對一般的線性碼，這片網路只能跟著碼長一起長大。
+              接收端拿到 7 個 bit，第一件事是判斷「這是不是 codeword」。第一課的做法是 parallel 計算 <M>{'Hr^T'}</M>：每個 syndrome 位元是一條 parity check，把它盯著的那些位置全部 XOR 起來，一個時脈就算完。(7,4) 要 {hammingSyndromeXors(3)} 個 XOR 閘，第二課的 Hamming(127,120) 要 {hammingSyndromeXors(7)} 個；對一般的 linear code（線性碼），這片網路只能跟著 code length 一起長大。
             </p>
             <p>
-              循環碼（Cyclic Code）多要求一件事：codeword 循環位移後仍是 codeword。這一單元會看到，這個性質讓整個 code 剛好是 <M>{'g(x)'}</M> 的所有倍數，於是「是不是 codeword」變成「能不能被 <M>{'g(x)'}</M> 整除」。
+              而 cyclic code 多要求一件事：codeword 做 cyclic shift 後仍是 codeword。這一單元會看到，這個性質讓整個 code 剛好是 <M>{'g(x)'}</M> 的所有倍數，於是「是不是 codeword」變成「能不能被 <M>{'g(x)'}</M> 整除」。
             </p>
             <p>
-              接收端用和 A5 編碼器同樣大小的 LFSR 做除法就能檢查：{DIV7.flipFlops} 個暫存器加 {DIV7.xors} 個 XOR 閘，每個時脈讀進一個 bit，{syndromeClocks(7)} 個時脈讀完。碼長變成 127 時，暫存器只從 {DIV7.flipFlops} 個變成 {DIV127.flipFlops} 個，XOR 閘仍是 {DIV127.xors} 個，代價是要 {syndromeClocks(127)} 個時脈。這就是從「任意線性碼」走到循環碼的理由：硬體大小只看 <M>{'g(x)'}</M> 的次數和項數，而不是碼長。
+              接收端用和 A5 encoder 同樣大小的 LFSR 做除法就能檢查：{DIV7.flipFlops} 個 register 加 {DIV7.xors} 個 XOR 閘，每個時脈讀進一個 bit，{syndromeClocks(7)} 個時脈讀完。code length 變成 127 時，register 只從 {DIV7.flipFlops} 個變成 {DIV127.flipFlops} 個，XOR 閘仍是 {DIV127.xors} 個，代價是要 {syndromeClocks(127)} 個時脈。這就是從「任意 linear code」走到 cyclic code 的理由：硬體大小只看 <M>{'g(x)'}</M> 的次數和項數，而不是 code length。
             </p>
             <p>
-              要把「位移」寫成代數，先看左移一格：把每一項的次方加一，也就是乘以 <M>x</M>。問題是最高次項 <M>{'x^6'}</M> 乘以 <M>x</M> 變成 <M>{'x^7'}</M>，超出 7 個位元。循環位移的做法是把它「繞回」最右邊，也就是讓 <M>{'x^7'}</M> 變成 <M>1</M>。
+              要把「位移」寫成代數，先看左移一格：把每一項的次方加一，也就是乘以 <M>x</M>。問題是最高次項 <M>{'x^6'}</M> 乘以 <M>x</M> 變成 <M>{'x^7'}</M>，超出 7 個位元。cyclic shift 的做法是把它「繞回」最右邊，也就是讓 <M>{'x^7'}</M> 變成 <M>1</M>。
             </p>
             <p>
-              要讓「<M>{'x^7 = 1'}</M>」合法，就要在一個規定 <M>{'x^7 - 1 \\equiv 0'}</M> 的世界裡計算——這就是商環 <M>{'R_7'}</M>。在 <M>{'R_7'}</M> 中，循環碼有一個漂亮的描述：它是一個<strong>理想（Ideal）</strong>。
+              要讓「<M>{'x^7 = 1'}</M>」合法，就要在一個規定 <M>{'x^7 - 1 \\equiv 0'}</M> 的世界裡計算——這就是 quotient ring <M>{'R_7'}</M>。在 <M>{'R_7'}</M> 中，cyclic code 有一個漂亮的描述：它是一個 <strong>ideal（理想）</strong>。
             </p>
           </Plain>
         ),
       }}
       what={{
-        title: '循環碼、環、R₇ 與理想',
+        title: 'Cyclic code、ring、R₇ 與 ideal',
         body: (
           <Terms
             items={[
-              { zh: '循環碼', en: 'Cyclic Code', def: <>線性碼，而且任何 codeword 循環位移後仍是 codeword。</> },
-              { zh: '環', en: 'Ring', def: <>可以加、減、乘（滿足結合律、分配律），但<strong>不一定能除</strong>的結構。整數、GF(2)[x] 都是環。體是「每個非零元素都能除」的環。</> },
-              { zh: '商環 R₇ = GF(2)[x]/(x⁷ − 1)', en: 'Quotient Ring', def: <>次數 ≤ 6 的多項式，運算後用 <M>{'x^7 \\equiv 1'}</M> 化簡（<M>{'x^{7+i} \\equiv x^i'}</M>）。它有 <M>{'2^7 = 128'}</M> 個元素，就是所有 7 位元字串。<M>{'x^7-1'}</M> 可分解，所以 R₇ 是環不是體。</> },
+              { term: 'Cyclic code', def: <>是 linear code，而且任何 codeword 做 cyclic shift 後仍是 codeword。</> },
+              { term: 'Ring', def: <>可以加、減、乘（滿足 associativity、distributivity），但<strong>不一定能除</strong>的結構。整數、GF(2)[x] 都是 ring；field 則是「每個非零元素都能除」的 ring。</> },
+              { term: 'Quotient ring R₇ = GF(2)[x]/(x⁷ − 1)', def: <>次數 ≤ 6 的多項式，運算後用 <M>{'x^7 \\equiv 1'}</M> 化簡（<M>{'x^{7+i} \\equiv x^i'}</M>）。它有 <M>{'2^7 = 128'}</M> 個元素，就是所有 7 位元字串。<M>{'x^7-1'}</M> 可分解，所以 R₇ 是 ring 而不是 field。</> },
               {
-                zh: '理想',
-                en: 'Ideal',
+                term: 'Ideal',
                 def: (
                   <>
-                    環的一個子集 I，滿足：(1) I 中兩元素相加仍在 I；(2) I 中元素乘上<strong>環中任何元素</strong>仍在 I（會「吸收」乘法）。加法子群（在 GF(2) 上就是子空間，也就是線性碼）只要求 (1)；理想多了「吸收」的條件。在 R₇ 中，吸收「乘以 x」正是「循環位移後仍是 codeword」。
+                    ring 的一個子集 I，滿足：(1) I 中兩元素相加仍在 I；(2) I 中元素乘上 <strong>ring 中任何元素</strong>仍在 I（會「吸收」乘法）。additive subgroup（在 GF(2) 上就是 subspace（子空間），也就是 linear code）只要求 (1)；ideal 多了「吸收」的條件。在 R₇ 中，吸收「乘以 x」正是「cyclic shift 後仍是 codeword」。
                   </>
                 ),
               },
               {
-                zh: '主理想 ⟨g(x)⟩',
-                en: 'Principal Ideal',
+                term: 'Principal ideal ⟨g(x)⟩',
+                gloss: '主理想',
                 def: (
                   <>
-                    <M>{'\\langle g(x) \\rangle = \\{ a(x)g(x) \\bmod (x^7-1) \\}'}</M>：g 的所有倍數。循環 Hamming Code <M>{'C = \\langle x^3+x+1 \\rangle'}</M>。所以「r 是不是 codeword」等於「r(x) 除以 g(x) 的餘數是不是 0」，接收端只需要一個除法電路。
+                    <M>{'\\langle g(x) \\rangle = \\{ a(x)g(x) \\bmod (x^7-1) \\}'}</M>：g 的所有倍數。cyclic Hamming code 就是 <M>{'C = \\langle x^3+x+1 \\rangle'}</M>。所以「r 是不是 codeword」等於「r(x) 除以 g(x) 的餘數是不是 0」，接收端只需要一個除法電路。
                   </>
                 ),
               },
               {
-                zh: '為什麼 g(x) 要整除 x⁷ − 1？',
+                term: '為什麼 g(x) 要整除 x⁷ − 1？',
                 def: (
                   <>
-                    這保證繞回時不會「離開」g 的倍數。程式計算：<M>{`x^7 - 1 = (x^3+x+1)(${polyToTex(h)})`}</M>，商 <M>{'h(x)'}</M> 叫同位檢查多項式（Parity-check Polynomial）。
+                    這保證繞回時不會「離開」g 的倍數。程式計算：<M>{`x^7 - 1 = (x^3+x+1)(${polyToTex(h)})`}</M>，商 <M>{'h(x)'}</M> 叫 parity-check polynomial（同位檢查多項式）。
                   </>
                 ),
               },
@@ -105,12 +104,12 @@ export default function A6Cyclic() {
         ),
       }}
       how={{
-        title: '循環位移實驗器',
+        title: 'Cyclic shift 實驗器',
         body: (
           <>
           <Plain>
             <p>
-              在硬體上，<M>{'R_7'}</M> 的「乘以 <M>x</M>」就是 7 個首尾相接的暫存器（環狀移位暫存器）整排移一格：最左邊那個暫存器移出的 bit 從最右邊接回來，那條接回來的線就是 <M>{'x^7 \\equiv 1'}</M>。不管從哪個 codeword 出發、轉幾格，暫存器裡永遠是合法的 codeword。
+              在硬體上，<M>{'R_7'}</M> 的「乘以 <M>x</M>」就是 7 個首尾相接的 register（circular shift register）整排移一格：最左邊那個 register 移出的 bit 從最右邊接回來，那條接回來的線就是 <M>{'x^7 \\equiv 1'}</M>。不管從哪個 codeword 出發、轉幾格，register 裡永遠是合法的 codeword。
             </p>
           </Plain>
           <LabGrid
@@ -194,7 +193,7 @@ export default function A6Cyclic() {
         ),
       }}
       example={{
-        title: '理想會「吸收」乘法：任意 a(x) × codeword 仍是 codeword',
+        title: 'Ideal 會「吸收」乘法：任意 a(x) × codeword 仍是 codeword',
         body: (
           <>
           <LabGrid
@@ -243,7 +242,7 @@ export default function A6Cyclic() {
                     { label: <>128 個 7 位元字串中，被 g(x) 整除的剛好就是這 {CODE_SET.size} 個 codeword</>, pass: divisibleAreCode },
                   ]}
                 />
-                <Card title="加法也封閉">
+                <Card title="加法也滿足 closure">
                   <select className="mb-2 rounded-lg border border-slate-200 px-2 py-1 font-mono text-sm" value={cj} onChange={(e) => setCj(Number(e.target.value))}>
                     {CODE.map((x, i) => (
                       <option key={i} value={i}>
@@ -261,7 +260,7 @@ export default function A6Cyclic() {
           />
           <Plain>
             <p>
-              吸收保證 <M>{'g(x)'}</M> 乘上任何 <M>{'a(x)'}</M>、再用 <M>{'x^7 \\equiv 1'}</M> 繞回，結果都還在 code 裡；反過來，每個 codeword 本來就是 <M>{'m(x)g(x)'}</M>。上面第三項檢查把兩個方向一起驗證：所有 7 位元字串中被 <M>{'g(x)'}</M> 整除的，一個不多、一個不少，正好是這 {CODE_SET.size} 個 codeword。所以「除以 <M>{'g(x)'}</M>、看餘數」是完整的檢查：餘數為 0 就一定是 codeword，接收端不必再檢查別的條件。乙太網路封包的 CRC（Cyclic Redundancy Check）用的就是同一個除法，只是 <M>{'g(x)'}</M> 的次數更高，而且只用來<strong>偵測</strong>錯誤：餘數不為 0 就丟掉這個封包，由上層協定決定要不要重送，不嘗試更正。
+              吸收保證 <M>{'g(x)'}</M> 乘上任何 <M>{'a(x)'}</M>、再用 <M>{'x^7 \\equiv 1'}</M> 繞回，結果都還在 code 裡；反過來，每個 codeword 本來就是 <M>{'m(x)g(x)'}</M>。上面第三項檢查把兩個方向一起驗證：所有 7 位元字串中被 <M>{'g(x)'}</M> 整除的，一個不多、一個不少，正好是這 {CODE_SET.size} 個 codeword。所以「除以 <M>{'g(x)'}</M>、看餘數」是完整的檢查：餘數為 0 就一定是 codeword，接收端不必再檢查別的條件。乙太網路封包的 CRC 用的就是同一個除法，只是 <M>{'g(x)'}</M> 的次數更高，而且只用來<strong>偵測</strong>錯誤：餘數不為 0 就丟掉這個封包，由上層協定決定要不要重送，不嘗試更正。
             </p>
           </Plain>
           </>
@@ -272,16 +271,16 @@ export default function A6Cyclic() {
         body: (
           <Card>
             <p className="text-sm text-slate-700">
-              「線性」只保證 codeword 相加仍是 codeword；「循環」多保證乘以 <M>x</M> 仍是 codeword。兩者合起來，乘以任何多項式都還在 code 裡——這正是理想的定義。所以整個 code 由一個多項式 <M>{'g(x)'}</M> 決定：<M>{'C = \\langle g(x) \\rangle'}</M>。
+              「線性」只保證 codeword 相加仍是 codeword；「循環」多保證乘以 <M>x</M> 仍是 codeword。兩者合起來，乘以任何多項式都還在 code 裡——這正是 ideal 的定義。所以整個 code 由一個多項式 <M>{'g(x)'}</M> 決定：<M>{'C = \\langle g(x) \\rangle'}</M>。
             </p>
             <p className="mt-3 text-sm text-slate-700">
-              位移不變也讓解碼器可以做得很小。把收到的字左移一格，它的 Syndrome <M>{'S_1 = r(\\alpha)'}</M>（A10）剛好乘上 α（因為 <M>{'\\alpha^7 = 1'}</M>）；<M>{'x^i'}</M> 位置的單一錯誤，Syndrome 是 <M>{'\\alpha^i'}</M>，錯誤每往左移一格就多乘一個 α。所以解碼器可以不為 7 個位置各做一套比對電路，只用一個「乘以 α」電路（<M>{'x^3+x+1'}</M> 時只要 {alphaMultiplierXors(0b1011)} 個 XOR 閘），每個時脈換一個位置、掃過整個字，用時間換面積。第二課 2-7 的 Chien Search 用的也是這種「每個時脈乘一次 α」的逐一檢查。
+              位移不變也讓 decoder 可以做得很小。把 received word 左移一格，它的 syndrome <M>{'S_1 = r(\\alpha)'}</M>（A10）剛好乘上 α（因為 <M>{'\\alpha^7 = 1'}</M>）；<M>{'x^i'}</M> 位置的單一錯誤，syndrome 是 <M>{'\\alpha^i'}</M>，錯誤每往左移一格就多乘一個 α。所以 decoder 可以不為 7 個位置各做一套比對電路，只用一個「乘以 α」電路（<M>{'x^3+x+1'}</M> 時只要 {alphaMultiplierXors(0b1011)} 個 XOR 閘），每個時脈換一個位置、掃過整個字，用時間換面積。第二課 2-7 的 Chien search 用的也是這種「每個時脈乘一次 α」的逐一檢查。
             </p>
             <div className="mt-3">
               <Checks items={[{ label: <>128 個 7 位元字串左移一格後，r(α) 都剛好乘上 α</>, pass: shiftTimesAlpha }]} />
             </div>
             <p className="mt-3 text-sm text-slate-700">
-              要更正多個錯誤的長碼不靠查表，也是同樣的道理。2-5 的查表法要存 <M>{'2^{n-k}'}</M> 項：(7,4) 是 {syndromeTableEntries(7, 4)} 項、(127,120) 是 {syndromeTableEntries(127, 120)} 項，都還很小；但只要多更正一個錯，BCH(127,{127 - BCH2}) 的 n − k 就變成 {BCH2}，表要 {syndromeTableEntries(127, 127 - BCH2).toLocaleString('en-US')} 項。循環碼可以用 <M>{'g(x)'}</M> 的根來描述（A7、A8），解碼因此能改成代數計算（2-6、2-7），電路不必跟著表一起膨脹。
+              要更正多個錯誤的長 code 不靠查表，也是同樣的道理。2-5 的查表法要存 <M>{'2^{n-k}'}</M> 項：(7,4) 是 {syndromeTableEntries(7, 4)} 項、(127,120) 是 {syndromeTableEntries(127, 120)} 項，都還很小；但只要多更正一個錯，BCH(127,{127 - BCH2}) 的 n − k 就變成 {BCH2}，表要 {syndromeTableEntries(127, 127 - BCH2).toLocaleString('en-US')} 項。cyclic code 可以用 <M>{'g(x)'}</M> 的根來描述（A7、A8），解碼因此能改成代數計算（2-6、2-7），電路不必跟著表一起膨脹。
             </p>
             <p className="mt-3 text-sm text-slate-700">下一單元 A7 就從這些根下手，看 <M>{'g(x)'}</M> 該怎麼選。</p>
           </Card>
@@ -292,10 +291,10 @@ export default function A6Cyclic() {
           { to: 'l2-12', text: '第二課：同樣的結構放大到 x¹²⁷ − 1' },
         ],
         misconceptions: [
-          { wrong: '循環位移是向右移。', right: '本章（和第二課）最左邊是最高次項，乘以 x 讓每個係數往左移一格，最左邊的 x⁶ 繞到最右邊（x⁷ ≡ 1）。' },
-          { wrong: '理想就是「codeword 的集合」，任何子集合都可以。', right: '理想要對加法封閉，而且乘上環中任何元素都還在裡面。隨便挑的 codeword 集合通常不滿足。' },
-          { wrong: 'R₇ 是一個體。', right: 'x⁷ − 1 = (x+1)(x³+x+1)(x³+x²+1) 可分解，所以 R₇ 有零因子，例如 (x³+x+1)(x⁴+x²+x+1) ≡ 0。' },
-          { wrong: 'CRC 和循環碼是兩回事。', right: 'CRC 就是循環碼的除法檢查：把收到的資料除以 g(x)、看餘數是不是 0。差別在用途：CRC 只偵測錯誤（發現錯就丟掉封包），Hamming Code 還用 Syndrome 找出錯誤位置來更正。' },
+          { wrong: 'cyclic shift 是向右移。', right: '本章（和第二課）最左邊是最高次項，乘以 x 讓每個係數往左移一格，最左邊的 x⁶ 繞到最右邊（x⁷ ≡ 1）。' },
+          { wrong: 'ideal 就是「codeword 的集合」，任何子集合都可以。', right: 'ideal 要對加法滿足 closure，而且乘上 ring 中任何元素都還在裡面。隨便挑的 codeword 集合通常不滿足。' },
+          { wrong: 'R₇ 是一個 field。', right: 'x⁷ − 1 = (x+1)(x³+x+1)(x³+x²+1) 可分解，所以 R₇ 有 zero divisor，例如 (x³+x+1)(x⁴+x²+x+1) ≡ 0。' },
+          { wrong: 'CRC 和 cyclic code 是兩回事。', right: 'CRC 就是 cyclic code 的除法檢查：把收到的資料除以 g(x)、看餘數是不是 0。差別在用途：CRC 只偵測錯誤（發現錯就丟掉封包），Hamming code 還用 syndrome 找出錯誤位置來更正。' },
         ],
       }}
     />

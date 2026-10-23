@@ -43,7 +43,7 @@ export function Venn({ word, errorIdx = [], correctedIdx = [], onToggle, showSta
     return pc.covered.reduce<number>((a, i) => a ^ (word[i] as number), 0);
   });
   return (
-    <svg viewBox="0 0 360 300" className="mx-auto w-full max-w-[380px] select-none" role="img" aria-label="三個同位檢查的 Venn 圖">
+    <svg viewBox="0 0 360 300" className="mx-auto w-full max-w-[380px] select-none" role="img" aria-label="三個 parity check 的 Venn 圖">
       {CIRCLES.map((c, k) => {
         const par = circleParity[k];
         const bad = showStatus && par === 1;

@@ -24,12 +24,12 @@ export default function L2TwoErrors() {
       id={ID}
       lead={
         <p>
-          這一章非常重要：兩個錯誤時，解碼器<strong>不會</strong>失敗得很明顯。它會很有自信地「更正」一個本來正確的位元，交出一個通過驗證、卻是錯的 codeword。這叫做 <strong>誤更正（Miscorrection）</strong>。
+          這一章非常重要：兩個錯誤時，decoder <strong>不會</strong>失敗得很明顯。它會很有自信地「更正」一個本來正確的位元，交出一個通過驗證、卻是錯的 codeword。這叫做 <strong>miscorrection（誤更正）</strong>。
         </p>
       }
       goals={[
-        '計算兩個錯誤時的 Syndrome：S = αᵃ + αᵇ',
-        '追蹤單錯解碼器如何再翻轉一個本來正確的 bit（錯誤變成 3 個）',
+        '計算兩個錯誤時的 syndrome：S = αᵃ + αᵇ',
+        '追蹤單錯 decoder 如何再翻轉一個本來正確的 bit（錯誤變成 3 個）',
         <>
           理解「更正後 <M>{'\\hat c(\\alpha) = 0'}</M>」不代表還原正確
         </>,
@@ -42,28 +42,28 @@ export default function L2TwoErrors() {
         body: (
           <div className="prose-lab">
             <p>
-              每個合法 codeword 周圍有一圈「距離 1」的字串，解碼器會把它們都拉回中心的 codeword。兩個錯誤把 c 推到距離 2 的地方——那裡已經是<strong>另一個 codeword 的地盤</strong>（距離 1），解碼器就把它拉到那個錯的 codeword 去。
+              每個合法 codeword 周圍有一圈 Hamming distance（漢明距離）為 1 的字串，decoder 會把它們都拉回中心的 codeword。兩個錯誤把 c 推到 distance 2 的地方——那裡已經是<strong>另一個 codeword 的地盤</strong>（distance 1），decoder 就把它拉到那個錯的 codeword 去。
             </p>
-            <p>解碼器只能看到 r，它無法分辨「從 c 走了 2 步」和「從另一個 codeword 走了 1 步」。</p>
+            <p>但 decoder 只能看到 r，它無法分辨「從 c 走了 2 步」和「從另一個 codeword 走了 1 步」。</p>
           </div>
         ),
       }}
       math={{
-        title: '兩個錯誤的 Syndrome 與最小距離',
+        title: '兩個錯誤的 syndrome 與 minimum distance（最小距離）',
         body: (
           <Card>
             <Tex block>{'e(x) = x^a + x^b \\;\\Rightarrow\\; S_1 = e(\\alpha) = \\alpha^a + \\alpha^b'}</Tex>
-            <p className="text-sm text-slate-700">GF(8) 中兩個不同元素的和仍是某個非零元素 <M>{'\\alpha^k'}</M>，於是解碼器以為錯誤只在 <M>{'x^k'}</M>。</p>
+            <p className="text-sm text-slate-700">GF(8) 中兩個不同元素的和仍是某個非零元素 <M>{'\\alpha^k'}</M>，於是 decoder 以為錯誤只在 <M>{'x^k'}</M>。</p>
             <Tex block>{'\\text{預設：}\\ e(x) = x^5 + 1,\\quad S = \\alpha^5 + 1 = 111 \\oplus 001 = 110 = \\alpha^4 \\Rightarrow \\text{翻轉 } x^4\\ (\\text{第 3 個 bit})'}</Tex>
             <Tex block>{`d_{\\min} = ${dmin} \\;\\Rightarrow\\; t = \\left\\lfloor \\tfrac{d_{\\min}-1}{2} \\right\\rfloor = ${correctionCapability(dmin)}`}</Tex>
             <p className="text-sm text-slate-700">
-              兩個錯誤後 <M>{'d_H(r, c) = 2'}</M>；因為 Hamming Code 是完美碼，每個字串都恰好在某個 codeword 的距離 1 以內，所以存在 <M>{"c'"}</M> 使 <M>{"d_H(r, c') = 1 < 2"}</M>。最近 codeword 解碼必然選錯。
+              兩個錯誤後 <M>{'d_H(r, c) = 2'}</M>；因為 Hamming code 是 perfect code，每個字串都恰好在某個 codeword 的 distance 1 以內，所以存在 <M>{"c'"}</M> 使 <M>{"d_H(r, c') = 1 < 2"}</M>。照 nearest-codeword decoding（最近 codeword 解碼）的規則，decoder 必然選錯。
             </p>
           </Card>
         ),
       }}
       algorithm={{
-        title: '單錯解碼器在雙錯時的行為',
+        title: '單錯 decoder 在雙錯時的行為',
         body: (
           <AlgoSteps
             steps={[
@@ -81,7 +81,7 @@ export default function L2TwoErrors() {
         title: '選擇兩個錯誤位置',
         body: (
           <Card
-            title="點擊接收字的位元選擇錯誤（最多 2 個）"
+            title="點擊 received word 的位元選擇錯誤（最多 2 個）"
             actions={
               <ResetButton
                 onClick={() => {
@@ -99,7 +99,7 @@ export default function L2TwoErrors() {
             {errors.length === 2 && d.field !== 0 && (
               <div className="mt-4 rounded-xl bg-slate-50 p-3 text-sm">
                 <Tex>{`S_1 = \\alpha^{${exps[0]}} + \\alpha^{${exps[1]}} = ${fieldToBits(alphaPow(exps[0])).join('')} \\oplus ${fieldToBits(alphaPow(exps[1])).join('')} = ${d.syndrome.join('')} = \\alpha^{${LOG[d.field]}}`}</Tex>
-                <span className="ml-1">→ 解碼器翻轉第 {d.position} 個 bit（<M>{`x^{${d.exponent}}`}</M>），但真正的錯誤在第 {errors.join('、')} 個。</span>
+                <span className="ml-1">→ decoder 翻轉第 {d.position} 個 bit（<M>{`x^{${d.exponent}}`}</M>），但真正的錯誤在第 {errors.join('、')} 個。</span>
               </div>
             )}
             <div className="mt-5">
@@ -117,7 +117,7 @@ export default function L2TwoErrors() {
               items={[
                 { label: <>預設例子：r = {simulateL2(DEFAULT_U, [2, 7]).r.join('')}，S = {simulateL2(DEFAULT_U, [2, 7]).decode.syndrome.join('')}，輸出 {simulateL2(DEFAULT_U, [2, 7]).decode.corrected.join('')}</>, pass: simulateL2(DEFAULT_U, [2, 7]).decode.corrected.join('') === '1111111' },
                 { label: <>輸出滿足 ĉ(α) = 0，但訊息 {simulateL2(DEFAULT_U, [2, 7]).decode.message.join('')} ≠ 1001</>, pass: simulateL2(DEFAULT_U, [2, 7]).decode.check === 0 && simulateL2(DEFAULT_U, [2, 7]).miscorrection },
-                { label: <>對 u = {u.join('')}：21 種雙錯全部被偵測（S ≠ 0）且全部誤更正</>, pass: allMis },
+                { label: <>對 u = {u.join('')}：21 種雙錯全部被偵測（S ≠ 0）且全部造成 miscorrection</>, pass: allMis },
               ]}
             />
             <Card title={`u = ${u.join('')} 的 21 種雙錯`}>
@@ -128,7 +128,7 @@ export default function L2TwoErrors() {
                       <th className="py-1">錯誤位置</th>
                       <th>r</th>
                       <th>S</th>
-                      <th>解碼器翻轉</th>
+                      <th>Decoder 翻轉</th>
                       <th>輸出 ĉ</th>
                       <th>û</th>
                     </tr>
@@ -148,15 +148,15 @@ export default function L2TwoErrors() {
                 </table>
               </div>
             </Card>
-            <Callout kind="warning" title="即使更正後 Syndrome = 0，也不代表還原正確">
-              <p>每一列的輸出都是合法 codeword（再算一次 Syndrome 會得到 000），但沒有一列還原出原訊息。Hamming(7,4) 只保證 <M>{'t = 1'}</M>。</p>
+            <Callout kind="warning" title="即使更正後 syndrome = 0，也不代表還原正確">
+              <p>每一列的輸出都是合法 codeword（再算一次 syndrome 會得到 000），但沒有一列還原出原訊息。Hamming(7,4) 只保證 <M>{'t = 1'}</M>。</p>
             </Callout>
           </>
         ),
       }}
       next={
         <p>
-          兩個錯誤至少還會讓 S ≠ 0（被「偵測到」，只是修錯）。三個錯誤可能更糟：有些錯誤樣式會讓 S = 0，解碼器完全察覺不到。
+          兩個錯誤至少還會讓 S ≠ 0（被「偵測到」，只是修錯）。三個錯誤可能更糟：有些 error vector 會讓 S = 0，decoder 完全察覺不到。
         </p>
       }
     />

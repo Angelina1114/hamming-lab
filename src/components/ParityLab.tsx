@@ -23,16 +23,16 @@ const HAMMING_HOW = PARITY_CHECKS.map((pc, k) => `${pc.name} 管${k === 0 ? '位
 function setupsFor(d: readonly Bit[]): Record<Mode, Setup> {
   return {
     '1': {
-      tab: '1 個同位位元',
+      tab: '1 個 parity bit',
       labels: ['D1', 'D2', 'D3', 'D4', 'P'],
       parity: [false, false, false, false, true],
       checks: ['檢查'],
       cover: [[1, 1, 1, 1, 1]],
       sent: [...d, (d[0] ^ d[1] ^ d[2] ^ d[3]) as Bit],
-      how: `一個同位位元 P 負責全部 ${d.length + 1} 個位元：讓 1 的總數是偶數。`,
+      how: `一個 parity bit P 負責全部 ${d.length + 1} 個位元：讓 1 的總數是偶數。`,
     },
     '2': {
-      tab: '2 個同位位元',
+      tab: '2 個 parity bit',
       labels: ['D1', 'D2', 'D3', 'D4', 'P前', 'P後'],
       parity: [false, false, false, false, true, true],
       checks: ['前半檢查', '後半檢查'],
@@ -128,18 +128,18 @@ export function ParityLab({ message = DEFAULT_MESSAGE }: { message?: readonly Bi
 
   let truth: { ok: boolean; text: string; short: string };
   if (flips.length === 0) truth = { ok: true, text: '沒有任何位元被翻轉，判斷正確。', short: '沒有翻轉：判斷正確' };
-  else if (!anyFail) truth = { ok: false, text: `實際錯了 ${flipList}，但每個檢查裡的 1 又剛好變回偶數個 → 未偵測錯誤：接收端完全沒發現，被騙了。`, short: `錯了 ${flipList}：未偵測錯誤` };
+  else if (!anyFail) truth = { ok: false, text: `實際錯了 ${flipList}，但每個檢查裡的 1 又剛好變回偶數個 → 成為 undetected error：接收端完全沒發現，被騙了。`, short: `錯了 ${flipList}：undetected error` };
   else if (cands.length === 1 && flips.length === 1 && cands[0] === flips[0])
     truth = { ok: true, text: `真的是 ${flipNames[0]} 錯了：判斷正確，可以修正。`, short: `真的是 ${flipNames[0]}：修對了` };
   else if (cands.length === 1)
     truth = flips.includes(cands[0])
-      ? { ok: false, text: `實際錯了 ${flipList}，接收端卻以為只有 ${X} 錯：${X} 確實錯了、會被翻回來，但其餘 ${flips.length - 1} 個錯誤還在 → 誤更正（超過能力，第 3、4 章會細看）。`, short: `錯了 ${flipList} → 誤更正` }
-      : { ok: false, text: `實際錯了 ${flipList}，接收端卻以為只有 ${X} 錯 → 會把原本沒錯的 ${X} 也翻掉：誤更正（超過能力，第 3、4 章會細看）。`, short: `錯了 ${flipList} → 誤更正` };
+      ? { ok: false, text: `實際錯了 ${flipList}，接收端卻以為只有 ${X} 錯：${X} 確實錯了、會被翻回來，但其餘 ${flips.length - 1} 個錯誤還在 → miscorrection：超過能力，第 3、4 章會細看。`, short: `錯了 ${flipList} → miscorrection` }
+      : { ok: false, text: `實際錯了 ${flipList}，接收端卻以為只有 ${X} 錯 → 會把原本沒錯的 ${X} 也翻掉，造成 miscorrection：超過能力，第 3、4 章會細看。`, short: `錯了 ${flipList} → miscorrection` };
   else truth = { ok: true, text: `實際錯了 ${flipList}。接收端知道「有錯」是對的，只是沒辦法修。`, short: `錯了 ${flipList}：知道有錯是對的` };
 
   const tabs = (
     <Segmented
-      ariaLabel="同位位元的個數"
+      ariaLabel="Parity bit 的個數"
       value={mode}
       onChange={(v) => {
         setMode(v);
@@ -151,7 +151,7 @@ export function ParityLab({ message = DEFAULT_MESSAGE }: { message?: readonly Bi
 
   return (
     <Card
-      title={presenting ? undefined : '1 個、2 個、3 個同位位元，各能做到什麼？'}
+      title={presenting ? undefined : '1 個、2 個、3 個 parity bit，各能做到什麼？'}
       actions={
         <>
           <div className={t.tabs}>{tabs}</div>

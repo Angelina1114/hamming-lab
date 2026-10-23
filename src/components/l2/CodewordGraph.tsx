@@ -37,7 +37,7 @@ export function CodewordGraph({ sent, received, decoded, large = false }: Props)
 
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,280px)]">
-      <svg viewBox="0 0 420 400" className={`mx-auto w-full ${large ? 'max-w-[620px]' : 'max-w-[460px]'}`} role="img" aria-label="16 個 codeword 與最小距離的關係圖">
+      <svg viewBox="0 0 420 400" className={`mx-auto w-full ${large ? 'max-w-[620px]' : 'max-w-[460px]'}`} role="img" aria-label="16 個 codeword 與 minimum distance 的關係圖">
         {edges.map(([i, j]) => {
           const on = i === sel || j === sel;
           return <line key={`${i}-${j}`} x1={pos[i].x} y1={pos[i].y} x2={pos[j].x} y2={pos[j].y} stroke={on ? '#7638dc' : '#e2e8f0'} strokeWidth={on ? 2 : 1} />;
@@ -86,15 +86,15 @@ export function CodewordGraph({ sent, received, decoded, large = false }: Props)
           <div className="text-xs text-slate-500">點選的 codeword（節點內是訊息 u）</div>
           <div className="font-mono text-lg font-bold">{C[sel]?.c.join('')}</div>
           <div className="text-slate-600">u = {C[sel]?.u.join('')}</div>
-          <div className="mt-1">與送出的 c 距離：<strong>{sentIdx >= 0 ? hammingDistance(C[sel].c, sent) : '—'}</strong></div>
-          <div>與收到的 r 距離：<strong>{hammingDistance(C[sel].c, received)}</strong></div>
+          <div className="mt-1">與送出的 c 的 distance：<strong>{sentIdx >= 0 ? hammingDistance(C[sel].c, sent) : '—'}</strong></div>
+          <div>與收到的 r 的 distance：<strong>{hammingDistance(C[sel].c, received)}</strong></div>
           <div className="mt-1 text-xs text-slate-500">紫色線：與它相距 3（= d_min）的 {edges.filter(([a, b]) => a === sel || b === sel).length} 個 codeword</div>
         </div>
         <ul className="space-y-1 text-xs text-slate-600">
           <li>● 藍框「c 送出」、紅框「r 收到」、橘框「ĉ 解碼」。</li>
-          <li>● 灰線連接距離剛好 3 的 codeword；沒有任何兩個 codeword 距離 1 或 2。</li>
+          <li>● 灰線連接 distance 剛好 3 的 codeword；沒有任何兩個 codeword 的 distance 是 1 或 2。</li>
           <li>● 節點排成圓形只是為了好看，圖上的長短沒有意義——只有「相距幾個 bit」有意義。</li>
-          {!recIsCodeword && <li>● 紅色虛線：r 到最近 codeword（與 c）的 Hamming 距離。</li>}
+          {!recIsCodeword && <li>● 紅色虛線：r 到最近 codeword（與 c）的 Hamming distance。</li>}
         </ul>
       </div>
     </div>

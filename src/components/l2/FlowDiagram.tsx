@@ -30,23 +30,23 @@ interface NodeDef {
 }
 
 export const FLOW_NODES: NodeDef[] = [
-  { id: 'u', col: 'enc', zh: '原始資料 u', en: 'Message', desc: '要保護的 4 個資訊位元。視為多項式 u(x)，最左邊是 x³ 的係數。' },
-  { id: 'lfsr', col: 'enc', zh: 'LFSR / 多項式除法', en: 'LFSR / Polynomial Division', desc: '計算 x³u(x) mod g(x)。硬體用 3 個暫存器的 LFSR，一個時脈處理一個 bit。' },
-  { id: 'parity', col: 'enc', zh: '同位位元 p', en: 'Parity Bits', desc: 'LFSR 最後的暫存器內容就是 3 個同位位元（餘數）。' },
-  { id: 'codeword', col: 'enc', zh: 'Codeword c', en: 'Codeword', desc: 'c = u ‖ p，即 c(x) = x³u(x) + p(x)，一定被 g(x) 整除。' },
-  { id: 'overall', col: 'enc', zh: '整體同位位元', en: 'Overall Parity', secdedOnly: true, desc: 'SECDED 模式：在 7 位元 codeword 後面加 1 位偶同位，使 8 個位元中 1 的個數為偶數。' },
+  { id: 'u', col: 'enc', zh: '原始資料 u', en: 'Message', desc: '要保護的 4 個 data bit（資料位元）。視為多項式 u(x)，最左邊是 x³ 的係數。' },
+  { id: 'lfsr', col: 'enc', zh: 'LFSR / 多項式除法', en: 'LFSR / Polynomial division', desc: '計算 x³u(x) mod g(x)。硬體用 3 個 register（暫存器）組成的 LFSR，一個時脈處理一個 bit。' },
+  { id: 'parity', col: 'enc', zh: 'Parity bits p', en: '', desc: 'LFSR 最後的 register 內容就是餘數，也就是 3 個 parity bit。' },
+  { id: 'codeword', col: 'enc', zh: 'Codeword c', en: '', desc: 'c = u ‖ p 是 codeword（碼字），即 c(x) = x³u(x) + p(x)，一定被 g(x) 整除。' },
+  { id: 'overall', col: 'enc', zh: 'Overall parity bit', en: '', secdedOnly: true, desc: 'SECDED 模式：在 7 位元 codeword 後面加 1 個位元，採 even parity（偶同位），使 8 個位元中 1 的個數為偶數。' },
   { id: 'channel', col: 'ch', zh: '通道', en: 'Channel', desc: '雜訊把某些位元翻轉：r = c ⊕ e。e 中的 1 就是錯誤位置。' },
-  { id: 'received', col: 'ch', zh: '接收字 r', en: 'Received Word', desc: '接收端只看得到 r，不知道 c 與 e。' },
-  { id: 'buffer', col: 'ch', zh: '緩衝區', en: 'Buffer', desc: '計算 Syndrome 需要讀完全部 n 個位元，所以接收字先存在緩衝區，等定位完成再做更正。' },
-  { id: 'syndrome', col: 'dec', zh: '症狀值 S', en: 'Syndrome', desc: 'S(x) = r(x) mod g(x) = e(x) mod g(x)：只和錯誤有關。' },
-  { id: 'secdedchk', col: 'dec', zh: 'SECDED 判斷', en: 'Overall Parity Check', secdedOnly: true, desc: '重新計算 8 個位元的同位 q，與 Syndrome 一起分辨 0、1、2 個錯誤。' },
-  { id: 'locator', col: 'dec', zh: '錯誤定位多項式', en: 'Error Locator Polynomial', desc: 'S₁ = S(α) ∈ GF(8)，σ(z) = 1 + S₁z。' },
-  { id: 'search', col: 'dec', zh: 'Chien Search / 查表', en: 'Chien Search / Lookup', desc: '找出 σ(z) 的根（或直接查 Syndrome 表），得到錯誤的次方 i。' },
-  { id: 'logic', col: 'dec', zh: '更正邏輯', en: 'Correction Logic', desc: '決定要不要更正：S = 0 不動；單一錯誤就產生錯誤向量 ê；SECDED 偵測到雙錯時拒絕更正。' },
-  { id: 'xor', col: 'dec', zh: 'XOR 更正', en: 'XOR Correction', desc: 'ĉ = r ⊕ ê：在錯誤位置翻轉一個位元。' },
-  { id: 'corrected', col: 'dec', zh: '更正後 codeword ĉ', en: 'Corrected Codeword', desc: '應滿足 ĉ(α) = 0（合法 codeword）。合法不代表正確！' },
-  { id: 'recovered', col: 'dec', zh: '還原訊息 û', en: 'Recovered Message', desc: '系統碼：直接取 ĉ 的前 4 位。' },
-  { id: 'flag', col: 'dec', zh: '錯誤偵測旗標', en: 'Error Detection Flag', desc: '輸出給系統的狀態：無錯誤 / 已更正 / 偵測到無法更正的錯誤。' },
+  { id: 'received', col: 'ch', zh: 'Received word r', en: '', desc: '接收端只看得到 r，不知道 c 與 e。' },
+  { id: 'buffer', col: 'ch', zh: 'Buffer', en: '', desc: '計算 syndrome 需要讀完全部 n 個位元，所以 received word（收到的字）先存在 buffer，等定位完成再做更正。' },
+  { id: 'syndrome', col: 'dec', zh: 'Syndrome S', en: '', desc: 'S(x) = r(x) mod g(x) = e(x) mod g(x)：只和錯誤有關。' },
+  { id: 'secdedchk', col: 'dec', zh: 'SECDED 判斷', en: 'Overall parity check', secdedOnly: true, desc: '重新計算 8 個位元的 parity（同位）q，與 syndrome 一起分辨 0、1、2 個錯誤。' },
+  { id: 'locator', col: 'dec', zh: 'Error-locator polynomial', en: '', desc: 'S₁ = S(α) ∈ GF(8)，σ(z) = 1 + S₁z。' },
+  { id: 'search', col: 'dec', zh: 'Chien search / 查表', en: 'Chien search / lookup', desc: '找出 σ(z) 的根（或直接查 syndrome 表），得到錯誤的次方 i。' },
+  { id: 'logic', col: 'dec', zh: '更正邏輯', en: 'Correction logic', desc: '決定要不要更正：S = 0 不動；單一錯誤就產生 error vector（錯誤向量）ê；SECDED 偵測到雙錯時拒絕更正。' },
+  { id: 'xor', col: 'dec', zh: 'XOR 更正', en: 'XOR correction', desc: 'ĉ = r ⊕ ê：在錯誤位置翻轉一個位元。' },
+  { id: 'corrected', col: 'dec', zh: '更正後 codeword ĉ', en: 'Corrected codeword', desc: '應滿足 ĉ(α) = 0（合法 codeword）。合法不代表正確！' },
+  { id: 'recovered', col: 'dec', zh: '還原訊息 û', en: 'Recovered message', desc: '這是 systematic code（系統碼）：直接取 ĉ 的前 4 位。' },
+  { id: 'flag', col: 'dec', zh: '錯誤偵測旗標', en: 'Error detection flag', desc: '輸出給系統的狀態：無錯誤 / 已更正 / 偵測到無法更正的錯誤。' },
 ];
 
 export function flowSequence(secded: boolean): NodeDef[] {
@@ -121,7 +121,7 @@ export function FlowDiagram({ u, errors, secded, method, stepper, large = false 
     overall: { data: <Bits bits={so.c8} overall />, op: <>P = c₁ ⊕ … ⊕ c₇ = {so.c8[7]}</> },
     channel: { data: <span className="font-mono text-[13px] text-rose-700">e = {(secded ? e8 : o.e).join('')}</span>, op: <>{(secded ? errors : errors.filter((p) => p <= 7)).length ? `翻轉位置 ${(secded ? errors : errors.filter((p) => p <= 7)).join('、')}` : '無錯誤'}</> },
     received: { data: <Bits bits={secded ? so.r8 : o.r} err={secded ? e8 : o.e} overall={secded} />, op: <>r = c ⊕ e</> },
-    buffer: { data: <span className="text-xs text-slate-500">暫存 {secded ? 8 : 7} 個位元</span>, op: <>等待 Syndrome 計算完成</> },
+    buffer: { data: <span className="text-xs text-slate-500">暫存 {secded ? 8 : 7} 個位元</span>, op: <>等待 syndrome 計算完成</> },
     syndrome: { data: <span className="font-mono text-[13px] font-bold">S = {d.syndrome.join('')}</span>, op: <>r(x) mod g(x)</> },
     secdedchk: { data: <span className="font-mono text-[13px]">q = {so.result.parity}（{so.result.parity ? '奇' : '偶'}）</span>, op: <>{secdedLabel(so.result.case)}</> },
     locator: { data: <M>{d.field === 0 ? '\\sigma(z)=1' : `\\sigma(z) = 1 + ${aTex(d.field)}z`}</M>, op: <M>{`S_1 = S(\\alpha) = ${aTex(d.field)}`}</M> },
@@ -161,9 +161,9 @@ export function FlowDiagram({ u, errors, secded, method, stepper, large = false 
 
   const focus = FLOW_NODES.find((n) => n.id === (selected ?? current.id))!;
   const cols: { key: Col; zh: string }[] = [
-    { key: 'enc', zh: '編碼器 Encoder' },
+    { key: 'enc', zh: 'Encoder' },
     { key: 'ch', zh: '通道與接收 Channel' },
-    { key: 'dec', zh: '解碼器 Decoder' },
+    { key: 'dec', zh: 'Decoder' },
   ];
 
   // on a slide the explanation fills the room under the two short columns, beside the tall decoder column
@@ -171,7 +171,7 @@ export function FlowDiagram({ u, errors, secded, method, stepper, large = false 
     <motion.div key={focus.id} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className={`rounded-2xl border-2 border-indigo-200 bg-white p-4 ${large ? 'text-lg lg:col-span-2' : 'text-sm'}`}>
       <div className="mb-1 flex items-center gap-2 font-bold text-indigo-900">
         <Info className="h-4 w-4" />
-        {focus.zh} <span className="font-normal text-slate-400">{focus.en}</span>
+        {focus.zh} {focus.en && <span className="font-normal text-slate-400">{focus.en}</span>}
         {selected && <span className="chip bg-indigo-100 text-indigo-700">你點選的模組</span>}
       </div>
       <p className="text-slate-700">{focus.desc}</p>
@@ -193,7 +193,7 @@ export function FlowDiagram({ u, errors, secded, method, stepper, large = false 
 
   return (
     <div ref={rootRef} className="space-y-4">
-      {!stepper && <StepControls s={s} label={`${current.zh}（${current.en}）`} />}
+      {!stepper && <StepControls s={s} label={current.en ? `${current.zh}（${current.en}）` : current.zh} />}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.25fr)]">
         {cols.map((c) => (
           <div key={c.key} className={`min-w-0 rounded-2xl border border-slate-200 bg-slate-50/60 p-2.5 ${large && c.key === 'dec' ? 'lg:row-span-2' : ''}`}>
@@ -239,5 +239,5 @@ export function FlowDiagram({ u, errors, secded, method, stepper, large = false 
 }
 
 function secdedLabel(c: string) {
-  return c === 'no-error' ? 'S = 0、q 偶 → 無錯誤' : c === 'single' ? 'S ≠ 0、q 奇 → 單一錯誤，更正' : c === 'overall' ? 'S = 0、q 奇 → 整體同位位元錯誤' : 'S ≠ 0、q 偶 → 雙重錯誤，不更正';
+  return c === 'no-error' ? 'S = 0、q 偶 → 無錯誤' : c === 'single' ? 'S ≠ 0、q 奇 → 單一錯誤，更正' : c === 'overall' ? 'S = 0、q 奇 → overall parity bit 錯誤' : 'S ≠ 0、q 偶 → 雙重錯誤，不更正';
 }

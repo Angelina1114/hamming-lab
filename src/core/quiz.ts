@@ -30,10 +30,10 @@ export const QUIZ_TYPES: { type: QuizType; label: string }[] = [
   { type: 'division', label: '多項式除法' },
   { type: 'syndrome', label: 'Syndrome 計算' },
   { type: 'gf8', label: 'GF(8) 元素轉換' },
-  { type: 'chien', label: 'Chien Search' },
+  { type: 'chien', label: 'Chien search' },
   { type: 'single', label: '單一錯誤更正' },
-  { type: 'double', label: '雙位元誤更正' },
-  { type: 'triple', label: '三位元未偵測錯誤' },
+  { type: 'double', label: '雙位元 miscorrection' },
+  { type: 'triple', label: '三位元 undetected error' },
   { type: 'secded', label: 'SECDED 判斷' },
 ];
 
@@ -95,14 +95,14 @@ export function makeQuestion(type: QuizType, seed: number): QuizQuestion {
         id,
         type,
         chapter: 'l2-2',
-        chapterLabel: '2-2 LFSR 與生成多項式',
+        chapterLabel: '2-2 LFSR 與 generator polynomial',
         prompt: `預乘式 LFSR，$g(x)=x^3+x+1$，規則 feedback $= \\text{input} \\oplus R_2$，$R_2'=R_1,\\ R_1'=R_0\\oplus \\text{fb},\\ R_0'=\\text{fb}$。目前 $R_2R_1R_0 = ${s(state)}$，輸入 ${input}，下一個狀態是？`,
         options: finalize(
           { text: s(step), correct: true, why: `feedback $= ${input}\\oplus ${R2} = ${fb}$；左移得 $${s(noXor)}$，再把 fb 加到 $R_1$、$R_0$（對應 $g$ 的 $x$ 與 $1$ 項）得到 $${s(step)}$。` },
           [
             { text: s(noXor), correct: false, why: '只做了左移，忘了把 feedback XOR 回 $R_1$ 與 $R_0$。' },
-            { text: s(fbNoInput), correct: false, why: '把 feedback 當成 $R_2$，忘了先與輸入 bit 做 XOR（那是除法器的規則，不是預乘式編碼器）。' },
-            { text: s(wrongTaps), correct: false, why: '回授位置放錯：XOR 進了 $R_2$，相當於使用 $g(x)=x^3+x^2+1$。回授位置由 $g(x)$ 的係數決定。' },
+            { text: s(fbNoInput), correct: false, why: '把 feedback 當成 $R_2$，忘了先與輸入 bit 做 XOR（那是除法器的規則，不是預乘式 encoder）。' },
+            { text: s(wrongTaps), correct: false, why: '把 feedback 接到錯的位置：XOR 進了 $R_2$，相當於使用 $g(x)=x^3+x^2+1$；feedback 要接到哪幾個 register，由 $g(x)$ 的係數決定。' },
           ],
           r,
           randBitsStr(3, r),
@@ -129,7 +129,7 @@ export function makeQuestion(type: QuizType, seed: number): QuizQuestion {
           [
             { text: s(or), correct: false, why: '這是 OR（1 ∨ 1 = 1）。在 GF(2) 中 1 ⊕ 1 = 0。' },
             { text: s(and), correct: false, why: '這是 AND，不是加法。' },
-            { text: s(a), correct: false, why: '原字串沒有被改變——忘了套用錯誤向量。' },
+            { text: s(a), correct: false, why: '原字串沒有被改變——忘了套用 error vector。' },
           ],
           r,
           randBitsStr(7, r),
@@ -147,13 +147,13 @@ export function makeQuestion(type: QuizType, seed: number): QuizQuestion {
         type,
         chapter: 'l2-3',
         chapterLabel: '2-3 手算 GF(2) 多項式除法',
-        prompt: `訊息 $u = ${s(u)}$，補三個 0 後計算 $${s(enc.shifted)} \\bmod 1011$，得到的同位位元 $p$ 是？`,
+        prompt: `訊息 $u = ${s(u)}$，補三個 0 後計算 $${s(enc.shifted)} \\bmod 1011$，得到的 parity bit $p$ 是？`,
         options: finalize(
           { text: s(enc.parity), correct: true, why: `長除法：每次把 1011 對齊目前最高位的 1 並 XOR，最後剩下 3 位餘數 $${s(enc.parity)}$。` },
           [
             { text: s(noPad), correct: false, why: '忘了先補三個 0（乘以 $x^3$），直接計算 $u(x) \\bmod g(x)$。' },
             { text: s(reversed), correct: false, why: '餘數的位元順序寫反了。第二課最左邊是最高次項。' },
-            { text: s(enc.division.quotient.slice(1)), correct: false, why: '這是商的一部分，不是餘數。同位位元是「餘數」。' },
+            { text: s(enc.division.quotient.slice(1)), correct: false, why: '這是商的一部分，不是餘數；parity bit 是「餘數」。' },
           ],
           r,
           randBitsStr(3, r),
@@ -172,12 +172,12 @@ export function makeQuestion(type: QuizType, seed: number): QuizQuestion {
         type,
         chapter: 'l2-4',
         chapterLabel: '2-4 Syndrome 計算',
-        prompt: `收到 $r = ${s(rv)}$，計算 Syndrome $S(x) = r(x) \\bmod (x^3+x+1)$（以 3 位元表示）。`,
+        prompt: `收到 $r = ${s(rv)}$，計算 syndrome $S(x) = r(x) \\bmod (x^3+x+1)$（以 3 位元表示）。`,
         options: finalize(
           { text: s(S), correct: true, why: `$S(x) = r(x) \\bmod g(x)$；因為 $c(x) \\bmod g(x)=0$，$S = x^{${exp}} \\bmod g(x) = ${s(S)}$。` },
           [
-            { text: s(intToBits(pos, 3)), correct: false, why: '把錯誤「位置」直接寫成二進位。Syndrome 是餘數，不是位置編號。' },
-            { text: s(intToBits(exp, 3)), correct: false, why: '把錯誤「次方」寫成二進位。Syndrome 是 $x^i \\bmod g(x)$，不是 $i$ 本身。' },
+            { text: s(intToBits(pos, 3)), correct: false, why: '把錯誤「位置」直接寫成二進位；syndrome 是餘數，不是位置編號。' },
+            { text: s(intToBits(exp, 3)), correct: false, why: '把錯誤「次方」寫成二進位；syndrome 是 $x^i \\bmod g(x)$，不是 $i$ 本身。' },
             { text: s([...S].reverse() as Bit[]), correct: false, why: '餘數位元順序寫反了（第二課最左邊是 $x^2$ 係數）。' },
           ],
           r,
@@ -193,12 +193,12 @@ export function makeQuestion(type: QuizType, seed: number): QuizQuestion {
         id,
         type,
         chapter: 'l2-6',
-        chapterLabel: '2-6 Key Equation',
+        chapterLabel: '2-6 Key equation',
         prompt: `在 $\\mathrm{GF}(8)$（$g(x)=x^3+x+1$，$\\alpha^3=\\alpha+1$）中，$\\alpha^{${k}}$ 的三位元表示（$\\alpha^2\\,\\alpha\\,1$ 的係數）是？`,
         options: finalize(
           { text: s(fieldToBits(a)), correct: true, why: `逐次乘 $\\alpha$，遇到 $\\alpha^3$ 就換成 $\\alpha+1$，得到 $\\alpha^{${k}}$ = ${s(fieldToBits(a))}。` },
           [
-            { text: s(intToBits(k, 3)), correct: false, why: `把指數 ${k} 寫成二進位。有限體元素的表示是多項式係數，不是指數。` },
+            { text: s(intToBits(k, 3)), correct: false, why: `把指數 ${k} 寫成二進位；finite field 元素的表示是多項式係數，不是指數。` },
             { text: s([...fieldToBits(a)].reverse() as Bit[]), correct: false, why: '係數順序寫反了（左邊應是 $\\alpha^2$ 的係數）。' },
             { text: s(fieldToBits(alphaPow(k - 1))), correct: false, why: `這是 $\\alpha^{${k - 1}}$，少乘了一次 $\\alpha$。` },
           ],
@@ -218,12 +218,12 @@ export function makeQuestion(type: QuizType, seed: number): QuizQuestion {
         id,
         type,
         chapter: 'l2-7',
-        chapterLabel: '2-7 Chien Search',
-        prompt: `Syndrome $S_1 = ${s(fieldToBits(S1))} = \\alpha^{${i}}$，錯誤定位多項式 $\\sigma(z) = 1 + \\alpha^{${i}}z$。Chien Search 在 $z = \\alpha^0,\\dots,\\alpha^6$ 中找到的根是？`,
+        chapterLabel: '2-7 Chien search',
+        prompt: `已知 syndrome $S_1 = ${s(fieldToBits(S1))} = \\alpha^{${i}}$，error-locator polynomial $\\sigma(z) = 1 + \\alpha^{${i}}z$。Chien search 在 $z = \\alpha^0,\\dots,\\alpha^6$ 中找到的根是？`,
         options: finalize(
           { text: opt(j), correct: true, why: `$\\sigma(\\alpha^{${j}}) = 1 + \\alpha^{${i}+${j}} = 1 + \\alpha^{7} = 0$。根 $z = \\alpha^{-i}$，所以錯誤次方 $i = ${i}$，即從左數第 ${pos} 個 bit。` },
           [
-            { text: opt(i), correct: false, why: `$\\sigma(\\alpha^{${i}}) = 1+\\alpha^{${(2 * i) % 7}} \\ne 0$。根是 $\\alpha^{-i}$ 而不是 $\\alpha^{i}$：錯誤定位數 $X=\\alpha^i$ 是根的倒數。` },
+            { text: opt(i), correct: false, why: `$\\sigma(\\alpha^{${i}}) = 1+\\alpha^{${(2 * i) % 7}} \\ne 0$。根是 $\\alpha^{-i}$ 而不是 $\\alpha^{i}$：error-location number $X=\\alpha^i$ 是根的倒數。` },
             { text: opt(pos % 7), correct: false, why: '把「從左數的位置」當成指數。位置與次方的關係是 $i = 7 - \\text{位置}$。' },
             { text: opt((j + 1) % 7), correct: false, why: `$\\sigma(\\alpha^{${(j + 1) % 7}}) = 1+\\alpha \\ne 0$，不是根。` },
           ],
@@ -247,12 +247,12 @@ export function makeQuestion(type: QuizType, seed: number): QuizQuestion {
         type,
         chapter: 'l2-8',
         chapterLabel: '2-8 XOR 錯誤更正與驗證',
-        prompt: `收到 $r = ${s(rv)}$（假設至多一個錯誤），Syndrome $S = ${s(d.syndrome)}$。更正後的 codeword $\\hat c$ 是？`,
+        prompt: `收到 $r = ${s(rv)}$（假設至多一個錯誤），syndrome $S = ${s(d.syndrome)}$。更正後的 codeword $\\hat c$ 是？`,
         options: finalize(
           { text: s(d.corrected), correct: true, why: `查表 $S = ${s(d.syndrome)}$ → 位置 ${d.position}（$x^{${d.exponent}}$），$\\hat c = r \\oplus ${s(d.estimatedError)} = ${s(d.corrected)}$。` },
           [
-            { text: s(flipAt(asBinary)), correct: false, why: `把 $S = ${s(d.syndrome)}$ 當成二進位數 ${asBinary}，翻轉第 ${asBinary} 位。Syndrome 不是位置的二進位，必須查表或用 Chien Search。` },
-            { text: s(rv), correct: false, why: 'Syndrome 不為 0，表示有錯誤，不能原樣輸出。' },
+            { text: s(flipAt(asBinary)), correct: false, why: `把 $S = ${s(d.syndrome)}$ 當成二進位數 ${asBinary}，翻轉第 ${asBinary} 位；syndrome 不是位置的二進位，必須查表或用 Chien search。` },
+            { text: s(rv), correct: false, why: '這個 syndrome 不為 0，表示有錯誤，不能原樣輸出。' },
             { text: s(flipAt(confused)), correct: false, why: '混淆了「從左數的位置」與「多項式次方」。' },
           ],
           r,
@@ -271,14 +271,14 @@ export function makeQuestion(type: QuizType, seed: number): QuizQuestion {
         id,
         type,
         chapter: 'l2-9',
-        chapterLabel: '2-9 超過更正能力：兩個錯誤',
-        prompt: `送出 $c = ${s(c)}$，位置 ${p1}、${p2} 發生錯誤，收到 $r = ${s(rv)}$。只能更正一個錯誤的 Hamming(7,4) 解碼器輸出什麼？`,
+        chapterLabel: '2-9 超過 error-correcting capability：兩個錯誤',
+        prompt: `送出 $c = ${s(c)}$，位置 ${p1}、${p2} 發生錯誤，收到 $r = ${s(rv)}$。只能更正一個錯誤的 Hamming(7,4) decoder 輸出什麼？`,
         options: finalize(
-          { text: s(d.corrected), correct: true, why: `$S = ${s(d.syndrome)}$ 剛好等於位置 ${d.position} 的單一錯誤 Syndrome，解碼器翻轉位置 ${d.position}，得到另一個合法 codeword：這就是誤更正（Miscorrection）。` },
+          { text: s(d.corrected), correct: true, why: `$S = ${s(d.syndrome)}$ 剛好等於位置 ${d.position} 的單一錯誤 syndrome，decoder 翻轉位置 ${d.position}，得到另一個合法 codeword：這就是 miscorrection。` },
           [
-            { text: s(c), correct: false, why: '兩個錯誤超出 $t=1$ 的能力，解碼器無法還原原 codeword。' },
-            { text: s(rv), correct: false, why: '普通 Hamming 解碼器沒有「偵測雙錯並保留」的機制；那是 SECDED 才有的行為。' },
-            { text: s(oneFixed), correct: false, why: '解碼器不知道真正的錯誤位置，它只會翻轉 Syndrome 所指的那一位。' },
+            { text: s(c), correct: false, why: '兩個錯誤超出 $t=1$ 的能力，decoder 無法還原原 codeword。' },
+            { text: s(rv), correct: false, why: '普通 Hamming decoder 沒有「偵測雙錯並保留」的機制；那是 SECDED 才有的行為。' },
+            { text: s(oneFixed), correct: false, why: '真正的錯誤位置 decoder 並不知道，它只會翻轉 syndrome 所指的那一位。' },
           ],
           r,
           randBitsStr(7, r),
@@ -297,14 +297,14 @@ export function makeQuestion(type: QuizType, seed: number): QuizQuestion {
         id,
         type,
         chapter: 'l2-10',
-        chapterLabel: '2-10 超過更正能力：三個錯誤',
-        prompt: `送出訊息 $u = ${s(u)}$（$c = ${s(c)}$），錯誤向量 $e = ${s(e)}$（位置 ${positions.join('、')}）。解碼器輸出的訊息 $\\hat u$ 是？`,
+        chapterLabel: '2-10 超過 error-correcting capability：三個錯誤',
+        prompt: `送出訊息 $u = ${s(u)}$（$c = ${s(c)}$），error vector $e = ${s(e)}$（位置 ${positions.join('、')}）。此時 decoder 輸出的訊息 $\\hat u$ 是？`,
         options: finalize(
-          { text: s(d.message), correct: true, why: `$e(x) = x^{${shift}}g(x)$ 本身就是 codeword，所以 $S = 0$，解碼器以為沒錯，直接取前四位 $${s(d.message)}$（未偵測錯誤）。` },
+          { text: s(d.message), correct: true, why: `$e(x) = x^{${shift}}g(x)$ 本身就是 codeword，所以 $S = 0$，decoder 以為沒錯，直接取前四位 $${s(d.message)}$（undetected error）。` },
           [
-            { text: s(u), correct: false, why: '三個錯誤超出能力範圍，而且這個錯誤模式完全不會被偵測到。' },
-            { text: s(vecAdd(rv, errorVector([1])).slice(0, 4)), correct: false, why: '$S = 0$，解碼器不會翻轉任何位元。' },
-            { text: '偵測到錯誤，不輸出', correct: false, why: '$e(x)$ 被 $g(x)$ 整除，$S = 0$，解碼器根本察覺不到錯誤。' },
+            { text: s(u), correct: false, why: '三個錯誤超出能力範圍，而且這個 error vector 完全不會被偵測到。' },
+            { text: s(vecAdd(rv, errorVector([1])).slice(0, 4)), correct: false, why: '$S = 0$，decoder 不會翻轉任何位元。' },
+            { text: '偵測到錯誤，不輸出', correct: false, why: '$e(x)$ 被 $g(x)$ 整除，$S = 0$，decoder 根本察覺不到錯誤。' },
           ],
           r,
           randBitsStr(4, r),
@@ -323,14 +323,14 @@ export function makeQuestion(type: QuizType, seed: number): QuizQuestion {
       const LABEL: Record<SecdedL2Case, string> = {
         'no-error': '沒有錯誤（No Error）',
         single: '單一錯誤，更正（Single Error, Correct）',
-        overall: '整體同位位元錯誤（Overall Parity Bit Error）',
+        overall: 'Overall parity bit 錯誤',
         double: '偵測到雙重錯誤，不更正（Double Error Detected）',
       };
       const WHY: Record<SecdedL2Case, string> = {
-        'no-error': '需要 $S = 0$ 且整體同位為偶。',
-        single: '需要 $S \\ne 0$ 且整體同位為奇。',
-        overall: '需要 $S = 0$ 且整體同位為奇。',
-        double: '需要 $S \\ne 0$ 且整體同位為偶。',
+        'no-error': '需要 $S = 0$ 且 overall parity 為偶。',
+        single: '需要 $S \\ne 0$ 且 overall parity 為奇。',
+        overall: '需要 $S = 0$ 且 overall parity 為奇。',
+        double: '需要 $S \\ne 0$ 且 overall parity 為偶。',
       };
       const sz = res.syndrome.every((b) => b === 0);
       return {
@@ -338,11 +338,11 @@ export function makeQuestion(type: QuizType, seed: number): QuizQuestion {
         type,
         chapter: 'l2-11',
         chapterLabel: '2-11 SECDED 的補救',
-        prompt: `Extended Hamming(8,4) 收到 $r = ${s(r8)}$。前 7 位的 $S = ${s(res.syndrome)}$，8 個位元的整體同位為${res.parity ? '奇' : '偶'}。SECDED 的判斷是？`,
+        prompt: `收到 extended Hamming(8,4) 的 $r = ${s(r8)}$。前 7 位的 $S = ${s(res.syndrome)}$，8 個位元的 overall parity 為${res.parity ? '奇' : '偶'}。SECDED 的判斷是？`,
         options: (['no-error', 'single', 'overall', 'double'] as SecdedL2Case[]).map((k) => ({
           text: LABEL[k],
           correct: k === res.case,
-          why: k === res.case ? `$S ${sz ? '=' : '\\ne'} 0$、整體同位${res.parity ? '奇' : '偶'} → ${LABEL[k]}。` : WHY[k],
+          why: k === res.case ? `$S ${sz ? '=' : '\\ne'} 0$、overall parity 為${res.parity ? '奇' : '偶'} → ${LABEL[k]}。` : WHY[k],
         })),
         explanation: `實際錯誤數 = ${nErr}${positions.length ? `（位置 ${positions.join('、')}）` : ''}。在「至多兩個錯誤」的假設下，判斷保證正確。`,
       };

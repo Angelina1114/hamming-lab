@@ -185,7 +185,7 @@ function PathTable() {
           <thead>
             <tr className="text-left text-xs text-slate-500">
               <th className="py-1 pr-2">雜訊翻了</th>
-              <th className="pr-2">收到的字</th>
+              <th className="pr-2">Received word</th>
               <th className="pr-2">離 A</th>
               <th className="pr-2">離 B</th>
               <th className="pr-2">{L} 盞警示燈</th>
@@ -345,20 +345,20 @@ export default function M4Limits() {
     <div>
       <ModuleHeader moduleId={ID}>
         <p>
-          第 3 章看到：雜訊只翻 {T} 位時，燈號指出位置，翻回來就好；翻 2 位時，燈號指向第三個位置，解碼器反而誤更正：把原本沒錯的位置也翻掉。這一章回答兩個問題：這個碼到底能<strong>保證</strong>什麼？只有 {L} 盞燈，codeword 最長能做多長？
+          第 3 章看到：雜訊只翻 {T} 位時，燈號指出位置，翻回來就好；翻 2 位時，燈號指向第三個位置，decoder 反而造成 miscorrection：把原本沒錯的位置也翻掉。這一章回答兩個問題：這個 code 到底能<strong>保證</strong>什麼？只有 {L} 盞燈，codeword 最長能做多長？
         </p>
       </ModuleHeader>
       <KeyPoint>
-        雜訊每翻一位，就把收到的字往前推一步：<M>{`d_{\\min} = ${D_MIN}`}</M> 保證翻 {T} 位修得回來，而 {L} 盞燈的 {STATES} 種狀態剛好用完。
+        雜訊每翻一位，就把 received word 往前推一步：<M>{`d_{\\min} = ${D_MIN}`}</M> 保證翻 {T} 位修得回來，而 {L} 盞燈的 {STATES} 種狀態剛好用完。
       </KeyPoint>
       <FlowBar moduleId={ID} />
 
       <div className="space-y-12">
-        <Stage kind="why" moduleId={ID} title={`翻 ${T} 位修得好，翻 2 位就誤更正`}>
+        <Stage kind="why" moduleId={ID} title={`翻 ${T} 位修得好，翻 2 位就造成 miscorrection`}>
           <Card title="第 3 章留下的兩個問題">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <Stat label={`翻 ${T} 位（全部 ${ONE.total} 種）`} value={`${ONE.ok}/${ONE.total}`} sub="修好" tone="emerald" />
-              <Stat label={`翻 2 位（全部 ${TWO.total} 種）`} value={`${TWO.mis}/${TWO.total}`} sub="誤更正：燈號指向第三個位置" tone="rose" />
+              <Stat label={`翻 2 位（全部 ${TWO.total} 種）`} value={`${TWO.mis}/${TWO.total}`} sub="Miscorrection：燈號指向第三個位置" tone="rose" />
             </div>
             <ol className="mt-3 list-decimal space-y-1 pl-5 text-sm leading-relaxed text-slate-700">
               <li>
@@ -369,31 +369,31 @@ export default function M4Limits() {
               </li>
             </ol>
             <p className="mt-3 text-sm leading-relaxed text-slate-700">
-              先換一個看法：<strong>雜訊每翻一位，收到的字就離送出的 codeword 遠一步。</strong>翻 {T} 位還很近；翻 2 位，可能已經走到另一個 codeword 旁邊。
+              先換一個看法：<strong>雜訊每翻一位，received word 就離送出的 codeword 遠一步。</strong>翻 {T} 位還很近；翻 2 位，可能已經走到另一個 codeword 旁邊。
             </p>
           </Card>
         </Stage>
 
         <Stage kind="definition" moduleId={ID} title="接收端猜最近的 codeword：從 A 走到 B">
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <Card title="接收端的猜法：離收到的字最近的 codeword">
+            <Card title="接收端的猜法：離 received word 最近的 codeword">
               <div className="space-y-2 text-sm leading-relaxed text-slate-700">
                 <p>
-                  接收端看不到雜訊，只看到收到的字 r。它的設計是<strong>猜離 r 最近的 codeword</strong>，理由是：雜訊翻 1 位比翻 2 位常見得多，翻得越少越可能發生，所以最近的那個最可能就是送出的。
+                  接收端看不到雜訊，只看到 received word r。它的設計是<strong>猜離 r 最近的 codeword</strong>，理由是：雜訊翻 1 位比翻 2 位常見得多，翻得越少越可能發生，所以最近的那個最可能就是送出的。
                 </p>
                 <p className="text-slate-600">
-                  第 3 章的 {L} 盞燈，就是這個猜法的快速硬體版：不必和 {WORDS.length} 個 codeword 一一比較，看燈就知道最近的是誰（全部 {2 ** N} 個收到的字都驗證過{LAMPS_ARE_NEAREST ? ' ✓' : ' ✗'}，比較工具在下方進階）。
+                  第 3 章的 {L} 盞燈，就是這個猜法的快速硬體版：不必和 {WORDS.length} 個 codeword 一一比較，看燈就知道最近的是誰（全部 {2 ** N} 個 received word 都驗證過{LAMPS_ARE_NEAREST ? ' ✓' : ' ✗'}，比較工具在下方進階）。
                 </p>
               </div>
             </Card>
-            <Card title="寫成數學：距離與最近 codeword 解碼">
+            <Card title="寫成數學：distance 與 nearest-codeword decoding">
               <div className="space-y-2 text-sm leading-relaxed text-slate-700">
                 <p>
-                  兩個字串的<strong>距離</strong>，就是它們有幾個位置不同，也就是雜訊<strong>至少要翻幾位</strong>，才能把一個變成另一個。x + y 的 1 正好是 x、y 不同的位置（1 + 1 = 0），所以
+                  兩個字串的 <strong>Hamming distance</strong>，就是它們有幾個位置不同，也就是雜訊<strong>至少要翻幾位</strong>，才能把一個變成另一個。x + y 的 1 正好是 x、y 不同的位置（1 + 1 = 0），所以
                 </p>
                 <Tex block>{'d(x,y) = \\left|\\{\\, j : x_j \\neq y_j \\,\\}\\right| = \\mathrm{wt}(x+y)'}</Tex>
                 <p>
-                  接收端的猜法叫<strong>最近 codeword 解碼</strong>（Nearest-codeword decoding）：收到 r，選 <M>{'d(r,c)'}</M> 最小的 codeword <M>c</M>。
+                  接收端的猜法叫 <strong>nearest-codeword decoding（最近 codeword 解碼）</strong>：收到 r，選 <M>{'d(r,c)'}</M> 最小的 codeword <M>c</M>。
                 </p>
               </div>
             </Card>
@@ -415,7 +415,7 @@ export default function M4Limits() {
               </div>
               <div className="rounded-xl border border-rose-300 bg-rose-50/70 p-3 text-sm leading-relaxed text-rose-950">
                 <div className="mb-1 font-bold text-rose-800">翻 2 位：過了中線，修不回來</div>
-                這條路上，離 A {STEP2.dA}、離 B 只剩 {STEP2.dB}：過了中線，最近的變成 B。只偵測的話燈會亮，接收端知道「有錯」；硬要更正，燈號指向位置 {STEP2.dec.position}，翻下去就變成 B：誤更正。
+                這條路上，離 A {STEP2.dA}、離 B 只剩 {STEP2.dB}：過了中線，最近的變成 B。只偵測的話燈會亮，接收端知道「有錯」；硬要更正，燈號指向位置 {STEP2.dec.position}，翻下去就變成 B：miscorrection。
               </div>
             </div>
             <p className="mt-4 text-sm leading-relaxed text-slate-600">
@@ -424,21 +424,21 @@ export default function M4Limits() {
           </Card>
         </Stage>
 
-        <Stage kind="calculation" moduleId={ID} title={`最小距離 ${D_MIN}：最近的兩個 codeword 也隔 ${D_MIN} 步`}>
+        <Stage kind="calculation" moduleId={ID} title={`Minimum distance ${D_MIN}：最近的兩個 codeword 也隔 ${D_MIN} 步`}>
           <LabGrid
             main={
               <Card title="不只 A、B 這一對">
                 <div className="space-y-2 text-sm leading-relaxed text-slate-700">
                   <p>
-                    A、B 不是特例。把 {WORDS.length} 個 codeword 兩兩比較（{MD.pairsChecked} 對），最近的一對也差 {D_MIN} 位。這個最小值叫<strong>最小距離</strong>：
+                    A、B 不是特例。把 {WORDS.length} 個 codeword 兩兩比較（{MD.pairsChecked} 對），最近的一對也差 {D_MIN} 位。這個最小值叫 <strong>minimum distance</strong>：
                   </p>
                   <Tex block>{`d_{\\min} = \\min_{c \\neq c'} d(c, c') = ${D_MIN}`}</Tex>
                   <p>
-                    所以不管發送端送哪一個 codeword，翻 {T} 位後，它離原本的 codeword 是 {T}，離其他 codeword 至少 {D_MIN} − {T} = {D_MIN - T}：最近的永遠是送出的那一個，一定修得回來。整個碼能保證多少，由最容易混淆的那一對決定：
+                    所以不管發送端送哪一個 codeword，翻 {T} 位後，它離原本的 codeword 是 {T}，離其他 codeword 至少 {D_MIN} − {T} = {D_MIN - T}：最近的永遠是送出的那一個，一定修得回來。整個 code 能保證多少，由最容易混淆的那一對決定：
                   </p>
                   <Tex block>{`t = \\left\\lfloor \\frac{d_{\\min}-1}{2} \\right\\rfloor = \\left\\lfloor \\frac{${D_MIN}-1}{2} \\right\\rfloor = ${T}`}</Tex>
                   <p className="text-slate-600">
-                    只偵測、不更正的話，翻 1 到 {DETECT} 位燈都會亮：偵測得到 <M>{`d_{\\min} - 1 = ${DETECT}`}</M> 位。但同一個解碼器不能一邊修 {T} 位、一邊偵測 2 位：翻 2 位的字，看起來就像另一個 codeword 翻了 {T} 位（第 5 章）。
+                    只偵測、不更正的話，翻 1 到 {DETECT} 位燈都會亮：偵測得到 <M>{`d_{\\min} - 1 = ${DETECT}`}</M> 位。但同一個 decoder 不能一邊修 {T} 位、一邊偵測 2 位：翻 2 位的字，看起來就像另一個 codeword 翻了 {T} 位（第 5 章）。
                   </p>
                 </div>
               </Card>
@@ -451,7 +451,7 @@ export default function M4Limits() {
                     H 的設計 ① 沒有全 0 的欄：翻 1 位，燈一定亮。H 的設計 ② 沒有兩欄相同：翻 2 位時亮的是兩欄之和，也一定不是全暗。燈全暗才代表收到的是 codeword，所以翻 1、2 位都不可能把一個 codeword 變成另一個：codeword 之間至少隔 {D_MIN} 步。
                   </p>
                   <p className="mt-2 text-xs text-slate-500">
-                    H 的設計 ①② 見<ChLink to="matrix">第 2 章</ChLink>；用 H 的欄直接讀出最小距離的方法，見下方進階「線性碼的捷徑」。
+                    H 的設計 ①② 見<ChLink to="matrix">第 2 章</ChLink>；用 H 的欄直接讀出 minimum distance 的方法，見下方進階「Linear code 的捷徑」。
                   </p>
                 </Card>
               </>
@@ -468,7 +468,7 @@ export default function M4Limits() {
                     要更正 1 個錯，接收端只看燈號，就得分出 n + 1 種情況：<strong>沒有錯</strong>（不動），或<strong>錯在 n 個位置的哪一個</strong>（翻那一位）。每一種情況都要有自己的燈號，否則兩種情況亮法一樣，接收端就不知道該做哪一件事。
                   </p>
                   <p>
-                    ℓ 個同位位元 = ℓ 盞警示燈（<M>{'\\ell = n - k'}</M>），只有 <M>{'2^{\\ell}'}</M> 種亮法，所以：
+                    ℓ 個 parity bit = ℓ 盞警示燈（<M>{'\\ell = n - k'}</M>），只有 <M>{'2^{\\ell}'}</M> 種亮法，所以：
                   </p>
                   <Tex block>{'\\underbrace{2^{\\ell}}_{\\ell\\text{ 盞燈的狀態數}} \\;\\ge\\; \\underbrace{n + 1}_{\\text{要分辨的情況數}}'}</Tex>
                   <p>
@@ -479,7 +479,7 @@ export default function M4Limits() {
                   <div className="mb-1 font-bold text-slate-900">同一件事，前面已經出現過兩次</div>
                   <ul className="list-disc space-y-1 pl-5">
                     <li>
-                      <ChLink to="encode">第 1 章</ChLink>：{L} 個同位位元有 {PATTERNS} 種失敗組合，({N},{K}) 剛好用滿 {N} 個位置。
+                      <ChLink to="encode">第 1 章</ChLink>：{L} 個 parity bit 有 {PATTERNS} 種失敗組合，({N},{K}) 剛好用滿 {N} 個位置。
                     </li>
                     <li>
                       <ChLink to="matrix">第 2 章 H 的設計 ③</ChLink>：{L} 盞燈最多分辨 {PATTERNS} 個位置；要能指出是哪一位出錯，{L} 個檢查器能保護的長度已經到最大。
@@ -489,10 +489,10 @@ export default function M4Limits() {
                 </div>
                 <div className="mt-3 space-y-2 text-sm leading-relaxed text-slate-700">
                   <p>
-                    教科書上的 <strong>Hamming Bound</strong> 寫成左邊的樣子；更正 1 個錯時，兩邊同除以 <M>{'2^k'}</M>，就是右邊的燈號條件（<M>{'n - k'}</M> 正是同位位元的個數 ℓ）：
+                    教科書上的 <strong>Hamming bound</strong> 寫成左邊的樣子；更正 1 個錯時，兩邊同除以 <M>{'2^k'}</M>，就是右邊的燈號條件（<M>{'n - k'}</M> 正是 parity bit 的個數 ℓ）：
                   </p>
                   <Tex block>{'2^{k}(1 + n) \\le 2^{n} \\iff 1 + n \\le 2^{n-k} = 2^{\\ell}'}</Tex>
-                  <p className="text-slate-600">左邊的一般形式（要更正 t 個錯）和它的「漢明球」圖像，見下方進階。</p>
+                  <p className="text-slate-600">左邊的一般形式（要更正 t 個錯）和它的 Hamming ball（漢明球）圖像，見下方進階。</p>
                 </div>
               </Card>
             }
@@ -504,7 +504,7 @@ export default function M4Limits() {
                     全暗 = 不動，其餘 {PATTERNS} 種各指一個位置（讀成 {READ.map((i) => LAMP[i]).join('')} 就是位置編號）：要分辨的 {N} + 1 種情況，剛好用掉 <M>{`2^{${L}} = ${STATES}`}</M> 種燈號。
                   </p>
                 </Card>
-                <Card title="Hamming Code 家族：每多 1 盞燈，長度約翻倍">
+                <Card title="Hamming code 家族：每多 1 盞燈，長度約翻倍">
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
@@ -536,10 +536,10 @@ export default function M4Limits() {
                     </table>
                   </div>
                   <p className="mt-2 text-xs leading-relaxed text-slate-600">
-                    多 1 盞燈，能保護的位置約多一倍，同位位元卻只多 1 個：{LONG.m} 盞燈保護 {LONG.n} 個位置，其中 {LONG.k} 個是資料。每一列都讓 <M>{'2^{\\ell} = n + 1'}</M>：燈號一種都不浪費（下一節）。第二課 2-12 把 ℓ 記作 m。
+                    多 1 盞燈，能保護的位置約多一倍，parity bit 卻只多 1 個：{LONG.m} 盞燈保護 {LONG.n} 個位置，其中 {LONG.k} 個是資料。每一列都讓 <M>{'2^{\\ell} = n + 1'}</M>：燈號一種都不浪費（下一節）。第二課 2-12 把 ℓ 記作 m。
                   </p>
                   <p className="mt-1 text-xs text-slate-500">
-                    訊息比 {K} 位元長怎麼辦？切成小塊還是換更長的 Hamming Code、長度對不上時的縮短碼，見{' '}
+                    訊息比 {K} 位元長怎麼辦？切成小塊還是換更長的 Hamming code、長度對不上時的 shortened code（縮短碼），見{' '}
                     <a href="#/l2-12" className="font-semibold text-overall-700 hover:underline">
                       第二課 2-12
                     </a>
@@ -551,15 +551,15 @@ export default function M4Limits() {
           />
         </Stage>
 
-        <Stage kind="experiment" moduleId={ID} title={`完美碼：${STATES} 種燈號，一種都沒浪費`}>
+        <Stage kind="experiment" moduleId={ID} title={`Perfect code（完美碼）：${STATES} 種燈號，一種都沒浪費`}>
           <LabGrid
             main={<ReceivedOutcomes />}
             aside={
               <>
-                <Card title="等號成立 = 完美碼">
+                <Card title="等號成立 = perfect code">
                   <div className="space-y-2 text-sm leading-relaxed text-slate-700">
                     <p>
-                      Hamming({N},{K}) 讓 <M>{'2^{\\ell} \\ge n + 1'}</M> 的等號成立：{STATES} = {N} + 1。用燈來說：{L} 盞燈的 {STATES} 種狀態，<strong>每一種都有用到，沒有浪費</strong>。這樣的碼叫<strong>完美碼</strong>（Perfect code）。
+                      Hamming({N},{K}) 讓 <M>{'2^{\\ell} \\ge n + 1'}</M> 的等號成立：{STATES} = {N} + 1。用燈來說：{L} 盞燈的 {STATES} 種狀態，<strong>每一種都有用到，沒有浪費</strong>。這樣的 code 叫 <strong>perfect code</strong>。
                     </p>
                     <p>
                       整個空間也剛好分完：{HB.codewords} 個 codeword × {HB.volume} 種接收結果 = {HB.lhs}，正是全部 <M>{`2^{${N}} = ${HB.rhs}`}</M> 個 {N} 位元字串，{PARTITION.isPartition ? '每一個都恰好出現一次' : '✗ 有重複或遺漏'}。收到任何字串，燈號都對應一個明確的動作。
@@ -568,7 +568,7 @@ export default function M4Limits() {
                 </Card>
                 <Callout kind="warning" title="代價：沒有燈號留給「錯了兩個」">
                   <p>
-                    翻 2 位時，亮的是兩欄之和：不是全暗（H 的設計 ①②），就只能是 {PATTERNS} 種「翻位置 j」之一。{STATES} 種狀態都已經有主人，解碼器只能照著翻：翻 2 位一律被誤更正（{TWO.mis}/{TWO.total}）。
+                    翻 2 位時，亮的是兩欄之和：不是全暗（H 的設計 ①②），就只能是 {PATTERNS} 種「翻位置 j」之一。{STATES} 種狀態都已經有主人，decoder 只能照著翻：翻 2 位一律造成 miscorrection（{TWO.mis}/{TWO.total}）。
                   </p>
                 </Callout>
               </>
@@ -579,22 +579,22 @@ export default function M4Limits() {
         <Stage kind="conclusion" moduleId={ID} title={`修 ${T} 位的保證，${STATES} 種燈號剛好用完`}>
           <Callout kind="key" title="結論">
             <p>
-              <strong>能保證什麼</strong>：雜訊每翻一位，收到的字就走一步。codeword 之間至少隔 <M>{`d_{\\min} = ${D_MIN}`}</M> 步：翻 {T} 位還離原本的 codeword 最近，修得回來；翻 2 位可能走到別人旁邊：只能偵測，硬要更正就是誤更正。
+              <strong>能保證什麼</strong>：雜訊每翻一位，received word 就走一步。codeword 之間至少隔 <M>{`d_{\\min} = ${D_MIN}`}</M> 步：翻 {T} 位還離原本的 codeword 最近，修得回來；翻 2 位可能走到別人旁邊：只能偵測，硬要更正就是 miscorrection。
             </p>
             <p>
               <strong>能做多長</strong>：要更正 1 個錯，ℓ 盞燈的 <M>{'2^{\\ell}'}</M> 種狀態要分出 n + 1 種情況，<M>{'2^{\\ell} \\ge n + 1'}</M>。{L} 盞燈最多 {PATTERNS} 個位置：和<ChLink to="encode">第 1 章</ChLink>、<ChLink to="matrix">第 2 章 H 的設計 ③</ChLink>是同一件事。
             </p>
             <p>
-              <strong>完美碼</strong>：Hamming Code 讓等號成立，每一種燈號都有用到；代價是沒有一種燈號能說「錯了兩個」。要讓接收端回報雙錯，就得多出可用的狀態：<ChLink to="secded">第 5 章 SECDED</ChLink> 多加 1 個 P0（整體同位位元）。
+              <strong>Perfect code</strong>：Hamming code 讓等號成立，每一種燈號都有用到；代價是沒有一種燈號能說「錯了兩個」。要讓接收端回報雙錯，就得多出可用的狀態：<ChLink to="secded">第 5 章 SECDED</ChLink> 多加 1 個 P0（overall parity bit）。
             </p>
           </Callout>
           <Misconceptions
             items={[
-              { wrong: '完美碼什麼錯都修得好。', right: `「完美」只代表 ${STATES} 種燈號都用到、沒有浪費。翻 2 位時燈號照樣指向某一位，解碼器照樣翻，結果誤更正。` },
+              { wrong: 'perfect code 什麼錯都修得好。', right: `「perfect」只代表 ${STATES} 種燈號都用到、沒有浪費。翻 2 位時燈號照樣指向某一位，decoder 照樣翻，結果造成 miscorrection。` },
               {
                 wrong: (
                   <>
-                    <M>{'d_{\\min}'}</M> 是 codeword 之間的平均距離。
+                    <M>{'d_{\\min}'}</M> 是 codeword 之間的平均 distance。
                   </>
                 ),
                 right: (
@@ -606,7 +606,7 @@ export default function M4Limits() {
               {
                 wrong: (
                   <>
-                    <M>{'2^{\\ell} \\ge n + 1'}</M> 是任何碼的長度上限。
+                    <M>{'2^{\\ell} \\ge n + 1'}</M> 是任何 code 的長度上限。
                   </>
                 ),
                 right: '它是「要更正 1 個錯」的極限。要更正更多錯，要分辨的情況更多，長度上限更緊（一般形式見進階）。',
@@ -618,8 +618,8 @@ export default function M4Limits() {
               title="延伸"
               links={[
                 { to: 'secded', text: '多 1 個位元，錯 2 位就能被偵測' },
-                { to: 'l2-9', text: '兩個錯誤一定誤更正：原因與窮舉表' },
-                { to: 'l2-12', text: '更長的 Hamming Code 與縮短碼' },
+                { to: 'l2-9', text: '兩個錯誤一定造成 miscorrection：原因與窮舉表' },
+                { to: 'l2-12', text: '更長的 Hamming code 與 shortened code' },
               ]}
             />
           </Card>
@@ -644,22 +644,22 @@ function Advanced() {
           <Layers className="h-3.5 w-3.5" />
           進階 <span className="opacity-60">Advanced</span>
         </span>
-        <h2 className="text-lg font-bold text-slate-900 sm:text-xl">距離與 Hamming Bound 的完整工具</h2>
+        <h2 className="text-lg font-bold text-slate-900 sm:text-xl">Distance 與 Hamming bound 的完整工具</h2>
       </div>
-      <p className="text-sm text-slate-600">主線只用一條路和 {L} 盞燈。這裡收著完整的距離工具、漢明球，以及要更正 t 個錯時的 Hamming Bound。</p>
+      <p className="text-sm text-slate-600">主線只用一條路和 {L} 盞燈。這裡收著完整的 distance 工具、Hamming ball，以及要更正 t 個錯時的 Hamming bound。</p>
 
-      <h3 className="pt-2 text-base font-bold text-slate-800">距離的完整工具</h3>
+      <h3 className="pt-2 text-base font-bold text-slate-800">Distance 的完整工具</h3>
       <div className="space-y-2">
         <Expandable title={`錯 2 位的精確情形：${DOUBLE.total} 種全部落在別人旁邊`}>
           <DoubleErrorFact />
         </Expandable>
-        <Expandable title="計算任兩個字串的距離">
+        <Expandable title="計算任兩個字串的 distance">
           <DistanceCalculator />
         </Expandable>
-        <Expandable title={`${WORDS.length} 個 codeword 彼此的距離：路徑、距離分佈與距離矩陣`}>
+        <Expandable title={`${WORDS.length} 個 codeword 彼此的 distance：路徑、distance 分佈與 distance 矩陣`}>
           <CodewordExplorer />
         </Expandable>
-        <Expandable title={`最近 codeword 解碼：和 ${WORDS.length} 個 codeword 一一比較`}>
+        <Expandable title={`Nearest-codeword decoding：和 ${WORDS.length} 個 codeword 一一比較`}>
           <NearestDecoder />
         </Expandable>
         <Expandable
@@ -674,12 +674,12 @@ function Advanced() {
         <Expandable
           title={
             <>
-              定理證明：<M>{'d_{\\min} \\ge 2t+1'}</M> ⇒ 最近 codeword 解碼可修正 t 個錯誤
+              定理證明：<M>{'d_{\\min} \\ge 2t+1'}</M> ⇒ nearest-codeword decoding 可修正 t 個錯誤
             </>
           }
         >
           <p>
-            設送出 <M>c</M>、收到 <M>r</M>，錯誤數 <M>{'\\le t'}</M>，所以 <M>{'d(r,c) \\le t'}</M>。對任何其他 codeword <M>{"c'"}</M>，由三角不等式：
+            設送出 <M>c</M>、收到 <M>r</M>，錯誤數 <M>{'\\le t'}</M>，所以 <M>{'d(r,c) \\le t'}</M>。對任何其他 codeword <M>{"c'"}</M>，由 triangle inequality：
           </p>
           <Tex block>{"d(r,c') \\ge d(c,c') - d(r,c) \\ge (2t+1) - t = t+1 > t \\ge d(r,c)."}</Tex>
           <p>所以 <M>c</M> 是唯一的最近 codeword。∎</p>
@@ -687,34 +687,34 @@ function Advanced() {
         <Expandable
           title={
             <>
-              線性碼的捷徑：<M>{'d_{\\min}'}</M> = 最小非零 codeword 重量
+              Linear code 的捷徑：<M>{'d_{\\min}'}</M> = 最小非零 codeword weight
             </>
           }
         >
           <p>
-            因為 <M>{"d(c,c') = \\mathrm{wt}(c+c')"}</M> 而 <M>{"c+c'"}</M> 也是 codeword，只要檢查 {WORDS.length - 1} 個非零 codeword 的重量，不用比較 {MD.pairsChecked} 對。Hamming(7,4) 的重量分佈：
-            {WEIGHTS.flatMap((a, w) => (a ? [`${a} 個重量 ${w}`] : [])).join('、')}；最小非零重量 = {MIN_WEIGHT} = <M>{'d_{\\min}'}</M>。
+            因為 <M>{"d(c,c') = \\mathrm{wt}(c+c')"}</M> 而 <M>{"c+c'"}</M> 也是 codeword，只要檢查 {WORDS.length - 1} 個非零 codeword 的 weight，不用比較 {MD.pairsChecked} 對。Hamming(7,4) 的 weight distribution（重量分佈）：
+            {WEIGHTS.flatMap((a, w) => (a ? [`${a} 個 weight ${w}`] : [])).join('、')}；最小非零 weight = {MIN_WEIGHT} = <M>{'d_{\\min}'}</M>。
           </p>
           <p>
-            用 H 來看：<M>{'Hc^{T}'}</M> 是把 c 裡「是 1 的位置」那幾欄加起來，所以有重量 w 的 codeword ⇔ H 有 w 欄加起來 = 0。沒有全 0 的欄（H 的設計 ①）排除重量 1，沒有兩欄相同（H 的設計 ②）排除重量 2，而 <M>{`h_${TRIPLE.join(' + h_')} ${TRIPLE_ZERO ? '=' : '\\neq'} 0`}</M> 給出重量 {TRIPLE.length}：<M>{`d_{\\min} = ${D_MIN}`}</M>。
+            用 H 來看：<M>{'Hc^{T}'}</M> 是把 c 裡「是 1 的位置」那幾欄加起來，所以有 weight w 的 codeword ⇔ H 有 w 欄加起來 = 0。沒有全 0 的欄（H 的設計 ①）排除 weight 1，沒有兩欄相同（H 的設計 ②）排除 weight 2，而 <M>{`h_${TRIPLE.join(' + h_')} ${TRIPLE_ZERO ? '=' : '\\neq'} 0`}</M> 給出 weight {TRIPLE.length}：<M>{`d_{\\min} = ${D_MIN}`}</M>。
           </p>
         </Expandable>
       </div>
 
-      <h3 className="pt-2 text-base font-bold text-slate-800">漢明球與 Hamming Bound 的一般形式</h3>
+      <h3 className="pt-2 text-base font-bold text-slate-800">Hamming ball 與 Hamming bound 的一般形式</h3>
       <div className="space-y-2">
-        <Expandable title="漢明球、球的體積與一般形式 2ᵏ · V₂(n,t) ≤ 2ⁿ">
+        <Expandable title="Hamming ball、ball 的 volume（體積）與一般形式 2ᵏ · V₂(n,t) ≤ 2ⁿ">
           <BallFigures />
         </Expandable>
-        <Expandable title="調整 n、k、t，檢查 Hamming Bound">
+        <Expandable title="調整 n、k、t，檢查 Hamming bound">
           <BoundExplorer />
         </Expandable>
         <Expandable title="真正的 2ⁿ 個字串分組：Hamming(7,4) 的 128 個、Extended(8,4) 的 256 個">
           <PartitionView />
         </Expandable>
-        <Expandable title="球不重疊的證明">
+        <Expandable title="Ball 不重疊的證明">
           <p>
-            若 <M>{"x \\in \\mathrm{Ball}(c,1)\\cap \\mathrm{Ball}(c',1)"}</M>，則由三角不等式 <M>{"d(c,c') \\le d(c,x) + d(x,c') \\le 2"}</M>，與 <M>{`d_{\\min} = ${D_MIN}`}</M> 矛盾。
+            若 <M>{"x \\in \\mathrm{Ball}(c,1)\\cap \\mathrm{Ball}(c',1)"}</M>，則由 triangle inequality <M>{"d(c,c') \\le d(c,x) + d(x,c') \\le 2"}</M>，與 <M>{`d_{\\min} = ${D_MIN}`}</M> 矛盾。
           </p>
         </Expandable>
       </div>
@@ -726,13 +726,13 @@ function DoubleErrorFact() {
   return (
     <>
       <p>
-        主線的 A → B 路徑說翻 2 位「可能」跑到別人那邊：光靠 <M>{`d_{\\min} = ${D_MIN}`}</M>，只保證得了這麼多。對 Hamming(7,4)，其實是「一定」：{WORDS.length} 個 codeword 各有 <M>{`\\binom{${N}}{2} = ${DOUBLE.perWord}`}</M> 種雙錯，共 {WORDS.length} × {DOUBLE.perWord} = {DOUBLE.total} 種；全部試過，每一個收到的字都離<strong>另一個</strong> codeword 距離 1（{DOUBLE.nearOther}/{DOUBLE.total}）。
+        主線的 A → B 路徑說翻 2 位「可能」跑到別人那邊：光靠 <M>{`d_{\\min} = ${D_MIN}`}</M>，只保證得了這麼多。對 Hamming(7,4)，其實是「一定」：{WORDS.length} 個 codeword 各有 <M>{`\\binom{${N}}{2} = ${DOUBLE.perWord}`}</M> 種雙錯，共 {WORDS.length} × {DOUBLE.perWord} = {DOUBLE.total} 種；全部試過，每一個 received word 和<strong>另一個</strong> codeword 的 distance 都是 1（{DOUBLE.nearOther}/{DOUBLE.total}）。
       </p>
       <p>
-        原因是完美碼：每一個 {N} 位元字串都恰好離某個 codeword ≤ 1。翻 2 位的字離原本的 codeword 是 2，所以離它只有 1 的，一定是別人。不論用燈號還是比距離，解碼器都會把它改成那個別人：雙錯一律誤更正（第 3 章的 {TWO.mis}/{TWO.total}）。
+        原因是 perfect code：每一個 {N} 位元字串都恰好離某個 codeword ≤ 1。翻 2 位的字離原本的 codeword 是 2，所以離它只有 1 的，一定是別人。不論用燈號還是比 distance，decoder 都會把它改成那個別人：雙錯一律造成 miscorrection（第 3 章的 {TWO.mis}/{TWO.total}）。
       </p>
       <p className="text-slate-600">
-        不是每個碼都這樣：Extended(8,4) 的 {DOUBLE8.total} 種雙錯裡，落在別人距離 1 之內的有 {DOUBLE8.nearOther} 種。它們離每個 codeword 都至少 2，所以只能偵測、不會被誤更正（第 5 章）。
+        不是每個 code 都這樣，extended Hamming code（延伸 Hamming 碼）就不同：Extended(8,4) 的 {DOUBLE8.total} 種雙錯裡，落在別人 distance 1 之內的有 {DOUBLE8.nearOther} 種。它們離每個 codeword 都至少 2，所以只能偵測、不會造成 miscorrection（第 5 章）。
       </p>
     </>
   );
@@ -806,7 +806,7 @@ function DistanceCalculator() {
             ]}
           />
           <p className="text-xs text-slate-500">
-            <M>d</M> 是真正的度量（metric）：滿足三角不等式（有些書記作 <M>{'d_H'}</M>）。
+            <M>d</M> 是真正的 metric（度量），滿足 triangle inequality（三角不等式）；有些書記作 <M>{'d_H'}</M>。
           </p>
         </>
       }
@@ -866,7 +866,7 @@ function CodewordExplorer() {
             </div>
           </Card>
           <Card title="從 A 走到 B：每次翻一個位元">
-            <p className="mb-2 text-xs text-slate-500">這是一條 Hamming 空間中的最短路徑（每一步距離 1），不是平面上的直線。最右欄是該字串真正的最近 codeword。</p>
+            <p className="mb-2 text-xs text-slate-500">這是一條 Hamming 空間中的最短路徑（每一步 distance 1），不是平面上的直線。最右欄是該字串真正的最近 codeword。</p>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[420px] text-sm">
                 <thead>
@@ -900,7 +900,7 @@ function CodewordExplorer() {
                           ) : owner === pair[1] ? (
                             <span className="chip bg-overall-100 text-overall-700">B</span>
                           ) : (
-                            <span className="chip bg-slate-100 text-slate-600">{owner >= 0 ? `#${owner}（距離 ${nr.minDistance}）` : `平手（距離 ${nr.minDistance}）`}</span>
+                            <span className="chip bg-slate-100 text-slate-600">{owner >= 0 ? `#${owner}（distance ${nr.minDistance}）` : `平手（distance ${nr.minDistance}）`}</span>
                           )}
                         </td>
                       </tr>
@@ -918,11 +918,11 @@ function CodewordExplorer() {
             <Stat label="比較的 codeword 對" value={MD.pairsChecked} sub={`C(${WORDS.length},2)`} />
             <Stat label={<M>{'d_{\\min}'}</M>} value={MD.dmin} sub={`共 ${MD.closestPairs.length} 對達到`} tone="indigo" />
           </div>
-          <Card title="所有 codeword 對的距離分佈">
-            <Bars data={histogram} xLabel="距離 d" yLabel="Codeword 對數" highlight={(d) => d === MD.dmin} tooltipLabel={(d, n) => `${n} 對 codeword 距離為 ${d}`} />
-            <p className="text-xs text-slate-500">藍色長條是最小距離。沒有任何一對距離是 1 或 2。</p>
+          <Card title="所有 codeword 對的 distance 分佈">
+            <Bars data={histogram} xLabel="Distance d" yLabel="Codeword 對數" highlight={(d) => d === MD.dmin} tooltipLabel={(d, n) => `${n} 對 codeword 的 distance 為 ${d}`} />
+            <p className="text-xs text-slate-500">藍色長條是 minimum distance。沒有任何一對的 distance 是 1 或 2。</p>
           </Card>
-          <Card title={`${WORDS.length}×${WORDS.length} 距離矩陣（點擊格子選擇一對）`}>
+          <Card title={`${WORDS.length}×${WORDS.length} distance 矩陣（點擊格子選擇一對）`}>
             <div className="overflow-x-auto">
               <div className="grid w-max" style={{ gridTemplateColumns: `repeat(${WORDS.length}, 18px)` }}>
                 {D.map((row, i) =>
@@ -944,7 +944,7 @@ function CodewordExplorer() {
               </div>
             </div>
             <div className="mt-2 flex items-center gap-1 text-[10px] text-slate-500">
-              距離
+              Distance
               {[0, 3, 4, 7].map((d) => (
                 <span key={d} style={distColor(d)} className="rounded px-1.5 py-0.5 font-semibold">
                   {d}
@@ -968,7 +968,7 @@ function NearestDecoder() {
   return (
     <LabGrid
       main={
-        <Card title={`點擊收到的字 r 的位元，觀察它與 ${WORDS.length} 個 codeword 的距離`} actions={<ResetButton onClick={() => setR(parseBits('0110111'))} />}>
+        <Card title={`點擊 received word r 的位元，觀察它與 ${WORDS.length} 個 codeword 的 distance`} actions={<ResetButton onClick={() => setR(parseBits('0110111'))} />}>
           <BitRow bits={r} layout={LAYOUT_74} onToggle={(i) => setR(flipBit(r, i))} />
           <div className="mt-4 space-y-1">
             {sorted.map(({ i, d }) => {
@@ -992,7 +992,7 @@ function NearestDecoder() {
           <Card title="解碼結果">
             <div className="space-y-2 text-sm">
               <div>
-                離 r 最近的距離 = <strong>{near.minDistance}</strong>，達到的 codeword：{near.nearest.map((i) => `#${i}`).join(', ')}
+                離 r 最近的 distance = <strong>{near.minDistance}</strong>，達到的 codeword：{near.nearest.map((i) => `#${i}`).join(', ')}
               </div>
               <div>
                 最近 codeword：<span className="mono font-semibold">{WORDS[near.nearest[0]].join('')}</span>
@@ -1004,12 +1004,12 @@ function NearestDecoder() {
               <div className={`rounded-lg px-2 py-1 text-xs ${same ? 'bg-emerald-50 text-emerald-800' : 'bg-rose-50 text-rose-800'}`}>{same ? '✓ 兩種解碼方法得到相同 codeword' : '✗ 兩種方法結果不同'}</div>
             </div>
             <p className="mt-3 text-xs text-slate-500">
-              對 Hamming(7,4)，任何 {N} 位元字串到最近 codeword 的距離都 ≤ 1 且最近 codeword 唯一（本章「完美碼」一節）。所以 Syndrome 解碼 = 最近 codeword 解碼，但 Syndrome 只需要一次矩陣乘法，不必比較 {WORDS.length} 次。
+              對 Hamming(7,4)，任何 {N} 位元字串到最近 codeword 的 distance 都 ≤ 1 且最近 codeword 唯一（本章「Perfect code」一節）。所以 syndrome 解碼 = nearest-codeword decoding，但 syndrome 只需要一次矩陣乘法，不必比較 {WORDS.length} 次。
             </p>
           </Card>
           <Misconceptions
             items={[
-              { wrong: '最近 codeword 一定是送出的 codeword。', right: '只有錯誤數 ≤ t 時才保證。錯誤太多時，收到的字可能更靠近另一個 codeword。' },
+              { wrong: '最近 codeword 一定是送出的 codeword。', right: '只有錯誤數 ≤ t 時才保證。錯誤太多時，received word 可能更靠近另一個 codeword。' },
             ]}
           />
         </>
@@ -1026,7 +1026,7 @@ function DminSlider() {
         <span className="text-sm">
           設 <M>{'d_{\\min}'}</M> =
         </span>
-        <input type="range" min={1} max={8} value={d} onChange={(e) => setD(Number(e.target.value))} className="w-40 accent-slate-900" aria-label="最小距離" />
+        <input type="range" min={1} max={8} value={d} onChange={(e) => setD(Number(e.target.value))} className="w-40 accent-slate-900" aria-label="Minimum distance" />
         <span className="font-mono text-lg font-bold">{d}</span>
         <span className="text-sm text-slate-600">
           ⇒ <M>{`t = \\lfloor (${d}-1)/2 \\rfloor = ${correctionCapability(d)}`}</M>，可偵測 <M>{`${detectionCapability(d)}`}</M> 個錯誤
@@ -1034,7 +1034,7 @@ function DminSlider() {
       </div>
       <DistanceLine d={d} />
       <p className="mt-2 text-sm text-slate-600">
-        兩個最接近的 codeword A、B 之間有一條長度 <M>{'d_{\\min}'}</M> 的路徑。以每個 codeword 為中心、半徑 <M>t</M> 的「地盤」只要滿足 <M>{'2t < d_{\\min}'}</M> 就不會重疊：錯 <M>t</M> 個以內時，收到的字一定比較靠近原本的 codeword。若 <M>{'2t \\ge d_{\\min}'}</M>，中間就會有字串同時屬於兩邊。
+        兩個最接近的 codeword A、B 之間有一條長度 <M>{'d_{\\min}'}</M> 的路徑。以每個 codeword 為中心、半徑 <M>t</M> 的「地盤」只要滿足 <M>{'2t < d_{\\min}'}</M> 就不會重疊：錯 <M>t</M> 個以內時，received word 一定比較靠近原本的 codeword。若 <M>{'2t \\ge d_{\\min}'}</M>，中間就會有字串同時屬於兩邊。
       </p>
     </>
   );
@@ -1046,38 +1046,38 @@ function BallFigures() {
   return (
     <div className="space-y-4">
       <p>
-        主線的「{HB.volume} 種接收結果」，一般化就是<strong>漢明球</strong>：要更正 t 個錯，每個 codeword 周圍「錯 t 個以內」的所有字串都必須解回它自己。這些區域不能重疊，加起來也不能超過整個空間的 <M>{'2^n'}</M> 個字串。
+        主線的「{HB.volume} 種接收結果」，一般化就是 <strong>Hamming ball</strong>：要更正 t 個錯，每個 codeword 周圍「錯 t 個以內」的所有字串都必須解回它自己。這些區域不能重疊，加起來也不能超過整個空間的 <M>{'2^n'}</M> 個字串。
       </p>
-      <Card title="漢明球（Hamming sphere）">
+      <Card title="Hamming ball">
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <div className="min-w-0 space-y-2 text-sm text-slate-600">
             <Tex block>{'\\mathrm{Ball}(c,t) = \\{\\, x \\in \\mathbb{F}_2^n : d(x,c) \\le t \\,\\}'}</Tex>
-            <p>以 codeword c 為中心、半徑 t 的球：離 c 最多 t 個位元不同的所有字串，也就是「c 錯了 t 個以內的位元，可能變成的所有樣子」。</p>
-            <p>注意這是一個<strong>有限集合</strong>，不是平面上的圓。n = 3 時可以畫出它真正的樣子（圖①）：每個字串是立方體的一個頂點，球就是從中心出發、沿著邊走 t 步以內能到的頂點。</p>
+            <p>以 codeword c 為中心、半徑 t 的 ball：離 c 最多 t 個位元不同的所有字串，也就是「c 錯了 t 個以內的位元，可能變成的所有樣子」。</p>
+            <p>注意這是一個<strong>有限集合</strong>，不是平面上的圓。n = 3 時可以畫出它真正的樣子（圖①）：每個字串是立方體的一個頂點，ball 就是從中心出發、沿著邊走 t 步以內能到的頂點。</p>
           </div>
           <CubeBall />
         </div>
       </Card>
-      <Card title="球的體積（Volume）">
+      <Card title="Ball 的 volume">
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <div className="min-w-0 space-y-2 text-sm text-slate-600">
             <Tex block>{'V_2(n,t) = |\\mathrm{Ball}(c,t)| = \\sum_{w=0}^{t} \\binom{n}{w}'}</Tex>
             <p>
-              <M>{'\\binom{n}{w}'}</M> = 從 n 個位置裡挑 w 個來錯的選法數，也就是「離 c 恰好 w」的字串個數。把 w = 0, 1, …, t 加起來，就是球裡的字串個數。
+              <M>{'\\binom{n}{w}'}</M> = 從 n 個位置裡挑 w 個來錯的選法數，也就是「離 c 恰好 w」的字串個數。把 w = 0, 1, …, t 加起來，就是 ball 裡的字串個數。
             </p>
             <p>n 大的時候畫不出立方體，就改成按「翻了幾位」一圈一圈排（圖②，n = 7）。</p>
           </div>
           <BallDiagram />
         </div>
       </Card>
-      <Card title="Hamming Bound（球填充界，Sphere-packing bound）">
+      <Card title="Hamming bound（sphere-packing bound）">
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <div className="min-w-0 space-y-2 text-sm text-slate-600">
             <Tex block>{'2^k \\cdot V_2(n,t) \\le 2^n'}</Tex>
             <p>
-              每個 codeword 需要一顆 <M>{'V_2(n,t)'}</M> 個字串的球（圖②），球之間不能重疊，而整個空間只有 <M>{'2^n'}</M> 個字串（圖③）。<M>{'2^k'}</M> 顆球要全部放得下，就必須滿足上式。t = 1 時 <M>{'V_2(n,1) = 1 + n'}</M>，就是主線的 <M>{'2^{\\ell} \\ge n + 1'}</M>。
+              每個 codeword 需要一顆 <M>{'V_2(n,t)'}</M> 個字串的 ball（圖②），ball 之間不能重疊，而整個空間只有 <M>{'2^n'}</M> 個字串（圖③）。<M>{'2^k'}</M> 顆 ball 要全部放得下，就必須滿足上式。t = 1 時 <M>{'V_2(n,1) = 1 + n'}</M>，就是主線的 <M>{'2^{\\ell} \\ge n + 1'}</M>。
             </p>
-            <p>等號成立的 code 稱為<strong>完美碼（Perfect code）</strong>：球恰好鋪滿整個空間（圖①的「兩顆球」就是最小的例子）。</p>
+            <p>等號成立的 code 稱為 <strong>perfect code</strong>：ball 恰好鋪滿整個空間（圖①的「兩顆 ball」就是最小的例子）。</p>
           </div>
           <PackingDiagram />
         </div>
@@ -1105,7 +1105,7 @@ function BoundExplorer() {
           <Card title="參數" actions={<ResetButton onClick={reset} />}>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <Slider
-                label="碼長 n（Codeword length）"
+                label="Code length n"
                 value={n}
                 min={1}
                 max={24}
@@ -1115,7 +1115,7 @@ function BoundExplorer() {
                   setT(Math.min(t, v));
                 }}
               />
-              <Slider label="維度 k（Dimension）" value={k} min={0} max={n} onChange={setK} />
+              <Slider label="Dimension k" value={k} min={0} max={n} onChange={setK} />
               <Slider label="修正半徑 t" value={t} min={0} max={n} onChange={setT} />
             </div>
             <div className="mt-5 space-y-3 rounded-xl bg-slate-50 p-4">
@@ -1124,7 +1124,7 @@ function BoundExplorer() {
             </div>
             <div className="mt-4">
               <div className="mb-1 flex justify-between text-xs text-slate-500">
-                <span>球所佔的比例 2ᵏ·V / 2ⁿ</span>
+                <span>Ball 所佔的比例 2ᵏ·V / 2ⁿ</span>
                 <span className="font-mono">{(hb.coverage * 100).toFixed(hb.coverage < 0.01 ? 4 : 1)}%</span>
               </div>
               <div className="h-3 overflow-hidden rounded-full bg-slate-200">
@@ -1137,16 +1137,16 @@ function BoundExplorer() {
           <>
             <Card>
               {hb.equality ? (
-                <Verdict ok title="等號成立：完美碼參數">
-                  {family ? <>已知例子：{family}</> : '等號成立是完美碼的必要條件；此參數是否真的存在完美碼需另外判斷。'}
+                <Verdict ok title="等號成立：perfect code 參數">
+                  {family ? <>已知例子：{family}</> : '等號成立是 perfect code 的必要條件；此參數是否真的存在 perfect code 需另外判斷。'}
                 </Verdict>
               ) : hb.satisfied ? (
-                <Verdict ok title="滿足 Hamming Bound（嚴格不等）">
-                  球沒有鋪滿空間，有 {(hb.rhs - hb.lhs).toLocaleString()} 個字串不在任何球中。注意：滿足界不代表這樣的 code 一定存在。
+                <Verdict ok title="滿足 Hamming bound（嚴格不等）">
+                  ball 沒有鋪滿空間，有 {(hb.rhs - hb.lhs).toLocaleString()} 個字串不在任何 ball 中。注意：滿足 bound 不代表這樣的 code 一定存在。
                 </Verdict>
               ) : (
-                <Verdict ok={false} title="違反 Hamming Bound">
-                  不可能存在長度 {n}、{hb.codewords} 個 codeword 且能修正 {t} 個錯誤的二元碼。
+                <Verdict ok={false} title="違反 Hamming bound">
+                  不可能存在長度 {n}、{hb.codewords} 個 codeword 且能修正 {t} 個錯誤的 binary code。
                 </Verdict>
               )}
               <div className="mt-3 text-sm text-slate-600">
@@ -1156,11 +1156,11 @@ function BoundExplorer() {
             <Misconceptions
               items={[
                 {
-                  wrong: '漢明球就像平面上的圓：圖上靠得近的字串，距離就比較近。',
-                  right: `Hamming 距離只計算「不同位元的個數」，不是歐氏距離。一個半徑 1 的球是 ${HB.volume} 個離散字串，它們的數值彼此可以相差很遠（見下一項「依數值排列」視圖）。圖②畫成同心圈只是按「翻幾位」分層，圈上的位置和角度沒有意義；真正的結構要看圖①的立方體（沿邊走的步數）。`,
+                  wrong: 'Hamming ball 就像平面上的圓：圖上靠得近的字串，distance 就比較近。',
+                  right: `Hamming distance 只計算「不同位元的個數」，不是歐氏距離。一個半徑 1 的 ball 是 ${HB.volume} 個離散字串，它們的數值彼此可以相差很遠（見下一項「依數值排列」視圖）。圖②畫成同心圈只是按「翻幾位」分層，圈上的位置和角度沒有意義；真正的結構要看圖①的立方體（沿邊走的步數）。`,
                 },
-                { wrong: '滿足 Hamming Bound 的參數一定有對應的 code。', right: 'Hamming Bound 是必要條件，不是充分條件。例如 (n,k,t) = (90,78,2) 滿足等號，但不存在這樣的完美碼。' },
-                { wrong: '完美碼表示能修正所有錯誤。', right: '完美碼只代表「每個字串都恰好在一個半徑 t 的球內」。超過 t 個錯誤仍會被解成錯的 codeword。' },
+                { wrong: '滿足 Hamming bound 的參數一定有對應的 code。', right: 'Hamming bound 是必要條件，不是充分條件。例如 (n,k,t) = (90,78,2) 滿足等號，但不存在這樣的 perfect code。' },
+                { wrong: 'perfect code 表示能修正所有錯誤。', right: 'perfect code 只代表「每個字串都恰好在一個半徑 t 的 ball 內」。超過 t 個錯誤仍會被解成錯的 codeword。' },
               ]}
             />
           </>
@@ -1169,15 +1169,15 @@ function BoundExplorer() {
       <Derivation
         title="逐步推導：Hamming(7,4) 剛好等號成立"
         steps={[
-          { title: '計算球的大小', body: <Tex block>{`V_2(${N},${T}) = ${sphereTerms(N, T).map((_, i) => `\\binom{${N}}{${i}}`).join(' + ')} = ${sphereTerms(N, T).join(' + ')} = ${HB.volume}`}</Tex> },
-          { title: '每顆球 = 主線的接收結果', body: <p>每個 codeword 的球 = 它自己（沒有錯）+ {N} 種單一錯誤 = {HB.volume} 個字串，也就是主線的 {HB.volume} 種接收結果。</p> },
-          { title: `${HB.codewords} 個 codeword 的球加總`, body: <Tex block>{`2^${K} \\cdot ${HB.volume} = ${HB.codewords} \\times ${HB.volume} = ${HB.lhs}`}</Tex> },
+          { title: '計算 ball 的大小', body: <Tex block>{`V_2(${N},${T}) = ${sphereTerms(N, T).map((_, i) => `\\binom{${N}}{${i}}`).join(' + ')} = ${sphereTerms(N, T).join(' + ')} = ${HB.volume}`}</Tex> },
+          { title: '每顆 ball = 主線的接收結果', body: <p>每個 codeword 的 ball = 它自己（沒有錯）+ {N} 種單一錯誤 = {HB.volume} 個字串，也就是主線的 {HB.volume} 種接收結果。</p> },
+          { title: `${HB.codewords} 個 codeword 的 ball 加總`, body: <Tex block>{`2^${K} \\cdot ${HB.volume} = ${HB.codewords} \\times ${HB.volume} = ${HB.lhs}`}</Tex> },
           { title: '和整個空間比較', body: <Tex block>{`2^${N} = ${HB.rhs} \\quad\\Rightarrow\\quad ${HB.codewords} \\times (1 + ${N}) = ${HB.lhs} = 2^${N}`}</Tex> },
           {
             title: '結論',
             body: (
               <p>
-                球彼此不重疊（因為 <M>{`d_{\\min} = ${D_MIN} \\ge 2 \\cdot ${T} + 1`}</M>），而總大小恰好等於空間大小，所以它們<strong>完全覆蓋</strong>整個空間：每一個 {N} 位元字串都恰好屬於一個球。反過來說，任何長度 {N}、能修正 {T} 個錯誤的二元碼最多只有 {HB.rhs} ÷ {HB.volume} = {HB.rhs / HB.volume} 個 codeword：Hamming({N},{K}) 已經沒有任何浪費。
+                ball 彼此不重疊（因為 <M>{`d_{\\min} = ${D_MIN} \\ge 2 \\cdot ${T} + 1`}</M>），而總大小恰好等於空間大小，所以它們<strong>完全覆蓋</strong>整個空間：每一個 {N} 位元字串都恰好屬於一個 ball。反過來說，任何長度 {N}、能修正 {T} 個錯誤的 binary code（二元碼）最多只有 {HB.rhs} ÷ {HB.volume} = {HB.rhs / HB.volume} 個 codeword：Hamming({N},{K}) 已經沒有任何浪費。
               </p>
             ),
           },
@@ -1272,7 +1272,7 @@ function PartitionView() {
                   onClick={() => o >= 0 && setSel(o)}
                   onMouseEnter={() => setHoverWord(w)}
                   onMouseLeave={() => setHoverWord(null)}
-                  title={`${w.toString(2).padStart(code.n, '0')} → ${o >= 0 ? `Codeword #${o}` : '平手'}`}
+                  title={`${w.toString(2).padStart(code.n, '0')} → ${o >= 0 ? `codeword #${o}` : '平手'}`}
                   className={`h-7 rounded text-[10px] font-semibold ${
                     o < 0 ? 'bg-rose-50 text-rose-400' : inSel ? (isCenter ? 'bg-emerald-600 text-white' : 'bg-emerald-200 text-emerald-900') : isCenter ? 'bg-slate-700 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
                   }`}
@@ -1289,14 +1289,14 @@ function PartitionView() {
                 目前：{hoverWord.toString(2).padStart(code.n, '0')}（= {hoverWord}）
               </span>
             )}
-            同一組的 {part.groups[0].length} 個字串在數值上分散各處：漢明球並不是「一團相鄰的點」。
+            同一組的 {part.groups[0].length} 個字串在數值上分散各處：Hamming ball 並不是「一團相鄰的點」。
           </p>
         </div>
       )}
       <p className="mt-3 text-xs text-slate-500">
         {codeKey === 'h74'
           ? `${part.groups.length} 組 × ${part.groups[0].length} 個 = ${part.totalWords}：沒有重疊、沒有遺漏。每一組就是主線那張表的 ${part.groups[0].length} 種接收結果。`
-          : `Extended(8,4) 每個球有 1 + ${code.n} = ${part.groups[0].length} 個字串，${part.groups.length} 個球共 ${part.groups.reduce((a, g) => a + g.length, 0)} 個；其餘 ${part.ties.length} 個字串（距離 2）同時離好幾個 codeword 一樣近 → 無法唯一解碼。這正是 SECDED「偵測但不修正」的區域。`}
+          : `Extended(8,4) 每個 ball 有 1 + ${code.n} = ${part.groups[0].length} 個字串，${part.groups.length} 個 ball 共 ${part.groups.reduce((a, g) => a + g.length, 0)} 個；其餘 ${part.ties.length} 個字串（distance 2）同時離好幾個 codeword 一樣近 → 無法唯一解碼。這正是 SECDED「偵測但不修正」的區域。`}
       </p>
     </Card>
   );

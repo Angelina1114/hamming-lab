@@ -29,7 +29,7 @@ const TWO = { patterns: 2 ** (L - 1) - 1, positions: K + L - 1 };
 
 /** Lesson 1 in six parts: tag, chapter name, one line on what it answers */
 const AGENDA: [string, string, ReactNode][] = [
-  ['導論', '', '雜訊會翻轉位元；一個同位位元只能發現錯'],
+  ['導論', '', '雜訊會翻轉位元；一個 parity bit 只能發現錯'],
   ['第 1 章', '編碼', `${L} 個互相重疊的檢查：Hamming(${N},${K})`],
   ['第 2 章', 'H 與 G（發送端／接收端）', '發送端用 G 產生 codeword，接收端用 H 檢查'],
   ['第 3 章', 'Syndrome 解碼', '亮的警示燈 = H 的一欄 = 錯誤位置'],
@@ -40,7 +40,7 @@ const AGENDA: [string, string, ReactNode][] = [
       <M>{`d_{\\min} = ${D_MIN}`}</M>：修 {T} 個；{L} 盞燈的 {2 ** L} 種狀態剛好用完
     </>,
   ],
-  ['第 5 章', 'SECDED', '多 1 個整體同位位元：修 1 個、偵測 2 個'],
+  ['第 5 章', 'SECDED', '多 1 個 overall parity bit：修 1 個、偵測 2 個'],
 ];
 
 function TitleSlide() {
@@ -62,10 +62,10 @@ function TitleSlide() {
       </ol>
       <div className="space-y-4">
         <div className="rounded-2xl bg-data-50 p-5 text-xl leading-relaxed text-data-700">
-          {K} 個資料位元 + {L} 個同位位元 = {N} 個位元：接收端<strong>不必知道原本送了什麼</strong>，就能自己找出並修正任何 1 個錯誤。
+          {K} 個 data bit（資料位元）+ {L} 個 parity bit = {N} 個位元：接收端<strong>不必知道原本送了什麼</strong>，就能自己找出並修正任何 1 個錯誤。
         </div>
         <div className="rounded-2xl bg-overall-50 p-5 text-xl leading-relaxed text-overall-700">
-          再多 1 個整體同位位元（SECDED）：修正 1 個錯誤，同時偵測 2 個錯誤。
+          再多 1 個 overall parity bit（整體同位位元），變成 SECDED：修正 1 個錯誤，同時偵測 2 個錯誤。
         </div>
       </div>
     </div>
@@ -86,7 +86,7 @@ function WhyCodesSlide({ s }: { s: Stepper }) {
   const k = message.length;
   const schemes = [
     { name: '不編碼', n: k, legal: 2 ** k },
-    { name: '加 1 個同位位元', n: k + 1, legal: 2 ** k },
+    { name: '加 1 個 parity bit', n: k + 1, legal: 2 ** k },
     { name: 'Hamming(7,4)', n: LAYOUT_74.length, legal: codewords74().length },
   ];
   return (
@@ -141,9 +141,9 @@ function WhyCodesSlide({ s }: { s: Stepper }) {
           </Box>
         </Reveal>
         <Reveal on={s.step >= 2}>
-          <Box tone="bg-emerald-50 text-emerald-950" title="唯一的工具：冗餘">
+          <Box tone="bg-emerald-50 text-emerald-950" title="唯一的工具：redundancy（冗餘）">
             <p>
-              <M>k</M> 個資料位元編成 <M>{'n > k'}</M> 個位元：<M>{'2^n'}</M> 個字串只有 <M>{'2^k'}</M> 個合法，出錯後很難剛好又是合法字串。
+              <M>k</M> 個 data bit 編成 <M>{'n > k'}</M> 個位元：<M>{'2^n'}</M> 個字串只有 <M>{'2^k'}</M> 個合法，出錯後很難剛好又是合法字串。
             </p>
             <div className="mt-2 space-y-1.5 text-lg">
               {schemes.map((sc) => (
@@ -196,11 +196,11 @@ function FlipSumSlide() {
           </tbody>
         </table>
         <p>
-          這就是 <strong>mod 2 的加法</strong>（XOR）：<M>{'1 + 1 = 0'}</M>，不進位，每一位各自算。這套算術記作 GF(2)。
+          這就是 <strong>mod 2 的加法</strong>，也就是 <span className="whitespace-nowrap">exclusive OR（XOR，互斥或）</span>：<M>{'1 + 1 = 0'}</M>，不進位，每一位各自算。這套算術記作 GF(2)。
         </p>
       </div>
       <div className="space-y-4 text-xl">
-        <p>錯誤向量 e：是 1 的位置就是被翻轉的位元。</p>
+        <p>error vector（錯誤向量）e：是 1 的位置就是被翻轉的位元。</p>
         <BitRow bits={e} plain size="lg" states={e.map((b) => (b ? 'error' : 'normal'))} onToggle={(i) => setE(flipBit(e, i))} />
         <Tex block>{`\\underbrace{${message.join('')}}_{c\\ (\\text{送出})} + \\underbrace{${e.join('')}}_{e\\ (\\text{錯誤})} = \\underbrace{${r.join('')}}_{r\\ (\\text{收到})}`}</Tex>
         <p className="text-lg text-slate-600">接收端只看得到 r。整門課的任務：只靠 r，找出 e。</p>
@@ -230,7 +230,7 @@ function ParityBitSlide({ s }: { s: Stepper }) {
       <Reveal on={s.step >= 0}>
         <Box tone="bg-parity-50 text-parity-700" title="做法：湊成偶數個 1">
           <p className="text-slate-800">
-            在 {message.length} 個資料位元後面多送一個<strong>同位位元</strong> P，讓全部位元裡 1 的個數是偶數：
+            在 {message.length} 個 data bit 後面多送一個 <strong>parity bit</strong> P，讓全部位元裡 1 的個數是偶數：
           </p>
           <Tex block>{`P = ${message.map((_, i) => `D_${i + 1}`).join(' \\oplus ')} = ${p}`}</Tex>
           <div className="text-center">
@@ -253,7 +253,7 @@ function ParityBitSlide({ s }: { s: Stepper }) {
               <div className="text-lg text-slate-500">錯 2 個</div>
               <Word w={two} flips={[1, 3]} />
               <div className="text-lg">
-                {ones(two)} 個 1，偶數 → <strong className="text-rose-700">未偵測錯誤</strong>
+                {ones(two)} 個 1，偶數 → <strong className="text-rose-700">undetected error（未偵測錯誤）</strong>
               </div>
             </div>
           </div>
@@ -287,7 +287,7 @@ function ParitySlide() {
 
 export const CH0_SLIDES: DeckSlide<null>[] = [
   {
-    title: 'Lesson 1 — Hamming(7,4)：從同位位元到 SECDED',
+    title: 'Lesson 1 — Hamming(7,4)：從 parity bit（同位位元）到 SECDED',
     sub: '第一課報告：導論與第 1–5 章',
     steps: () => 1,
     render: () => <TitleSlide />,
@@ -298,7 +298,7 @@ export const CH0_SLIDES: DeckSlide<null>[] = [
     ),
     notes: (
       <ul className={NOTES_UL}>
-        <li>題目：Hamming({N},{K})，從一個同位位元走到 SECDED</li>
+        <li>題目：Hamming({N},{K})，從一個 parity bit 走到 SECDED</li>
         <li>要解決的事：雜訊會翻轉位元，接收端要自己發現、自己修好，不能問發送端</li>
         <li>左邊是路線：導論加五章；每一章都先講發送端、接收端遇到的情境，再講設計：每個選擇解決了什麼問題，最後才推導</li>
         <li>
@@ -307,7 +307,7 @@ export const CH0_SLIDES: DeckSlide<null>[] = [
             <li>
               {K} + {L} = {N}：只多 {L} 個位元，就修得好任何 1 個錯
             </li>
-            <li>再加 1 個整體同位位元：修 1 個，同時偵測 2 個</li>
+            <li>再加 1 個 overall parity bit：修 1 個，同時偵測 2 個</li>
           </ul>
         </li>
       </ul>
@@ -318,7 +318,7 @@ export const CH0_SLIDES: DeckSlide<null>[] = [
     sub: '接收端要怎麼發現錯、甚至自己修好錯？',
     steps: () => 3,
     render: (s) => <WhyCodesSlide s={s} />,
-    takeaway: <>位元會被雜訊翻轉；只有多送的冗餘，能讓接收端發現並修好錯</>,
+    takeaway: <>位元會被雜訊翻轉；只有多送的 redundancy，能讓接收端發現並修好錯</>,
     notes: (
       <ul className={NOTES_UL}>
         <li>
@@ -336,10 +336,10 @@ export const CH0_SLIDES: DeckSlide<null>[] = [
           </ul>
         </li>
         <li>
-          → 唯一的工具：冗餘，多送位元讓合法字串變稀少
+          → 唯一的工具：redundancy，多送位元讓合法字串變稀少
           <ul className={NOTES_SUB}>
             <li>
-              不編碼 {2 ** K} / {2 ** K}、加 1 個同位位元 {2 ** K} / {2 ** (K + 1)}、Hamming({N},{K}) {CODEWORDS} / {2 ** N}
+              不編碼 {2 ** K} / {2 ** K}、加 1 個 parity bit {2 ** K} / {2 ** (K + 1)}、Hamming({N},{K}) {CODEWORDS} / {2 ** N}
             </li>
             <li>合法的越稀少，錯一位就越容易落在不合法的字串上</li>
           </ul>
@@ -363,14 +363,14 @@ export const CH0_SLIDES: DeckSlide<null>[] = [
             <li>翻兩次等於沒翻：1 + 1 = 0，所以減法就是加法</li>
           </ul>
         </li>
-        <li>錯誤向量 e：是 1 的位置就是被翻的位元</li>
+        <li>error vector e：是 1 的位置就是被翻的位元</li>
         <li>r = c + e：接收端只看得到 r；整門課的任務是只靠 r 找出 e，再用 c = r + e 修回來</li>
         <li>這套算術叫 GF(2)：之後的檢查、矩陣都在裡面算</li>
       </ul>
     ),
   },
   {
-    title: '導論：一個同位位元能做什麼？',
+    title: '導論：一個 parity bit 能做什麼？',
     sub: '能發現奇數個錯，卻找不到錯在哪',
     steps: () => 3,
     render: (s) => <ParityBitSlide s={s} />,
@@ -378,7 +378,7 @@ export const CH0_SLIDES: DeckSlide<null>[] = [
     notes: (
       <ul className={NOTES_UL}>
         <li>
-          最便宜的冗餘：多送 1 個同位位元 P，讓 1 的個數是偶數
+          最便宜的 redundancy：多送 1 個 parity bit P，讓 1 的個數是偶數
           <ul className={NOTES_SUB}>
             <li>發送端：P = D1 ⊕ D2 ⊕ D3 ⊕ D4，幾個 XOR 閘就算得出來</li>
             <li>接收端：數 1 的個數，偶數通過、奇數有錯</li>
@@ -387,7 +387,7 @@ export const CH0_SLIDES: DeckSlide<null>[] = [
         <li>
           → 能偵測奇數個錯
           <ul className={NOTES_SUB}>
-            <li>錯 1 個 → 奇數 → 抓到；錯 2 個 → 奇偶又翻回來 → 未偵測錯誤</li>
+            <li>錯 1 個 → 奇數 → 抓到；錯 2 個 → 奇偶又翻回來 → undetected error</li>
           </ul>
         </li>
         <li>
@@ -396,21 +396,21 @@ export const CH0_SLIDES: DeckSlide<null>[] = [
             <li>
               不管翻哪一位，答案都是同一句「失敗」：1 個檢查只有 2 種答案，卻要分辨 {K + 1} 個位置
             </li>
-            <li>工程上只能丟掉重送，像序列埠（UART）的同位檢查</li>
+            <li>工程上只能丟掉重送，像序列埠（UART）的 parity check</li>
           </ul>
         </li>
       </ul>
     ),
   },
   {
-    title: '導論：要幾個同位位元，才找得到錯？',
+    title: '導論：要幾個 parity bit，才找得到錯？',
     sub: `1 個只能偵測；${L} 個重疊的檢查才能定位`,
     steps: () => 1,
     render: () => <ParitySlide />,
     takeaway: <>檢查要夠多、還要互相重疊，失敗的組合才指得出位置</>,
     notes: (
       <ul className={NOTES_UL}>
-        <li>同一份資料 m（跟著上方的範例），上方切換 1、2、3 個同位位元；畫面先開在 {L} 個</li>
+        <li>同一份資料 m（跟著上方的範例），上方切換 1、2、3 個 parity bit；畫面先開在 {L} 個</li>
         <li>1 個：只知道有錯，{K + 1} 個位置都可能</li>
         <li>
           2 個：資料分兩半，只知道錯在哪一半
@@ -423,7 +423,7 @@ export const CH0_SLIDES: DeckSlide<null>[] = [
         <li>
           {L} 個（Hamming）：互相重疊，每個位置一種失敗組合 → 能定位、能修
           <ul className={NOTES_SUB}>
-            <li>現場示範：翻一個位元 → 右表只剩一個位置；再翻第二個 → 接收端以為只錯一個，會誤更正（第 3、4 章）</li>
+            <li>現場示範：翻一個位元 → 右表只剩一個位置；再翻第二個 → 接收端以為只錯一個，造成 miscorrection（第 3、4 章）</li>
           </ul>
         </li>
       </ul>

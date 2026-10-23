@@ -12,17 +12,17 @@ import { outcomeStatus } from '../../components/l2/Decode';
 
 const ID = 'l2-11';
 
-const CASES: { k: SecdedL2Case; s: string; q: string; zh: string; en: string; action: string; status: DecodeStatus }[] = [
+const CASES: { k: SecdedL2Case; s: string; q: string; zh: string; en?: string; action: string; status: DecodeStatus }[] = [
   { k: 'no-error', s: 'S = 0', q: '偶（Even）', zh: '沒有錯誤', en: 'No Error', action: '直接輸出', status: 'ok' },
   { k: 'single', s: 'S ≠ 0', q: '奇（Odd）', zh: '單一錯誤', en: 'Single Error, Correct', action: '依 S 翻轉一個 bit', status: 'corrected' },
   { k: 'double', s: 'S ≠ 0', q: '偶（Even）', zh: '雙重錯誤', en: 'Double Error Detected', action: '不更正，保留資料，設旗標', status: 'detected' },
-  { k: 'overall', s: 'S = 0', q: '奇（Odd）', zh: '整體同位位元錯誤', en: 'Overall Parity Bit Error', action: '翻轉第 8 位（P）', status: 'corrected' },
+  { k: 'overall', s: 'S = 0', q: '奇（Odd）', zh: 'Overall parity bit 錯誤', action: '翻轉第 8 位（P）', status: 'corrected' },
 ];
 
 const SCENARIOS: { label: string; errors: number[] }[] = [
   { label: '無錯誤', errors: [] },
   { label: '單一錯誤（位置 2）', errors: [2] },
-  { label: '整體同位位元錯誤（位置 8）', errors: [8] },
+  { label: 'Overall parity bit 錯誤（位置 8）', errors: [8] },
   { label: '雙重錯誤（位置 2、7）', errors: [2, 7] },
 ];
 
@@ -56,17 +56,17 @@ export default function L2Secded() {
         </p>
       }
       goals={[
-        '回顧：Extended Hamming(8,4) 與 SECDED 四種判斷（理論在第一課第 5 章）',
-        '把 SECDED 套到第二課的循環碼：Syndrome 改用 r(x) mod g(x)',
+        '回顧：(8,4) extended Hamming code（延伸 Hamming 碼）與 SECDED 四種判斷（理論在第一課第 5 章）',
+        '把 SECDED 套到第二課的 cyclic code：syndrome 改用 r(x) mod g(x)',
         '實作細節：雙錯時不更正、保留資料、設定 Uncorrectable Error 旗標',
         '理解保證只在「至多兩個錯誤」時成立',
       ]}
       intuition={{
-        title: '同一套規則，換到循環碼上實作',
+        title: '同一套規則，換到 cyclic code 上實作',
         body: (
           <div className="prose-lab">
             <p>
-              第一課已經證明：Syndrome 回答「像是錯在哪」，整體同位位元回答「錯誤個數是奇數還是偶數」，兩者合起來就能分辨 0、1、2 個錯誤（<a className="text-indigo-700 underline" href="#/secded">第一課第 5 章 SECDED</a>）。這一章不再重新推導，而是把同一套規則放到第二課的系統式循環碼上，並處理硬體真正要做的事：<strong>雙錯時輸出什麼、旗標怎麼設</strong>。
+              第一課已經證明：syndrome 回答「像是錯在哪」，overall parity bit 回答「錯誤個數是奇數還是偶數」，兩者合起來就能分辨 0、1、2 個錯誤（<a className="text-indigo-700 underline" href="#/secded">第一課第 5 章 SECDED</a>）。這一章不再重新推導，而是把同一套規則放到第二課的 systematic cyclic code 上，並處理硬體真正要做的事：<strong>雙錯時輸出什麼、旗標怎麼設</strong>。
             </p>
           </div>
         ),
@@ -81,7 +81,7 @@ export default function L2Secded() {
                   <tr className="text-left text-xs text-slate-500">
                     <th className="py-1">項目</th>
                     <th>第一課第 5 章</th>
-                    <th>本章（循環碼）</th>
+                    <th>本章（cyclic code）</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -100,7 +100,7 @@ export default function L2Secded() {
                     </td>
                   </tr>
                   <tr className="border-t border-slate-100">
-                    <td className="py-1.5 text-slate-600">整體同位位元</td>
+                    <td className="py-1.5 text-slate-600">Overall parity bit</td>
                     <td colSpan={2}>
                       第 8 位 <M>{'P = c_1 \\oplus \\cdots \\oplus c_7'}</M>（第一課記作 <M>{'P_0'}</M>），讓 8 個位元中 1 的個數為偶數（兩者相同）
                     </td>
@@ -111,7 +111,7 @@ export default function L2Secded() {
                   </tr>
                   <tr className="border-t border-slate-100">
                     <td className="py-1.5 text-slate-600">本章新增</td>
-                    <td colSpan={2}>雙錯時的輸出與旗標、和普通 Hamming 解碼器並排比較、窮舉驗證</td>
+                    <td colSpan={2}>雙錯時的輸出與旗標、和普通 Hamming decoder 並排比較、窮舉驗證</td>
                   </tr>
                 </tbody>
               </table>
@@ -137,7 +137,7 @@ export default function L2Secded() {
                   <thead>
                     <tr className="text-left text-xs text-slate-500">
                       <th className="py-1">Syndrome</th>
-                      <th>Overall Parity</th>
+                      <th>Overall parity q</th>
                       <th>判斷</th>
                       <th>動作</th>
                       <th>標示</th>
@@ -150,7 +150,8 @@ export default function L2Secded() {
                         <td>{c.q}</td>
                         <td>
                           {c.k === res.case && '▶ '}
-                          {c.zh}<span className="text-xs text-slate-500">（{c.en}）</span>
+                          {c.zh}
+                          {c.en && <span className="text-xs text-slate-500">（{c.en}）</span>}
                         </td>
                         <td className="text-slate-600">{c.action}</td>
                         <td>
@@ -164,9 +165,9 @@ export default function L2Secded() {
             </Card>
             <AlgoSteps
               steps={[
-                <>計算前 7 位的 Syndrome S 與 8 位的同位 q。</>,
-                <>依上表判斷；單錯時用 2-5 的查表（或 Chien Search）找到位置並翻轉。</>,
-                <>整體同位錯誤時翻轉第 8 位，資訊位元不受影響。</>,
+                <>計算前 7 位的 syndrome S 與 8 位的 parity q。</>,
+                <>依上表判斷；單錯時用 2-5 的查表（或 Chien search）找到位置並翻轉。</>,
+                <>若是 overall parity bit 錯誤，翻轉第 8 位，data bit 不受影響。</>,
                 <>雙錯時：不更正、原樣保留接收資料、設定 Uncorrectable Error 旗標，交給上層處理（重傳、記錄、停用記憶體頁面…）。</>,
               ]}
             />
@@ -201,7 +202,7 @@ export default function L2Secded() {
             <div className="space-y-3">
               <div>
                 <div className="mb-1 text-xs font-semibold text-slate-500">
-                  送出：7 位元 codeword {c7.join('')} + 整體同位 P = {c8[7]}（1 的個數 = {weight(c8)}，偶數）
+                  送出：7 位元 codeword {c7.join('')} + overall parity bit P = {c8[7]}（1 的個數 = {weight(c8)}，偶數）
                 </div>
                 <BitStrip bits={c8} />
               </div>
@@ -217,7 +218,7 @@ export default function L2Secded() {
                 <div className="text-xs">{res.syndrome.some(Boolean) ? 'S ≠ 0' : 'S = 0'}</div>
               </div>
               <div className={`rounded-xl border-2 p-3 ${res.parity ? 'border-orange-300 bg-orange-50' : 'border-emerald-200 bg-emerald-50'}`}>
-                <div className="text-xs text-slate-500">Overall Parity q（8 位）</div>
+                <div className="text-xs text-slate-500">Overall parity q（8 位）</div>
                 <div className="font-mono text-2xl font-bold">{res.parity}</div>
                 <div className="text-xs">{res.parity ? '奇（Odd）' : '偶（Even）'}，1 的個數 = {weight(so.r8)}</div>
               </div>
@@ -228,7 +229,7 @@ export default function L2Secded() {
               </motion.div>
             </div>
             <div className="mt-4">
-              <div className="mb-1 text-xs font-semibold text-slate-500">解碼器輸出</div>
+              <div className="mb-1 text-xs font-semibold text-slate-500">Decoder 輸出</div>
               <BitStrip bits={res.output} states={outStates} groups={false} />
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 <span className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold ${res.uncorrectable ? 'bg-orange-500 text-white' : 'bg-slate-100 text-slate-500'}`}>
@@ -250,7 +251,7 @@ export default function L2Secded() {
             <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm">
               <div className="mb-1 font-semibold">同樣的錯誤，交給普通 Hamming(7,4)（只看前 7 位）：</div>
               <span className="mono">{plain.decode.corrected.join('')}</span>，訊息 <span className="mono">{plain.decode.message.join('')}</span>{' '}
-              <StatusBadge status={outcomeStatus(plain).status} zh={outcomeStatus(plain).zh} />
+              <StatusBadge status={outcomeStatus(plain).status} zh={outcomeStatus(plain).zh} en={outcomeStatus(plain).en} />
             </div>
           </Card>
         ),
@@ -261,7 +262,7 @@ export default function L2Secded() {
           <>
             <Checks
               items={[
-                { label: <>延伸 codeword {c8.join('')} 中 1 的個數為偶數</>, pass: weight(c8) % 2 === 0 },
+                { label: <>Extended codeword {c8.join('')} 中 1 的個數為偶數</>, pass: weight(c8) % 2 === 0 },
                 { label: <>8 種單錯（含位置 8 的 P）全部更正</>, pass: singles.every((x) => x.success) },
                 { label: <>28 種雙錯全部判為「雙重錯誤」、不更正、資料保留</>, pass: doubles.every((x) => x.result.case === 'double' && x.result.uncorrectable && x.result.output.join('') === x.r8.join('')) },
                 { label: <>超出保證的反例存在：56 種三錯中有 {tripleWrong} 種被誤判</>, pass: tripleWrong > 0, detail: '（說明保證只到 2 個錯誤）' },
@@ -269,7 +270,7 @@ export default function L2Secded() {
             />
             <Callout kind="misconception" title="SECDED 不能偵測所有多位元錯誤">
               <p>
-                三個錯誤是奇數個，q = 1，看起來像單錯，解碼器會「更正」某一位；四個錯誤甚至可能讓 S = 0、q = 0（重量 4 的延伸 codeword）。SECDED 的承諾是：<strong>1 個錯必更正、2 個錯必偵測</strong>，僅此而已。
+                三個錯誤是奇數個，q = 1，看起來像單錯，decoder 會「更正」某一位；四個錯誤甚至可能讓 S = 0、q = 0（weight 4 的 extended codeword）。SECDED 的承諾是：<strong>1 個錯必更正、2 個錯必偵測</strong>，僅此而已。
               </p>
             </Callout>
           </>
@@ -277,7 +278,7 @@ export default function L2Secded() {
       }}
       next={
         <p>
-          我們一直用 n = 7 的小例子。實際系統用的 Hamming Code 長得多，例如 GF(128) 上的 Hamming(127,120)。下一章比較小例子與實際參數的差距，並介紹硬體架構與 400ZR 光通訊中的 Hamming 內碼。
+          我們一直用 n = 7 的小例子。實際系統用的 Hamming code 長得多，例如 GF(128) 上的 Hamming(127,120)。下一章比較小例子與實際參數的差距，並介紹硬體架構，以及 400ZR 光通訊中當作 inner code（內碼）的 Hamming code。
         </p>
       }
     />

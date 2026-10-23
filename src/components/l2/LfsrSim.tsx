@@ -7,7 +7,7 @@ import { Segmented } from '../Lesson';
 import { StepControls, useStepper, type Stepper } from './Stepper';
 import { Mono } from './Common';
 
-export const PHASES = ['讀入 bit', '計算 feedback', '左移（× x）', 'XOR 回授'] as const;
+export const PHASES = ['讀入 bit', '計算 feedback', '左移（× x）', 'XOR feedback'] as const;
 
 /** frame → (t, phase); frame 0 is the initial state */
 export function lfsrFrame(frame: number, detailed: boolean): { t: number; phase: number } {
@@ -125,7 +125,7 @@ export function LfsrSim({ kind, input, stepper, detailed = true, large = false, 
               <th className="py-1">時脈</th>
               <th>輸入</th>
               <th>更新前</th>
-              <th>feedback</th>
+              <th>Feedback</th>
               <th>更新後 R₂R₁R₀</th>
               <th>多項式餘數</th>
             </tr>
@@ -260,7 +260,7 @@ function Circuit({ kind, regs, st, phase, large }: { kind: LfsrKind; regs: Bit[]
         );
       })}
       <text x={330} y={20} textAnchor="middle" fontSize={12} fill="#64748b">
-        {kind === 'encoder' ? '預乘式編碼器：輸入從 x³ 端進入（已乘 x³）' : '除法器：輸入從 R₀（1 的位置）進入'}
+        {kind === 'encoder' ? '預乘式 encoder：輸入從 x³ 端進入（已乘 x³）' : '除法器：輸入從 R₀（1 的位置）進入'}
       </text>
     </svg>
   );
@@ -276,12 +276,12 @@ export function OverflowViz({ large = false }: { large?: boolean }) {
     [0, 0, 1, 1], // x³ cancelled → x + 1
   ];
   const caption = [
-    <>第一次輸入 1：預乘式電路把它放在 <M>x^3</M> 的位置——但暫存器只有 <M>x^2, x, 1</M> 三格，<M>x^3</M> 「溢出」。</>,
+    <>第一次輸入 1：預乘式電路把它放在 <M>x^3</M> 的位置——但 register 只有 <M>x^2, x, 1</M> 三格，<M>x^3</M> 「溢出」。</>,
     <>
       在 mod <M>{'g(x)'}</M> 的世界裡 <M>{'g(x) = x^3 + x + 1 \\equiv 0'}</M>，所以可以任意加上 <M>g(x)</M>（GF(2) 中加法 = 減法）。
     </>,
     <>
-      <M>{'x^3 + (x^3 + x + 1) = x + 1'}</M>：<M>x^3</M> 抵消，回授到 <M>x</M> 與 <M>1</M> 的位置 → 暫存器 <strong className="mono">011</strong>。這就是 <M>{'x^3 \\equiv x + 1 \\pmod{g(x)}'}</M>。
+      <M>{'x^3 + (x^3 + x + 1) = x + 1'}</M>：<M>x^3</M> 抵消，以 feedback 加到 <M>x</M> 與 <M>1</M> 的位置 → register <strong className="mono">011</strong>。這就是 <M>{'x^3 \\equiv x + 1 \\pmod{g(x)}'}</M>。
     </>,
   ];
   return (
@@ -336,7 +336,7 @@ export function LfsrModeToggle({ kind, onChange }: { kind: LfsrKind; onChange: (
       value={kind}
       onChange={onChange}
       options={[
-        { value: 'encoder', label: '預乘式編碼器（輸入 u）' },
+        { value: 'encoder', label: '預乘式 encoder（輸入 u）' },
         { value: 'divider', label: '除法器（輸入 x³u）' },
       ]}
     />

@@ -34,7 +34,7 @@ export default function A2WhyGF8() {
   return (
     <AlgebraUnit
       id={ID}
-      lead={<p>GF(2) 的矩陣已經足以建構 Hamming(7,4)。那為什麼還要大費周章建立一個有 8 個元素的體？這一單元先回答「為什麼」，再看 GF(8) 長什麼樣子。</p>}
+      lead={<p>GF(2) 的矩陣已經足以建構 Hamming(7,4)。那為什麼還要大費周章建立一個有 8 個元素的 field？這一單元先回答「為什麼」，再看 GF(8) 長什麼樣子。</p>}
       takeaway={<>GF(8) 讓 {BITS} 條線上的位元成為能加減乘除的數，{NONZERO} 個錯誤位置各對應一個非零元素。</>}
       why={{
         title: `把 ${BITS} 個位元當成一個可以乘除的數`,
@@ -45,20 +45,20 @@ export default function A2WhyGF8() {
                 先誠實地說：<strong>只用 GF(2) 的矩陣，就能完整建構 Hamming(7,4)</strong>（第一課就是這樣做的）。GF(8) 不是「修好」什麼缺陷，而是提供一個<strong>額外的乘法結構</strong>。
               </p>
               <p>
-                接收端手上只有 {BITS} 個位元的 Syndrome。只有一個錯時，第一課的排法讓這 {BITS} 個位元直接就是出錯位置的地址。可是如果位置 {E1} 和位置 {E2} 同時被翻轉，Syndrome 是兩個欄相加：<span className="mono">{gf8Bits(E1)} ⊕ {gf8Bits(E2)} = {gf8Bits(ALIAS)}</span>，和「只有位置 {ALIAS} 錯」一模一樣，解碼器會去翻轉位置 {ALIAS}，結果錯上加錯。光靠這 {BITS} 個位元，兩個錯誤位置已經被 XOR 在一起，拆不開。要更正兩個錯，就得多送一組檢查位元，讓接收端多得到一條方程，例如由 <M>{'X_1 + X_2'}</M> 和 <M>{'X_1^3 + X_2^3'}</M> 解出兩個未知位置 <M>{'X_1, X_2'}</M>（能更正多個錯誤的 BCH Code 就是這樣做的）。這組新的檢查要算「位置的立方」，解的時候還要除，所以必須能對「位置」做乘法和除法。
+                接收端手上只有 {BITS} 個位元的 syndrome。只有一個錯時，第一課的排法讓這 {BITS} 個位元直接就是出錯位置的地址。可是如果位置 {E1} 和位置 {E2} 同時被翻轉，syndrome 是兩個欄相加：<span className="mono">{gf8Bits(E1)} ⊕ {gf8Bits(E2)} = {gf8Bits(ALIAS)}</span>，和「只有位置 {ALIAS} 錯」一模一樣，decoder 會去翻轉位置 {ALIAS}，結果錯上加錯。光靠這 {BITS} 個位元，兩個錯誤位置已經被 XOR 在一起，拆不開。要更正兩個錯，就得多送一組 parity bit，讓接收端多得到一條方程，例如由 <M>{'X_1 + X_2'}</M> 和 <M>{'X_1^3 + X_2^3'}</M> 解出兩個未知位置 <M>{'X_1, X_2'}</M>（能更正多個錯誤的 BCH code 就是這樣做的）。這組新的檢查要算「位置的立方」，解的時候還要除，所以必須能對「位置」做乘法和除法。
               </p>
               <p>
                 看看 H 的 {H74[0].length} 個欄：剛好是 {NONZERO} 個不同的非零 {BITS} 位元向量。在 GF(2) 的觀點裡，它們只是 {H74[0].length} 個向量，可以相加、但不能相乘。如果能把每個 3 位元向量當成一個「數」，可以相加<strong>也可以相乘、相除</strong>，那麼：
               </p>
               <ul className="ml-5 list-disc space-y-1">
                 <li>
-                  三條 GF(2) 檢查方程 <M>{'Hc^T = 0'}</M> 可以濃縮成<strong>一條</strong>方程 <M>{'c(\\alpha) = 0'}</M>（A9）。
+                  三條 GF(2) parity-check equation（同位檢查方程）<M>{'Hc^T = 0'}</M> 可以濃縮成<strong>一條</strong>方程 <M>{'c(\\alpha) = 0'}</M>（A9）。
                 </li>
                 <li>Codeword 可以寫成多項式，編碼變成多項式乘法、除法（A5；硬體 LFSR 見第二課 2-2）。</li>
-                <li>解碼變成「解方程、找根」（A10，以及第二課 2-7 的 Chien Search），並能推廣到可更正多個錯誤的 BCH、Reed–Solomon Code。</li>
+                <li>解碼變成「解方程、找根」（A10，以及第二課 2-7 的 Chien search），並能推廣到可更正多個錯誤的 BCH、Reed–Solomon code。</li>
               </ul>
               <p className="mt-3">
-                在硬體上，一個 GF(8) 元素就是 {BITS} 條線（或 {BITS} 個暫存器）上的 {BITS} 個位元，所以這個「數」的運算也必須便宜，最好只用 XOR 閘、AND 閘和移位。最直覺的候選是把 {BITS} 個位元當成整數 0–7、做 mod 8 運算（<M>{'\\mathbb{Z}/8\\mathbb{Z}'}</M>），但下面會看到它的兩個缺點：它有零因子（zero divisor），不能做除法；加法還要進位。GF(8) 兩個問題都沒有。
+                在硬體上，一個 GF(8) 元素就是 {BITS} 條線（或 {BITS} 個 register）上的 {BITS} 個位元，所以這個「數」的運算也必須便宜，最好只用 XOR 閘、AND 閘和移位。最直覺的候選是把 {BITS} 個位元當成整數 0–7、做 mod 8 運算（<M>{'\\mathbb{Z}/8\\mathbb{Z}'}</M>），但下面會看到它的兩個缺點：它有 zero divisor，不能做除法；加法還要進位。GF(8) 兩個問題都沒有。
               </p>
             </Plain>
           </>
@@ -70,10 +70,10 @@ export default function A2WhyGF8() {
           <>
             <Terms
               items={[
-                { zh: '擴張體', en: 'Extension Field', def: <>把 GF(2) 擴大成更大的體。GF(8) 的每個元素都寫成 <M>{'a + b\\alpha + c\\alpha^2'}</M>，其中 <M>{'a,b,c \\in \\mathrm{GF}(2)'}</M>。</> },
-                { zh: '元素個數', en: 'Order of the Field', def: <>每個係數有 2 種選擇，共 <M>{'2^3 = 8'}</M> 個元素，所以叫 GF(8) 或 <M>{'\\mathrm{GF}(2^3)'}</M>。</> },
-                { zh: '加法', en: 'Addition', def: <>係數逐項在 GF(2) 中相加 = 三位元 XOR。電路上就是 {gfAdderXors(BITS)} 個並排的 XOR 閘，彼此不用等進位。</> },
-                { zh: 'α 是什麼？', def: <>暫時把 α 想成一個「新的符號」，滿足某個規則（A3 會揭曉是 <M>{'\\alpha^3 = \\alpha + 1'}</M>），讓乘法結果永遠留在這 8 個元素裡。</> },
+                { term: 'Extension field', gloss: '擴張體', def: <>把 GF(2) 擴大成更大的 field。GF(8) 的每個元素都寫成 <M>{'a + b\\alpha + c\\alpha^2'}</M>，其中 <M>{'a,b,c \\in \\mathrm{GF}(2)'}</M>。</> },
+                { term: 'Order of the field', gloss: '元素個數', def: <>每個係數有 2 種選擇，共 <M>{'2^3 = 8'}</M> 個元素，所以叫 GF(8) 或 <M>{'\\mathrm{GF}(2^3)'}</M>。</> },
+                { term: '加法', def: <>係數逐項在 GF(2) 中相加 = 三位元 XOR。電路上就是 {gfAdderXors(BITS)} 個並排的 XOR 閘，彼此不用等進位。</> },
+                { term: 'α 是什麼？', def: <>暫時把 α 想成一個「新的符號」，滿足某個規則（A3 會揭曉是 <M>{'\\alpha^3 = \\alpha + 1'}</M>），讓乘法結果永遠留在這 8 個元素裡。</> },
               ]}
             />
             <Card title="GF(8) 元素表：點擊元素">
@@ -107,7 +107,7 @@ export default function A2WhyGF8() {
             </Card>
             <Plain>
               <p>
-                硬體裡不需要任何轉換：{BITS} 個係數直接放在 {BITS} 條線上，暫存器裡存著 <span className="mono">101</span>，代表的就是 <M>{'\\alpha^2 + 1'}</M>。元素表的 {GF8_ELEMENTS.length} 個格子，就是這 {BITS} 條線所有可能的狀態。
+                硬體裡不需要任何轉換：{BITS} 個係數直接放在 {BITS} 條線上，register 裡存著 <span className="mono">101</span>，代表的就是 <M>{'\\alpha^2 + 1'}</M>。元素表的 {GF8_ELEMENTS.length} 個格子，就是這 {BITS} 條線所有可能的狀態。
               </p>
             </Plain>
           </>
@@ -152,7 +152,7 @@ export default function A2WhyGF8() {
                               const v = S.mul(x, y);
                               const zeroDiv = v === 0 && x !== 0 && y !== 0;
                               return (
-                                <td key={y} className={`rounded p-1 ${zeroDiv ? 'bg-rose-200 font-bold text-rose-800' : v === 1 ? 'bg-emerald-100 text-emerald-800' : ''}`} title={zeroDiv ? '零因子：兩個非零元素相乘得 0' : undefined}>
+                                <td key={y} className={`rounded p-1 ${zeroDiv ? 'bg-rose-200 font-bold text-rose-800' : v === 1 ? 'bg-emerald-100 text-emerald-800' : ''}`} title={zeroDiv ? 'Zero divisor：兩個非零元素相乘得 0' : undefined}>
                                   {label(v)}
                                 </td>
                               );
@@ -162,17 +162,17 @@ export default function A2WhyGF8() {
                       </tbody>
                     </table>
                   </div>
-                  <p className="mt-2 text-xs text-slate-500">綠色 = 乘積為 1（找到反元素）；紅色 = 兩個非零元素相乘得 0（零因子）。</p>
+                  <p className="mt-2 text-xs text-slate-500">綠色 = 乘積為 1（找到 inverse）；紅色 = 兩個非零元素相乘得 0（zero divisor）。</p>
                 </Card>
               }
-              aside={<Checks title={`${S.name} 是體嗎？`} items={axioms.filter((x) => ['mul-inv', 'no-zero-div', 'distrib', 'add-inv'].includes(x.key)).map((x) => ({ label: x.zh, pass: x.holds, detail: x.counterexample }))} />}
+              aside={<Checks title={`${S.name} 是 field 嗎？`} items={axioms.filter((x) => ['mul-inv', 'no-zero-div', 'distrib', 'add-inv'].includes(x.key)).map((x) => ({ label: x.plain, pass: x.holds, detail: x.counterexample }))} />}
             />
             <Plain>
               <p>
-                切到 ℤ/8 看紅色的格子：<M>{`2 \\cdot 4 = ${Z8.mul(2, 4)}`}</M>。如果「位置」用這種數來表示，兩個非零的位置相乘會變成 0，資訊直接消失；{Z8.elements.length - 1} 個非零元素裡有 {Z8_NO_INV.length} 個（{Z8_NO_INV.join('、')}）沒有乘法反元素（也就是倒數），不能當除數，「解方程找位置」在 ℤ/8 裡根本做不下去。GF(8) 的每一個非零元素都有反元素，所以任何非零的數都能拿來除。
+                切到 ℤ/8 看紅色的格子：<M>{`2 \\cdot 4 = ${Z8.mul(2, 4)}`}</M>。如果「位置」用這種數來表示，兩個非零的位置相乘會變成 0，資訊直接消失；{Z8.elements.length - 1} 個非零元素裡有 {Z8_NO_INV.length} 個（{Z8_NO_INV.join('、')}）沒有 multiplicative inverse（也就是倒數），不能當除數，「解方程找位置」在 ℤ/8 裡根本做不下去。GF(8) 的每一個非零元素都有 inverse，所以任何非零的數都能拿來除。
               </p>
               <p>
-                電路成本也不一樣。ℤ/8 的加法要進位：最簡單的漣波進位加法器（ripple-carry adder）要 {RIPPLE.xors} 個 XOR 閘、{RIPPLE.ands} 個 AND 閘、{RIPPLE.ors} 個 OR 閘，而且最高位要等進位從最低位接力傳 {RIPPLE.carryHops} 次才算得出來；GF(8) 的加法只要 {gfAdderXors(BITS)} 個 XOR 閘，{BITS} 個位元同時完成。乘法也是如此：等 A3 定出乘法規則後，一個 GF(8) 乘法器只用 {GF_MUL.ands} 個 AND 閘和 {GF_MUL.xors} 個 XOR 閘，沒有任何進位。
+                電路成本也不一樣。ℤ/8 的加法要進位：最簡單的 ripple-carry adder（漣波進位加法器）要 {RIPPLE.xors} 個 XOR 閘、{RIPPLE.ands} 個 AND 閘、{RIPPLE.ors} 個 OR 閘，而且最高位要等進位從最低位接力傳 {RIPPLE.carryHops} 次才算得出來；GF(8) 的加法只要 {gfAdderXors(BITS)} 個 XOR 閘，{BITS} 個位元同時完成。乘法也是如此：等 A3 定出乘法規則後，一個 GF(8) 乘法器只用 {GF_MUL.ands} 個 AND 閘和 {GF_MUL.xors} 個 XOR 閘，沒有任何進位。
               </p>
             </Plain>
           </>
@@ -194,9 +194,9 @@ export default function A2WhyGF8() {
                 <p className="mt-3 text-sm text-slate-700">
                   第 {col + 1} 欄（由上而下）是 ({column(H74, col).join(', ')})。把它讀成 <M>{'1, \\alpha, \\alpha^2'}</M> 的係數，就是 GF(8) 元素 <M>{gf8PolyTex(col + 1)}</M>（{BITS} 位元寫作 <span className="mono">{gf8Bits(col + 1)}</span>）。
                 </p>
-                <p className="mt-2 text-sm text-slate-600">{H74[0].length} 個欄剛好用完 GF(8) 的 {NONZERO} 個非零元素——這不是巧合，Hamming Code 的 H 就是「列出所有非零元素」。</p>
+                <p className="mt-2 text-sm text-slate-600">{H74[0].length} 個欄剛好用完 GF(8) 的 {NONZERO} 個非零元素——這不是巧合，Hamming code 的 H 就是「列出所有非零元素」。</p>
                 <p className="mt-2 text-sm text-slate-600">
-                  這也是接收端讀 Syndrome 的方式：{BITS} 個 Syndrome 位元就是一個 GF(8) 元素。<span className="mono">000</span> 留給「所有檢查都通過」，其餘 {NONZERO} 個非零值各指向一個位置，{GF8_ELEMENTS.length} 種狀態剛好用完，一個也沒有浪費。
+                  這也是接收端讀 syndrome 的方式：{BITS} 個 syndrome 位元就是一個 GF(8) 元素。<span className="mono">000</span> 留給「所有檢查都通過」，其餘 {NONZERO} 個非零值各指向一個位置，{GF8_ELEMENTS.length} 種狀態剛好用完，一個也沒有浪費。
                 </p>
               </Card>
             }
@@ -231,14 +231,14 @@ export default function A2WhyGF8() {
           </Card>
         ),
         links: [
-          { to: 'a-1', text: '上一步：GF(2) 是 Hamming Code 本來的運算' },
-          { to: 'a-3', text: '下一步：α 到底是什麼？用不可約多項式建構 GF(8)' },
+          { to: 'a-1', text: '上一步：GF(2) 是 Hamming code 本來的運算' },
+          { to: 'a-3', text: '下一步：α 到底是什麼？用 irreducible polynomial 建構 GF(8)' },
           { to: 'a-9', text: '終點之一：把 H 的每一欄寫成 αⁱ，Hcᵀ = 0 變成 c(α) = 0' },
           { to: 'l2-6', text: '第二課：Syndrome 111 就是 GF(8) 元素 α⁵' },
         ],
         misconceptions: [
-          { wrong: 'GF(8) 就是 {0,1,…,7} 做 mod 8 的運算。', right: 'ℤ/8 中 2·4 = 0、2 沒有反元素，不是體。GF(8) 的元素是 α 的多項式，加法是 XOR，乘法另有規則。' },
-          { wrong: '有了 GF(8)，GF(2) 的矩陣方法就錯了。', right: '兩種方法描述的是等價的 code（只差一個座標排列，A9 會證明）。GF(8) 提供的是更多結構：乘法、根、多項式。' },
+          { wrong: 'GF(8) 就是 {0,1,…,7} 做 mod 8 的運算。', right: 'ℤ/8 中 2·4 = 0、2 沒有 inverse，不是 field。GF(8) 的元素是 α 的多項式，加法是 XOR，乘法另有規則。' },
+          { wrong: '有了 GF(8)，GF(2) 的矩陣方法就錯了。', right: '兩種方法描述的是 equivalent code：只差一個座標排列（A9 會證明）。GF(8) 提供的是更多結構：乘法、根、多項式。' },
           { wrong: '3 位元字串 101 代表數字 5。', right: '在 GF(8) 中 101 代表 α² + 1。把它當成整數 5 去做乘法會得到錯的答案。' },
         ],
       }}

@@ -59,7 +59,7 @@ export default function L2Division() {
         title: '多項式除法定理',
         body: (
           <Card>
-            <p className="text-sm text-slate-700">對任何多項式 <M>{'a(x)'}</M> 與非零的 <M>{'g(x)'}</M>，存在唯一的商 <M>{'q(x)'}</M> 與餘數 <M>{'\\rho(x)'}</M>（不寫成 <M>{'r(x)'}</M>，因為從 2-4 起 <M>{'r(x)'}</M> 代表接收字）：</p>
+            <p className="text-sm text-slate-700">對任何多項式 <M>{'a(x)'}</M> 與非零的 <M>{'g(x)'}</M>，存在唯一的商 <M>{'q(x)'}</M> 與餘數 <M>{'\\rho(x)'}</M>（不寫成 <M>{'r(x)'}</M>，因為從 2-4 起 <M>{'r(x)'}</M> 代表 received word）：</p>
             <Tex block>{'a(x) = q(x)\\,g(x) + \\rho(x),\\qquad \\deg \\rho(x) < \\deg g(x) = 3'}</Tex>
             <p className="text-sm text-slate-700">位元字串與多項式一一對應（最左邊 = 最高次）：</p>
             <div className="mt-1 space-y-1 text-sm">
@@ -85,7 +85,7 @@ export default function L2Division() {
               <>看除數對齊位置下的位元：若是 1，在商寫 1，並把除數與這 4 位做 XOR。</>,
               <>若是 0，在商寫 0，不做 XOR（等於減去 0）。</>,
               <>把除數往右移一格，重複，直到除數的最右邊對齊被除數的最右邊。</>,
-              <>最後 3 位就是餘數；它就是同位位元 p。</>,
+              <>最後 3 位就是餘數；它就是 parity bit p。</>,
             ]}
           />
         ),
@@ -131,7 +131,7 @@ export default function L2Division() {
             {view === 'sync' && (
               <div className="space-y-2">
                 <p className="text-sm text-slate-600">
-                  老師的預乘式 LFSR 只輸入訊息 u = <span className="mono">{dividend.slice(0, 4).join('')}</span>（被除數的前 4 位）；左邊用「一次帶下一個位元」的長除法，每一步都與暫存器相同。
+                  老師的預乘式 LFSR 只輸入訊息 u = <span className="mono">{dividend.slice(0, 4).join('')}</span>（被除數的前 4 位）；左邊用「一次帶下一個位元」的長除法，每一步都與 register 相同。
                   {dividend.slice(4).some(Boolean) && ' （注意：目前被除數後三位不是 000，這裡只使用前 4 位。）'}
                 </p>
                 <SyncLfsrDivision key={`s${key}-${dividend.slice(0, 4).join('')}`} u={dividend.slice(0, 4) as Bit[]} />
@@ -167,7 +167,7 @@ export default function L2Division() {
                     })}
                   </tbody>
                 </table>
-                <p className="mt-2 text-xs text-slate-500">兩欄分別由 longDivision() 與 runLfsr() 獨立計算。LFSR 的暫存器就是長除法「目前看得到的三位數」。</p>
+                <p className="mt-2 text-xs text-slate-500">兩欄分別由 longDivision() 與 runLfsr() 獨立計算。LFSR 的 register 就是長除法「目前看得到的三位數」。</p>
               </div>
             )}
           </Card>
@@ -196,10 +196,10 @@ export default function L2Division() {
           </>
         ),
       }}
-      related={[{ to: 'a-5', text: '系統式 vs 非系統式編碼、GF(2) 多項式乘法與生成多項式' }, { to: 'l2-2', text: 'LFSR 每一步的「為什麼」' }]}
+      related={[{ to: 'a-5', text: 'Systematic vs nonsystematic encoding、GF(2) 多項式乘法與 generator polynomial' }, { to: 'l2-2', text: 'LFSR 每一步的「為什麼」' }]}
       next={
         <p>
-          同一個除法換個用途：接收端把收到的 <M>r</M> 除以 <M>{'g(x)'}</M>。如果沒有錯誤，餘數一定是 0；有錯誤時，餘數就是 Syndrome。
+          同一個除法換個用途：接收端把收到的 <M>r</M> 除以 <M>{'g(x)'}</M>。如果沒有錯誤，餘數一定是 0；有錯誤時，餘數就是 syndrome。
         </p>
       }
     />

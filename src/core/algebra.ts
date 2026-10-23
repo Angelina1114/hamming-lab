@@ -26,7 +26,10 @@ export interface Structure {
 
 export interface AxiomResult {
   key: string;
+  /** label for the first checklist a reader sees: closure, additive inverse and zero divisor carry their Chinese gloss */
   zh: string;
+  /** the same label without the Chinese gloss, for every later checklist (the gloss is given once per unit) */
+  plain: string;
   holds: boolean;
   /** first counterexample found, as readable text */
   counterexample?: string;
@@ -48,23 +51,26 @@ export function checkFieldAxioms(S: Structure, label: (x: number) => string = St
     return rec([]);
   };
   const L = label;
-  const push = (key: string, zh: string, ce?: string) => res.push({ key, zh, holds: !ce, counterexample: ce });
-  push('add-closed', '加法封閉', find((a, b) => E.includes(S.add(a, b)), 2, (a, b) => `${L(a)} + ${L(b)} 不在集合中`));
-  push('mul-closed', '乘法封閉', find((a, b) => E.includes(S.mul(a, b)), 2, (a, b) => `${L(a)} · ${L(b)} 不在集合中`));
-  push('add-assoc', '加法結合律', find((a, b, c) => S.add(S.add(a, b), c) === S.add(a, S.add(b, c)), 3, (a, b, c) => `(${L(a)}+${L(b)})+${L(c)}`));
-  push('mul-assoc', '乘法結合律', find((a, b, c) => S.mul(S.mul(a, b), c) === S.mul(a, S.mul(b, c)), 3, (a, b, c) => `(${L(a)}·${L(b)})·${L(c)}`));
-  push('add-comm', '加法交換律', find((a, b) => S.add(a, b) === S.add(b, a), 2, (a, b) => `${L(a)}+${L(b)}`));
-  push('mul-comm', '乘法交換律', find((a, b) => S.mul(a, b) === S.mul(b, a), 2, (a, b) => `${L(a)}·${L(b)}`));
-  push('distrib', '分配律', find((a, b, c) => S.mul(a, S.add(b, c)) === S.add(S.mul(a, b), S.mul(a, c)), 3, (a, b, c) => `${L(a)}·(${L(b)}+${L(c)})`));
-  push('add-inv', '每個元素有加法反元素', find((a) => E.some((b) => S.add(a, b) === S.zero), 1, (a) => `${L(a)} 沒有加法反元素`));
+  const push = (key: string, zh: string, ce?: string) => res.push({ key, zh, plain: zh.replace(/（[^（）]*）/g, ''), holds: !ce, counterexample: ce });
+  // Labels are shown in the algebra pages (A1 lists all ten first) and the algebra deck: closure, inverse and
+  // zero divisor carry their Chinese gloss in `zh`, used only where that checklist is the first occurrence;
+  // later checklists use `plain`. Associativity etc. are glossed in the page text before.
+  push('add-closed', '對加法滿足 closure（封閉性）', find((a, b) => E.includes(S.add(a, b)), 2, (a, b) => `${L(a)} + ${L(b)} 不在集合中`));
+  push('mul-closed', '對乘法滿足 closure', find((a, b) => E.includes(S.mul(a, b)), 2, (a, b) => `${L(a)} · ${L(b)} 不在集合中`));
+  push('add-assoc', '加法滿足 associativity', find((a, b, c) => S.add(S.add(a, b), c) === S.add(a, S.add(b, c)), 3, (a, b, c) => `(${L(a)}+${L(b)})+${L(c)}`));
+  push('mul-assoc', '乘法滿足 associativity', find((a, b, c) => S.mul(S.mul(a, b), c) === S.mul(a, S.mul(b, c)), 3, (a, b, c) => `(${L(a)}·${L(b)})·${L(c)}`));
+  push('add-comm', '加法滿足 commutativity', find((a, b) => S.add(a, b) === S.add(b, a), 2, (a, b) => `${L(a)}+${L(b)}`));
+  push('mul-comm', '乘法滿足 commutativity', find((a, b) => S.mul(a, b) === S.mul(b, a), 2, (a, b) => `${L(a)}·${L(b)}`));
+  push('distrib', '滿足 distributivity', find((a, b, c) => S.mul(a, S.add(b, c)) === S.add(S.mul(a, b), S.mul(a, c)), 3, (a, b, c) => `${L(a)}·(${L(b)}+${L(c)})`));
+  push('add-inv', '每個元素都有 additive inverse（加法反元素）', find((a) => E.some((b) => S.add(a, b) === S.zero), 1, (a) => `${L(a)} 沒有 additive inverse`));
   push(
     'mul-inv',
-    '每個非零元素有乘法反元素',
-    find((a) => a === S.zero || E.some((b) => S.mul(a, b) === S.one), 1, (a) => `${L(a)} 沒有乘法反元素`),
+    '每個非零元素都有 multiplicative inverse',
+    find((a) => a === S.zero || E.some((b) => S.mul(a, b) === S.one), 1, (a) => `${L(a)} 沒有 multiplicative inverse`),
   );
   push(
     'no-zero-div',
-    '沒有零因子（ab = 0 ⇒ a = 0 或 b = 0）',
+    '沒有 zero divisor（零因子）：ab = 0 ⇒ a = 0 或 b = 0',
     find((a, b) => !(S.mul(a, b) === S.zero && a !== S.zero && b !== S.zero), 2, (a, b) => `${L(a)} · ${L(b)} = 0`),
   );
   return res;

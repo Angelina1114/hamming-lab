@@ -53,7 +53,7 @@ function OverlapIdeaSlide({ s }: { s: Stepper }) {
         <Reveal on={s.step >= 0}>
           <Box tone="bg-sky-50 text-sky-950" title="想法：多個重疊的檢查">
             <p>
-              發送端多算 {L} 個同位位元，各管一組位置；接收端把這 {L} 組重算一次。
+              發送端多算 {L} 個 parity bit，各管一組位置；接收端把這 {L} 組重算一次。
             </p>
             <p className="mt-2 text-lg text-slate-600">各組互相重疊：每個位置對到一種專屬的失敗組合，「全部通過」留給「沒有錯」。</p>
           </Box>
@@ -108,8 +108,8 @@ function OverlapIdeaSlide({ s }: { s: Stepper }) {
       </div>
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.8fr_1fr]">
         <Reveal on={s.step >= 2}>
-          <Box tone="bg-parity-50" title={<span className="text-parity-700">同位位元放在位置 {PARITY_POS}（2 的冪次）</span>}>
-            <p className="text-lg">二進位只有一個 1 → 每個同位位元只在一組檢查裡，直接用資料位元算出：</p>
+          <Box tone="bg-parity-50" title={<span className="text-parity-700">Parity bit 放在位置 {PARITY_POS}（2 的冪次）</span>}>
+            <p className="text-lg">二進位只有一個 1 → 每個 parity bit 只在一組檢查裡，直接用 data bit 算出：</p>
             <div className="mt-1 flex flex-wrap gap-x-5 gap-y-1">
               {eqs.map((e) => (
                 <Tex key={e}>{e}</Tex>
@@ -118,13 +118,13 @@ function OverlapIdeaSlide({ s }: { s: Stepper }) {
           </Box>
         </Reveal>
         <Reveal on={s.step >= 3}>
-          <Box tone="bg-emerald-50 text-emerald-950" title={`結果：Hamming(${N},${K})`}>
+          {/* the two glosses below take a second line, so the claim moved up into the title to keep the slide on one screen at 16:9 */}
+          <Box tone="bg-emerald-50 text-emerald-950" title={`Hamming(${N},${K})：修正任何 1 個錯誤`}>
             <p>
-              <span className="font-semibold text-data-700">{K} 個資料位元</span> + <span className="font-semibold text-parity-700">{L} 個同位位元</span>
+              <span className="font-semibold text-data-700">{K} 個 data bit</span> + <span className="font-semibold text-parity-700">{L} 個 parity bit</span>
             </p>
-            <p>能找出並修正任何 1 個錯誤</p>
             <p className="text-lg text-slate-600">
-              碼率 <M>{`${K}/${N} \\approx ${(K / N).toFixed(2)}`}</M>（三重重複碼 <M>{`1/${N_REPEAT}`}</M>）
+              code rate（碼率）<M>{`${K}/${N} \\approx ${(K / N).toFixed(2)}`}</M>；3-fold repetition code（重複碼）只有 <M>{`1/${N_REPEAT}`}</M>
             </p>
           </Box>
         </Reveal>
@@ -165,11 +165,11 @@ function EncodeSlide({ s }: { s: Stepper }) {
         )}
       </div>
       <p className="text-lg text-slate-600">
-        {s.step === 0 && `先把 ${K} 個資料位元放進位置 ${DATA_POS}，再逐一算出 ${PARITY_CHECKS.map((pc) => pc.name).join('、')}：每個檢查管到的位元要有偶數個 1。`}
+        {s.step === 0 && `先把 ${K} 個 data bit 放進位置 ${DATA_POS}，再逐一算出 ${PARITY_CHECKS.map((pc) => pc.name).join('、')}：每個檢查管到的位元要有偶數個 1。`}
         {s.step > 0 && s.step <= L && `算出 ${PARITY_CHECKS[s.step - 1].name}：讓它管的 ${COVER} 個位置有偶數個 1。`}
         {s.step === L + 1 && (
           <>
-            完成！訊息 {message.join('')} 編成 codeword <strong className="mono">{enc.codeword.join('')}</strong>。
+            完成！訊息 {message.join('')} 編成 codeword（碼字）<strong className="mono">{enc.codeword.join('')}</strong>。
           </>
         )}
       </p>
@@ -194,10 +194,10 @@ function VennSlide() {
           {e.length > 0 && d.position > 0 && (
             <>
               只有位置 <strong>{d.position}（{LAYOUT_74[d.position - 1].label}）</strong>落在所有失敗的圓圈裡、又不在任何通過的圓圈裡：把它翻回來就修好了
-              {e.length > 1 && <span className="text-rose-700">（但其實錯了 {e.length} 個：誤更正）</span>}。
+              {e.length > 1 && <span className="text-rose-700">（但其實錯了 {e.length} 個：miscorrection）</span>}。
             </>
           )}
-          {e.length > 0 && d.position === 0 && <>{L} 個圓圈又都變回偶數：錯誤剛好互相抵銷，看不出來（未偵測錯誤）。</>}
+          {e.length > 0 && d.position === 0 && <>{L} 個圓圈又都變回偶數：錯誤剛好互相抵銷，看不出來（undetected error）。</>}
         </div>
         <p className="text-lg text-slate-600">紅色圓圈 = 奇數個 1（檢查失敗）。哪幾個圈失敗，就像座標一樣指出錯在哪裡。</p>
       </div>
@@ -227,7 +227,7 @@ export const CH1_SLIDES: DeckSlide<null>[] = [
     notes: (
       <ul className={NOTES_UL}>
         <li>
-          情境：一個檢查只回答「有沒有錯」→ 發送端多算 {L} 個同位位元，接收端重算 {L} 組檢查
+          情境：一個檢查只回答「有沒有錯」→ 發送端多算 {L} 個 parity bit，接收端重算 {L} 組檢查
           <ul className={NOTES_SUB}>
             <li>各組互相重疊：每個位置對到一種專屬的失敗組合；「全部通過」留給「沒有錯」</li>
           </ul>
@@ -242,15 +242,15 @@ export const CH1_SLIDES: DeckSlide<null>[] = [
           </ul>
         </li>
         <li>
-          → 同位位元放在 {PARITY_POS}：二進位只有一個 1，每個只在一組檢查裡
+          → parity bit 放在 {PARITY_POS}：二進位只有一個 1，每個只在一組檢查裡
           <ul className={NOTES_SUB}>
-            <li>直接用資料位元算出，{L} 個 XOR 互不依賴、可以同時算</li>
+            <li>直接用 data bit 算出，{L} 個 XOR 互不依賴、可以同時算</li>
           </ul>
         </li>
         <li>
-          → 結果：Hamming({N},{K})，能修任何 1 個錯；碼率 {K}/{N} ≈ {(K / N).toFixed(2)}，三重重複碼只有 1/{N_REPEAT}
+          → 結果：Hamming({N},{K})，能修任何 1 個錯；code rate {K}/{N} ≈ {(K / N).toFixed(2)}，3-fold repetition code 只有 1/{N_REPEAT}
           <ul className={NOTES_SUB}>
-            <li>代價：錯 2 個就會誤更正（第 3、4 章）</li>
+            <li>代價：錯 2 個就會造成 miscorrection（第 3、4 章）</li>
           </ul>
         </li>
       </ul>
@@ -264,20 +264,20 @@ export const CH1_SLIDES: DeckSlide<null>[] = [
     takeaway: (
       <>
         <Ph>發送端只做 XOR：</Ph>
-        <Ph>補上同位位元，</Ph>
+        <Ph>補上 parity bit，</Ph>
         <Ph>讓每組檢查都有偶數個 1</Ph>
       </>
     ),
     notes: (
       <ul className={NOTES_UL}>
-        <li>先把 {K} 個資料位元原封不動放進位置 {DATA_POS}，同位位元先空著；接收端拿掉同位位元就是原訊息</li>
+        <li>先把 {K} 個 data bit 原封不動放進位置 {DATA_POS}，parity bit 先空著；接收端拿掉 parity bit 就是原訊息</li>
         {PARITY_CHECKS.map((_, k) => (
           <li key={k}>
             → {eqText(k)}：讓位置 {coveredText(k)} 湊成偶數個 1
             {k === L - 1 && (
               <ul className={NOTES_SUB}>
                 <li>
-                  {L} 個式子只用到資料位元、互不依賴：硬體上是 {L} 組 XOR 同時算完
+                  {L} 個式子只用到 data bit、互不依賴：硬體上是 {L} 組 XOR 同時算完
                 </li>
               </ul>
             )}
@@ -313,7 +313,7 @@ export const CH1_SLIDES: DeckSlide<null>[] = [
             <li>只有一格「在所有紅圈裡、又不在任何綠圈裡」：就是錯的位置，翻回來就修好</li>
           </ul>
         </li>
-        <li>現場再翻第二個：紅圈的組合會指向第三個位置 → 誤更正（第 3、4 章）</li>
+        <li>現場再翻第二個：紅圈的組合會指向第三個位置 → miscorrection（第 3、4 章）</li>
         <li>接收端做的就是這件事：看 {L} 盞警示燈亮哪幾盞，就知道錯在哪（第 3 章）</li>
       </ul>
     ),

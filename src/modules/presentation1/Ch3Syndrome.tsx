@@ -335,7 +335,7 @@ function DecodeCircuitSlide({ s }: { s: Stepper }) {
                 <>燈全暗：不用比。</>
               ) : (
                 <>
-                  資料位元排前面的 <M>{'\\tilde H'}</M>：{binText(lamps)} = {value}，第 {value} 欄卻是 {SYS_LABELS[value - 1]}。只能逐欄比對（到第 {sysCol + 1} 欄 {SYS_LABELS[sysCol]} 才對上），或存一張 {TABLE_ROWS} 格對照表。
+                  data bit 排前面的 <M>{'\\tilde H'}</M>：{binText(lamps)} = {value}，第 {value} 欄卻是 {SYS_LABELS[value - 1]}。只能逐欄比對（到第 {sysCol + 1} 欄 {SYS_LABELS[sysCol]} 才對上），或存一張 {TABLE_ROWS} 格對照表。
                 </>
               )}
             </p>
@@ -363,7 +363,7 @@ function DecodeCircuitSlide({ s }: { s: Stepper }) {
             {arrow}
             <Lamps bits={lamps} size="sm" read onToggle={toggle} />
             {arrow}
-            {machine('border-sky-300 bg-sky-50 text-sky-800', `${R}-to-${STATES} 解碼器`, `${STATES} 條輸出線`)}
+            {machine('border-sky-300 bg-sky-50 text-sky-800', `${R}-to-${STATES} decoder`, `${STATES} 條輸出線`)}
             {arrow}
             {machine('border-emerald-300 bg-white text-emerald-800', '翻轉', `${FLIP_XORS} 個 XOR 閘`)}
           </div>
@@ -439,11 +439,11 @@ function SyndromeSlide({ s }: { s: Stepper }) {
             )}
             <div className="mt-2 flex flex-wrap items-center gap-3">
               {d.position === 0 ? (
-                <StatusBadge status={e.length ? 'wrong' : 'ok'} zh={e.length ? '未偵測錯誤' : undefined} en={e.length ? 'Undetected error' : undefined} large />
+                <StatusBadge status={e.length ? 'wrong' : 'ok'} zh={e.length ? 'Undetected error' : undefined} en={e.length ? '' : undefined} large />
               ) : e.length === 1 ? (
                 <StatusBadge status="corrected" large />
               ) : (
-                <StatusBadge status="wrong" zh="誤更正" en="Miscorrection" large />
+                <StatusBadge status="wrong" zh="Miscorrection" en="" large />
               )}
               <span className="text-base text-slate-600">
                 {e.length <= 1 ? (e.length ? '只錯一位：一定修好。' : '') : `錯 ${e.length} 位：超出「恰好翻一位」的前提。`}
@@ -478,7 +478,7 @@ function BeyondSlide({ s }: { s: Stepper }) {
           </div>
           <Tex block>{`h_${PAIR[0]} + h_${PAIR[1]} = ${colTex(h(PAIR[0]))} + ${colTex(h(PAIR[1]))} = ${colTex(PAIR_SUM)} = h_${PAIR_POS}`}</Tex>
           <p className="text-slate-700">
-            兩欄不同，和不是 0；{PATTERNS} 種非零亮法全用上了，和一定是<strong>第三欄</strong>。解碼器把原本沒錯的位置 {PAIR_POS} 也翻掉 → {PAIR_AFTER} 個錯：<strong className="text-rose-700">誤更正</strong>（{TWO.mis}/{TWO.total} 種雙錯）。
+            兩欄不同，和不是 0；{PATTERNS} 種非零亮法全用上了，和一定是<strong>第三欄</strong>。於是 decoder 把原本沒錯的位置 {PAIR_POS} 也翻掉 → {PAIR_AFTER} 個錯：<strong className="text-rose-700">miscorrection（誤更正）</strong>（{TWO.mis}/{TWO.total} 種雙錯）。
           </p>
         </Box>
       </Reveal>
@@ -493,21 +493,21 @@ function BeyondSlide({ s }: { s: Stepper }) {
             <Lamps bits={TRIPLE_SUM} />
           </div>
           <p className="text-slate-700">
-            燈全暗，r 看起來是合法 codeword：<strong className="text-rose-700">未偵測錯誤</strong>（{THREE.undetected} 種）。其餘 {THREE.mis} 種三位錯誤被誤更正。
+            燈全暗，r 看起來是合法 codeword：<strong className="text-rose-700">undetected error</strong>（{THREE.undetected} 種）。其餘 {THREE.mis} 種三位錯誤造成 miscorrection。
           </p>
         </Box>
       </Reveal>
       <Reveal on={s.step >= 2}>
         <Box tone="bg-emerald-50 text-emerald-950" title={`保證只到 ${T} 位`}>
           <p className="text-slate-700">
-            解碼器永遠假設「最多翻了一位」：只錯一位 {ONE.ok}/{ONE.total} 修好，錯更多就不保證。
+            這個 decoder 永遠假設「最多翻了一位」：只錯一位 {ONE.ok}/{ONE.total} 修好，錯更多就不保證。
           </p>
           <ul className="mt-3 space-y-3">
             <li className="rounded-xl border-l-4 border-sky-400 bg-white px-3 py-2">
               <strong>第 4 章</strong>：極限剛好是 {T} 位，因為 codeword 之間至少差 <M>{`{d_{\\min} = ${D_MIN}}`}</M> 位。
             </li>
             <li className="rounded-xl border-l-4 border-emerald-500 bg-white px-3 py-2">
-              <strong>第 5 章</strong>：SECDED，多一個同位位元，錯兩位時改成「偵測、不亂修」。
+              <strong>第 5 章</strong>：SECDED，多一個 parity bit，錯兩位時改成「偵測、不亂修」。
             </li>
           </ul>
         </Box>
@@ -535,7 +535,7 @@ export const CH3_SLIDES: DeckSlide<null>[] = [
     notes: (
       <ul className={NOTES_UL}>
         <li>
-          接收端只有收到的 r 和 {R} 盞燈 s = Hrᵀ，也就是 Syndrome（徵狀）
+          接收端只有收到的 r 和 {R} 盞燈 s = Hrᵀ，也就是 syndrome
           <ul className={NOTES_SUB}>
             <li>
               看不到 c，也看不到雜訊。例：翻了位置 {EXAMPLE_POS} → 燈{lampText(EXAMPLE_COL)}
@@ -598,12 +598,12 @@ export const CH3_SLIDES: DeckSlide<null>[] = [
   },
   {
     title: '第 3 章：讀燈號就知道翻哪一位',
-    sub: '燈號讀成二進位，接上解碼器',
+    sub: '燈號讀成二進位，接上 decoder',
     steps: () => 3,
     render: (s) => <DecodeCircuitSlide s={s} />,
     takeaway: (
       <>
-        <Ph>燈號讀成二進位、接上解碼器，</Ph>
+        <Ph>燈號讀成二進位、接上 decoder，</Ph>
         <Ph>就翻回那一位</Ph>
       </>
     ),
@@ -613,7 +613,7 @@ export const CH3_SLIDES: DeckSlide<null>[] = [
           知道「亮的燈 = 第 j 欄」，還要找出是哪一欄
           <ul className={NOTES_SUB}>
             <li>
-              一般的 <M>{'\\tilde H'}</M>（同樣 {N} 欄，資料位元排前面）：{binText(EXAMPLE_COL)} = {EXAMPLE_POS}，第 {EXAMPLE_POS} 欄卻是 {SYS_LABELS[EXAMPLE_POS - 1]} → 只能逐欄比對，或存 {TABLE_ROWS} 格對照表
+              一般的 <M>{'\\tilde H'}</M>（同樣 {N} 欄，data bit 排前面）：{binText(EXAMPLE_COL)} = {EXAMPLE_POS}，第 {EXAMPLE_POS} 欄卻是 {SYS_LABELS[EXAMPLE_POS - 1]} → 只能逐欄比對，或存 {TABLE_ROWS} 格對照表
             </li>
           </ul>
         </li>
@@ -629,7 +629,7 @@ export const CH3_SLIDES: DeckSlide<null>[] = [
           → 解碼電路：全部組合邏輯，r 一進來一次算完
           <ul className={NOTES_SUB}>
             <li>
-              {SYNDROME_XORS} 個 XOR 閘算燈號 → {R}-to-{STATES} 解碼器：第 j 條線翻第 j 位，第 0 條不接 → {FLIP_XORS} 個 XOR 閘翻轉
+              {SYNDROME_XORS} 個 XOR 閘算燈號 → {R}-to-{STATES} decoder：第 j 條線翻第 j 位，第 0 條不接 → {FLIP_XORS} 個 XOR 閘翻轉
             </li>
             <li>可以點燈切換燈號，亮的輸出線跟著換</li>
           </ul>
@@ -675,7 +675,7 @@ export const CH3_SLIDES: DeckSlide<null>[] = [
     render: (s) => <BeyondSlide s={s} />,
     takeaway: (
       <>
-        <Ph>錯兩位會誤更正，</Ph>
+        <Ph>錯兩位會造成 miscorrection，</Ph>
         <Ph>錯三位可能全暗：</Ph>
         <Ph>保證只到 {T} 位</Ph>
       </>
@@ -689,7 +689,7 @@ export const CH3_SLIDES: DeckSlide<null>[] = [
               兩欄不同 → 和不是 0；{PATTERNS} 種非零亮法全用上 → 和是某一欄，又不是 hⱼ、hⱼ′ → 第三欄
             </li>
             <li>
-              例：位置 {PAIR[0]}、{PAIR[1]} → 第 {PAIR_POS} 欄（{PAIR[0]} ⊕ {PAIR[1]} = {PAIR[0] ^ PAIR[1]}）→ 把原本沒錯的位置 {PAIR_POS} 也翻掉 → {PAIR_AFTER} 個錯：誤更正（{TWO.mis}/{TWO.total}）
+              例：位置 {PAIR[0]}、{PAIR[1]} → 第 {PAIR_POS} 欄（{PAIR[0]} ⊕ {PAIR[1]} = {PAIR[0] ^ PAIR[1]}）→ 把原本沒錯的位置 {PAIR_POS} 也翻掉 → {PAIR_AFTER} 個錯：miscorrection（{TWO.mis}/{TWO.total}）
             </li>
           </ul>
         </li>
@@ -697,12 +697,12 @@ export const CH3_SLIDES: DeckSlide<null>[] = [
           → 錯三位：燈可能全暗
           <ul className={NOTES_SUB}>
             <li>
-              錯誤本身是 codeword（例：{bits(TRIPLE_WORD)}）→ Heᵀ = 0：未偵測錯誤（{THREE.undetected} 種）；其餘 {THREE.mis} 種誤更正
+              錯誤本身是 codeword（例：{bits(TRIPLE_WORD)}）→ Heᵀ = 0：undetected error（{THREE.undetected} 種）；其餘 {THREE.mis} 種是 miscorrection
             </li>
           </ul>
         </li>
         <li>
-          → 解碼器永遠假設最多翻了一位，保證只到 {T} 位
+          → decoder 永遠假設最多翻了一位，保證只到 {T} 位
           <ul className={NOTES_SUB}>
             <li>
               第 4 章：極限剛好是 {T} 位的原因（<M>{`d_{\\min} = ${D_MIN}`}</M>）；第 5 章：SECDED，錯兩位時能偵測

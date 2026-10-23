@@ -12,20 +12,20 @@ interface Node {
 }
 
 const NODES: Node[] = [
-  { id: 'encode', label: 'Hamming(7,4)', sub: '同位方程', x: 110, y: 50, kind: 'l1', desc: '用三條 XOR 方程產生 3 個同位位元。' },
-  { id: 'matrix', label: 'H 與 G', sub: 'GF(2) 線性代數', x: 360, y: 50, kind: 'l1', desc: 'c = mG、Hcᵀ = 0：Hamming Code 的線性代數描述。' },
-  { id: 'syndrome', label: 'Syndrome', sub: 's = Hrᵀ', x: 680, y: 50, kind: 'l1', desc: '單一錯誤的 Syndrome 等於 H 的某一欄。' },
-  { id: 'a-1', label: 'GF(2)', sub: '1 + 1 = 0', x: 360, y: 150, kind: 'alg', desc: 'Hamming Code 原本就使用的運算規則：體、特徵 2、XOR。' },
+  { id: 'encode', label: 'Hamming(7,4)', sub: 'Parity-check equation', x: 110, y: 50, kind: 'l1', desc: '用三條 XOR 方程產生 3 個 parity bit。' },
+  { id: 'matrix', label: 'H 與 G', sub: 'GF(2) 線性代數', x: 360, y: 50, kind: 'l1', desc: 'c = mG、Hcᵀ = 0：Hamming code 的線性代數描述。' },
+  { id: 'syndrome', label: 'Syndrome', sub: 's = Hrᵀ', x: 680, y: 50, kind: 'l1', desc: '單一錯誤的 syndrome 等於 H 的某一欄。' },
+  { id: 'a-1', label: 'GF(2)', sub: '1 + 1 = 0', x: 360, y: 150, kind: 'alg', desc: 'Hamming code 原本就使用的運算規則：field、characteristic 2、XOR。' },
   { id: 'a-2', label: 'GF(8)', sub: 'a + bα + cα²', x: 200, y: 250, kind: 'alg', desc: '把 3 位元向量變成可以相乘、相除的「數」。' },
-  { id: 'a-3', label: '不可約多項式・商環', sub: 'GF(2)[x]/(x³+x+1)', x: 440, y: 250, kind: 'alg', desc: '用不可約多項式取商才會得到體；α³ = α + 1。' },
-  { id: 'a-4', label: '本原元素 α', sub: 'α⁷ = 1', x: 200, y: 350, kind: 'alg', desc: 'α 的次方走遍 7 個非零元素：指數 = 位置。' },
-  { id: 'a-5', label: '生成多項式 g(x)', sub: 'c(x) = m(x)g(x)', x: 680, y: 350, kind: 'alg', desc: '一個多項式取代整個生成矩陣；G_cyc 的列是 g 的位移。' },
-  { id: 'a-6', label: '循環碼・理想', sub: 'C = ⟨g(x)⟩ ⊂ R₇', x: 680, y: 450, kind: 'alg', desc: '乘以 x = 循環位移；code 是 R₇ 的理想。' },
-  { id: 'a-7', label: 'Frobenius・陪集', sub: 'α → α² → α⁴', x: 200, y: 450, kind: 'alg', desc: 'GF(2) 係數多項式的根成組出現（共軛元素）。' },
-  { id: 'a-8', label: '最小多項式', sub: 'm_α = x³+x+1', x: 440, y: 450, kind: 'alg', desc: '共軛根乘起來得到 GF(2) 多項式，它就是 g(x)。' },
+  { id: 'a-3', label: 'Quotient ring', sub: 'GF(2)[x]/(x³+x+1)', x: 440, y: 250, kind: 'alg', desc: '用 irreducible polynomial 取商才會得到 field；α³ = α + 1。' },
+  { id: 'a-4', label: 'Primitive element α', sub: 'α⁷ = 1', x: 200, y: 350, kind: 'alg', desc: 'α 的次方走遍 7 個非零元素：指數 = 位置。' },
+  { id: 'a-5', label: 'Generator g(x)', sub: 'c(x) = m(x)g(x)', x: 680, y: 350, kind: 'alg', desc: '一個 generator polynomial 取代整個 generator matrix；G_cyc 的列是 g 的位移。' },
+  { id: 'a-6', label: 'Cyclic code・ideal', sub: 'C = ⟨g(x)⟩ ⊂ R₇', x: 680, y: 450, kind: 'alg', desc: '乘以 x = cyclic shift；code 是 R₇ 的 ideal。' },
+  { id: 'a-7', label: 'Frobenius・cosets', sub: 'α → α² → α⁴', x: 200, y: 450, kind: 'alg', desc: 'GF(2) 係數多項式的根成組出現（conjugates）。' },
+  { id: 'a-8', label: 'Minimal polynomial', sub: 'm_α = x³+x+1', x: 440, y: 450, kind: 'alg', desc: '把 conjugate roots 乘起來得到 GF(2) 多項式，它就是 g(x)。' },
   { id: 'a-9', label: 'GF(8) 推導 H', sub: 'c(α)=0 ⇔ Hcᵀ=0', x: 440, y: 560, kind: 'alg', desc: '一條 GF(8) 方程 = 三條 GF(2) 方程：回到線性代數。' },
-  { id: 'l2-2', label: 'LFSR 編碼', sub: 'x³u mod g', x: 680, y: 560, kind: 'l2', desc: '第二課：三個暫存器計算 x³u(x) mod g(x)，與長除法同步（2-3）。' },
-  { id: 'a-10', label: 'Syndrome（GF(8)）', sub: 'S₁ = r(α) = αⁱ', x: 200, y: 560, kind: 'alg', desc: 'S₁ = r(α) = e(α)：錯誤位置寫在它的指數裡；之後接第二課的 Chien Search。' },
+  { id: 'l2-2', label: 'LFSR 編碼', sub: 'x³u mod g', x: 680, y: 560, kind: 'l2', desc: '第二課：三個 register 計算 x³u(x) mod g(x)，與長除法同步（2-3）。' },
+  { id: 'a-10', label: 'Syndrome（GF(8)）', sub: 'S₁ = r(α) = αⁱ', x: 200, y: 560, kind: 'alg', desc: 'S₁ = r(α) = e(α)：錯誤位置寫在它的指數裡；之後接第二課的 Chien search。' },
   { id: 'l2-1', label: '第二課流水線', sub: '編碼→解碼', x: 440, y: 660, kind: 'l2', desc: '把所有元件組成完整的編碼／解碼流程（含 SECDED）。' },
 ];
 
@@ -42,12 +42,12 @@ const EDGES: [string, string, string, [number, number]?, number?][] = [
   ['a-3', 'a-5', '同一個多項式'],
   ['a-5', 'a-6', '位移'],
   ['a-4', 'a-7', '平方'],
-  ['a-7', 'a-8', '共軛根'],
+  ['a-7', 'a-8', 'Conjugates', undefined, 0.1],
   ['a-8', 'a-5', 'g = m_α'],
   ['a-6', 'a-9', 'c(α)=0'],
   ['a-8', 'a-9', ''],
-  ['a-9', 'syndrome', '等價碼', undefined, 0.78],
-  ['a-5', 'l2-2', '系統式', [830, 455]],
+  ['a-9', 'syndrome', 'Equivalent code', undefined, 0.78],
+  ['a-5', 'l2-2', 'Systematic', [830, 455]],
   ['a-9', 'a-10', 'S₁ = r(α)'],
   ['a-4', 'a-10', '取對數', [50, 455]],
   ['l2-2', 'l2-1', ''],
@@ -66,7 +66,7 @@ export function ConceptMap() {
   return (
     <div className="space-y-3">
       <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white p-2">
-        <svg viewBox="0 0 860 700" className="w-full min-w-[680px]" role="img" aria-label="抽象代數與 Hamming Code 的概念關係圖">
+        <svg viewBox="0 0 860 700" className="w-full min-w-[680px]" role="img" aria-label="抽象代數與 Hamming code 的概念關係圖">
           <defs>
             <marker id="cm-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
               <path d="M0,0 L10,5 L0,10 z" fill="#94a3b8" />

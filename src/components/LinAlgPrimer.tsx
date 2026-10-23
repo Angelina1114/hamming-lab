@@ -49,7 +49,8 @@ const NULLITY_H = N7 - RANK_H;
 interface Concept {
   id: string;
   short: string;
-  en: string;
+  /** an English name shown after a Chinese tab label (omitted when the label is already the English term) */
+  en?: string;
   title: string;
   def: ReactNode;
   example: ReactNode;
@@ -163,7 +164,7 @@ function SpanExample() {
           </>
         ) : (
           <>
-            {combos(vecs).length} 種挑法組出 {size} 個不同向量 = <M>{`2^{${Math.log2(size)}}`}</M>：三個向量線性獨立，span 是 {Math.log2(size)} 維。
+            {combos(vecs).length} 種挑法組出 {size} 個不同向量 = <M>{`2^{${Math.log2(size)}}`}</M>：三個向量是 linearly independent，span 是 {Math.log2(size)} 維。
           </>
         )}
       </p>
@@ -215,7 +216,7 @@ function RankExample() {
   return (
     <div className="space-y-3 text-xs text-slate-600">
       <div>
-        <div className="mb-1 font-semibold text-slate-700">① 高斯消去，化成 RREF</div>
+        <div className="mb-1 font-semibold text-slate-700">① Gaussian elimination，化成 RREF</div>
         <div className="flex flex-wrap items-center gap-2">
           <MatrixView matrix={A_KER} name="M =" size="sm" />
           {res.steps.map((st, k) => (
@@ -229,9 +230,9 @@ function RankExample() {
         </div>
       </div>
       <div>
-        <div className="mb-1 font-semibold text-slate-700">② 找樞紐</div>
+        <div className="mb-1 font-semibold text-slate-700">② 找 pivot</div>
         <p>
-          <span className="rounded-full bg-indigo-600 px-1.5 text-white">實心</span> 是樞紐（每一列第一個 1），所在的第 {res.pivotCols.map((j) => j + 1).join('、')} 欄是樞紐欄；<span className="rounded bg-amber-50 px-1 text-amber-800">橘色</span>的第 {free.map((j) => j + 1).join('、')} 欄沒有樞紐，所以 {free.map((j) => `x${j + 1}`).join('、')} 是自由變數。
+          <span className="rounded-full bg-indigo-600 px-1.5 text-white">實心</span> 是 pivot（每一列第一個 1），所在的第 {res.pivotCols.map((j) => j + 1).join('、')} 欄是 pivot column；<span className="rounded bg-amber-50 px-1 text-amber-800">橘色</span>的第 {free.map((j) => j + 1).join('、')} 欄沒有 pivot，所以 {free.map((j) => `x${j + 1}`).join('、')} 是 free variable。
         </p>
       </div>
       <div>
@@ -244,14 +245,14 @@ function RankExample() {
           ))}
         </div>
         <p className="mt-1">
-          自由變數 <M>{free.map(x).join(', ')}</M> 各自選 0 或 1，其他的就被決定：ker M = {'{'}
+          每個 free variable <M>{free.map(x).join(', ')}</M> 各自選 0 或 1，其他的就被決定：ker M = {'{'}
           {ker.map((v) => v.join('')).join(', ')}
-          {'}'}，和工具箱「核空間」那一頁逐一代入的結果一樣。
+          {'}'}，和工具箱「Kernel」那一頁逐一代入的結果一樣。
         </p>
       </div>
       <div className="rounded-lg bg-white p-2">
         <div className="mb-1 font-semibold text-slate-700">④ 數一數</div>
-        <M>{`\\operatorname{rank} M = ${res.rank}\\ (\\text{樞紐}),\\quad \\operatorname{nullity} M = ${free.length}\\ (\\text{自由變數}),\\quad ${res.rank} + ${free.length} = ${cols} = \\text{欄數}`}</M>
+        <M>{`\\operatorname{rank} M = ${res.rank}\\ (\\text{pivot}),\\quad \\operatorname{nullity} M = ${free.length}\\ (\\text{free variable}),\\quad ${res.rank} + ${free.length} = ${cols} = \\text{欄數}`}</M>
       </div>
     </div>
   );
@@ -276,7 +277,7 @@ const CONCEPTS: Concept[] = [
           <M>{'Mx^{T}'}</M> 的結果，就是<strong>把 <M>{'x_j = 1'}</M> 的那些欄加起來</strong>。反過來，列向量放左邊的 <M>{'xM'}</M> 是把 <M>{'x_i = 1'}</M> 的那些<strong>列</strong>加起來。
         </p>
         <p>
-          <M>{'x^{T}'}</M>（轉置）只是把橫的列向量立起來，變成直的行向量。
+          <M>{'x^{T}'}</M>（transpose）只是把橫的列向量立起來，變成直的行向量。
         </p>
       </>
     ),
@@ -289,48 +290,46 @@ const CONCEPTS: Concept[] = [
   },
   {
     id: 'span',
-    short: '生成與維度',
-    en: 'Span & Dimension',
-    title: '線性組合、生成空間與維度',
+    short: 'Span 與 dimension',
+    title: 'Linear combination（線性組合）、span 與 dimension',
     def: (
       <>
         <p>
-          <M>{'a_1v_1 + a_2v_2 + \\cdots'}</M>（每個係數 <M>{'a_i \\in \\{0,1\\}'}</M>）叫做<strong>線性組合</strong>：在 <M>{'\\mathbb{F}_2'}</M> 裡就是<strong>挑一些向量加起來</strong>。所有線性組合的集合叫 <M>{'\\operatorname{span}\\{v_1, v_2, \\dots\\}'}</M>；一個矩陣所有列的 span 叫做它的<strong>列空間</strong>（row space）。
+          <M>{'a_1v_1 + a_2v_2 + \\cdots'}</M>（每個係數 <M>{'a_i \\in \\{0,1\\}'}</M>）叫做 <strong>linear combination</strong>：在 <M>{'\\mathbb{F}_2'}</M> 裡就是<strong>挑一些向量加起來</strong>。所有 linear combination 的集合叫 <M>{'\\operatorname{span}\\{v_1, v_2, \\dots\\}'}</M>；一個矩陣所有列的 span 叫做它的 <strong>row space</strong>。
         </p>
         <p>
-          如果只有「全部係數都是 0」才能組出零向量，這組向量就<strong>線性獨立</strong>；否則某個向量是其他向量的和，它是多餘的。能生成整個空間、又線性獨立的一組向量叫<strong>基底</strong>，基底的向量個數叫<strong>維度</strong>，空間 <M>V</M> 的維度記作 <M>{'\\dim V'}</M>。
+          如果只有「全部係數都是 0」才能組出零向量，這組向量就是 <strong>linearly independent</strong>；否則某個向量是其他向量的和，它是多餘的。能生成整個空間、又 linearly independent 的一組向量叫 <strong>basis（基底）</strong>，basis 的向量個數叫 <strong>dimension</strong>，空間 <M>V</M> 的 dimension 記作 <M>{'\\dim V'}</M>。
         </p>
         <p>
-          在 <M>{'\\mathbb{F}_2'}</M> 上，空間 <M>V</M> <strong>恰有 <M>{'2^{\\dim V}'}</M> 個向量</strong>：基底的每個係數 2 種選法，而且不同係數給不同向量。
+          在 <M>{'\\mathbb{F}_2'}</M> 上，空間 <M>V</M> <strong>恰有 <M>{'2^{\\dim V}'}</M> 個向量</strong>：basis 的每個係數 2 種選法，而且不同係數給不同向量。
         </p>
       </>
     ),
     example: <SpanExample />,
     use: (
       <>
-        發送端造得出的全部 codeword <M>{'\\{mG\\}'}</M>，就是 G 的 {G74.length} 列的所有線性組合，也就是 <strong>G 的列空間</strong>。G 的 D1–D4 那 {G74.length} 欄剛好是單位矩陣，所以 G 的 {G74.length} 列線性獨立（rank G = {RANK_G}）：列空間是 {RANK_G} 維，恰有 <M>{`2^{${RANK_G}} = ${2 ** RANK_G}`}</M> 個向量，{2 ** RANK_G} 種訊息各對應一個不同的 codeword。
+        發送端造得出的全部 codeword <M>{'\\{mG\\}'}</M>，就是 G 的 {G74.length} 列的所有 linear combination，也就是 <strong>G 的 row space</strong>。G 的 D1–D4 那 {G74.length} 欄剛好是 identity matrix，所以 G 的 {G74.length} 列是 linearly independent（rank G = {RANK_G}）：row space 是 {RANK_G} 維，恰有 <M>{`2^{${RANK_G}} = ${2 ** RANK_G}`}</M> 個向量，{2 ** RANK_G} 種訊息各對應一個不同的 codeword。
       </>
     ),
   },
   {
     id: 'kernel',
-    short: '核空間',
-    en: 'Kernel',
-    title: '核空間（kernel，也叫零空間）',
+    short: 'Kernel',
+    title: 'Kernel，也叫 null space（零空間）',
     def: (
       <>
         <p>
-          <M>{'\\ker M = \\{\\, x : Mx^{T} = 0 \\,\\}'}</M>：讓 M 乘出零向量的所有 x，也就是<strong>齊次方程組 <M>{'Mx^{T} = 0'}</M> 的全部解</strong>。M 的每一列就是一條方程。它一定包含 0，而且兩個解相加還是解，所以 ker M 是一個子空間。
+          <M>{'\\ker M = \\{\\, x : Mx^{T} = 0 \\,\\}'}</M>：讓 M 乘出零向量的所有 x，也就是<strong>齊次方程組 <M>{'Mx^{T} = 0'}</M> 的全部解</strong>。M 的每一列就是一條方程。它一定包含 0，而且兩個解相加還是解，所以 ker M 是一個 subspace。
         </p>
         <p>
-          <strong>Rank–Nullity Theorem</strong> 一句話：<M>{'\\operatorname{rank} M + \\dim \\ker M = \\text{M 的欄數}'}</M>。rank M 是互相獨立的方程有幾條，每多一條，解的維度就少 1。
+          <strong>Rank–nullity theorem</strong> 一句話：<M>{'\\operatorname{rank} M + \\dim \\ker M = \\text{M 的欄數}'}</M>。rank M 是互相獨立的方程有幾條，每多一條，解的 dimension 就少 1。
         </p>
       </>
     ),
     example: <KernelExample />,
     use: (
       <>
-        讓 {H74.length} 盞燈全暗的 {N7} 位元字串，就是 <strong>ker H</strong>。H 的 P1、P2、P4 那 {H74.length} 欄是單位矩陣，{H74.length} 條方程互相獨立（rank H = {RANK_H}），所以 <M>{`\\dim \\ker H = ${N7} - ${RANK_H} = ${NULLITY_H}`}</M>，ker H 恰有 <M>{`2^{${NULLITY_H}} = ${2 ** NULLITY_H}`}</M> 個向量：全部 <M>{`2^{${N7}} = ${2 ** N7}`}</M> 個 {N7} 位元字串裡，只有這些讓燈全暗。發送端造的 codeword 都在裡面（HGᵀ = 0），而且兩邊一樣多，所以兩者相等。
+        讓 {H74.length} 盞燈全暗的 {N7} 位元字串，就是 <strong>ker H</strong>。H 的 P1、P2、P4 那 {H74.length} 欄是 identity matrix，{H74.length} 條方程互相獨立（rank H = {RANK_H}），所以 <M>{`\\dim \\ker H = ${N7} - ${RANK_H} = ${NULLITY_H}`}</M>，ker H 恰有 <M>{`2^{${NULLITY_H}} = ${2 ** NULLITY_H}`}</M> 個向量：全部 <M>{`2^{${N7}} = ${2 ** N7}`}</M> 個 {N7} 位元字串裡，只有這些讓燈全暗。發送端造的 codeword 都在裡面（HGᵀ = 0），而且兩邊一樣多，所以兩者相等。
       </>
     ),
   },
@@ -341,31 +340,28 @@ export function RankNullityPrimer() {
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
       <div className="min-w-0 space-y-2 text-sm leading-relaxed text-slate-700">
-        <dl className="grid grid-cols-[minmax(0,7.5rem)_1fr] gap-x-3 gap-y-2">
+        <dl className="grid grid-cols-[minmax(0,6rem)_1fr] gap-x-3 gap-y-2 sm:grid-cols-[minmax(0,8.5rem)_1fr]">
           {[
-            ['高斯消去', 'Gaussian elimination', <>用「交換兩列」「把一列加到另一列」化簡矩陣，解不會改變。</>],
-            ['RREF', 'reduced row echelon form', <>化簡的終點：每列第一個 1 越往下越靠右，它所在的欄其他位置都是 0。</>],
-            ['樞紐', 'pivot', <>RREF 每一個非零列的第一個 1。它所在的欄叫樞紐欄。</>],
-            ['自由變數', 'free variable', <>沒有樞紐的欄對應的未知數，可以任意選 0 或 1。</>],
-            ['秩', 'rank', <>樞紐的個數（= 線性獨立的列數）。</>],
-            ['零度', 'nullity', <>自由變數的個數（= <M>{'\\dim \\ker M'}</M>）。</>],
-          ].map(([zh, en, d]) => (
-            <div key={zh as string} className="contents">
-              <dt className="font-semibold">
-                <span className="whitespace-nowrap">{zh}</span>
-                <span className="block text-[11px] font-normal leading-tight text-slate-400">{en}</span>
-              </dt>
+            ['Gaussian elimination', <>用「交換兩列」「把一列加到另一列」化簡矩陣，解不會改變。</>],
+            ['RREF', <>全名 reduced row echelon form（RREF，簡化列梯形），化簡的終點：每列第一個 1 越往下越靠右，它所在的欄其他位置都是 0。</>],
+            ['Pivot', <>RREF 每一個非零列的第一個 1 叫 pivot（樞紐），它所在的欄叫 pivot column（樞紐欄）。</>],
+            ['Free variable', <>沒有 pivot 的欄對應的未知數叫 free variable（自由變數），可以任意選 0 或 1。</>],
+            ['Rank', <>等於 pivot 的個數（= linearly independent 的列數）。</>],
+            ['Nullity', <>等於 free variable 的個數（= <M>{'\\dim \\ker M'}</M>）。</>],
+          ].map(([en, d]) => (
+            <div key={en as string} className="contents">
+              <dt className="font-semibold">{en}</dt>
               <dd>{d}</dd>
             </div>
           ))}
         </dl>
         <p>
-          <strong>Rank–Nullity Theorem</strong>：每一欄要嘛有樞紐、要嘛對應一個自由變數，所以
+          <strong>Rank–nullity theorem</strong>：每一欄要嘛有 pivot、要嘛對應一個 free variable，所以
         </p>
         <Tex block>{'\\operatorname{rank} M + \\operatorname{nullity} M = \\text{M 的欄數}'}</Tex>
         <p className="rounded-lg border border-sky-200 bg-sky-50/60 p-2">
-          <span className="mr-1 font-semibold text-sky-800">在 Hamming(7,4) 裡：</span>H 本身就是 RREF：樞紐在 P1、P2、P4，自由變數是 D1–D4。所以 rank H = {RANK_H}、nullity H = {NULLITY_H}，ker H 有{' '}
-          <M>{`2^{${NULLITY_H}} = ${2 ** NULLITY_H}`}</M> 個向量。資料位元自由選、同位位元被決定：這正是編碼。
+          <span className="mr-1 font-semibold text-sky-800">在 Hamming(7,4) 裡：</span>H 本身就是 RREF：pivot 在 P1、P2、P4，free variable 是 D1–D4。所以 rank H = {RANK_H}、nullity H = {NULLITY_H}，ker H 有{' '}
+          <M>{`2^{${NULLITY_H}} = ${2 ** NULLITY_H}`}</M> 個向量。也就是 data bit 自由選、parity bit 被決定：這正是編碼。
         </p>
       </div>
       <div className="min-w-0 rounded-xl border border-slate-200 bg-slate-50/60 p-3">
@@ -396,7 +392,8 @@ export function LinAlgPrimer({ tab, onTab, framed = true }: { tab?: number; onTa
             className={`rounded-full border px-3 py-1 text-sm transition-colors ${k === i ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 text-slate-600 hover:border-slate-400'}`}
           >
             <span className="mr-1 text-xs opacity-60">{k + 1}</span>
-            {x.short}（{x.en}）
+            {x.short}
+            {x.en && `（${x.en}）`}
           </button>
         ))}
       </div>

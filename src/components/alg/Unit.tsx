@@ -76,16 +76,19 @@ export function Plain({ children }: { children: ReactNode }) {
   return <div className="prose-lab">{children}</div>;
 }
 
-/** Small 「名詞（English）」 definition list; omit `en` for labels that are not a named concept */
-export function Terms({ items }: { items: { zh: string; en?: string; def: ReactNode }[] }) {
+/**
+ * Small definition list, shown as 「term（中文）」. `term` is the name as printed (English for a textbook term);
+ * `gloss` is the Chinese, given only where this is the term's first occurrence in the algebra chapter.
+ */
+export function Terms({ items }: { items: { term: string; gloss?: string; def: ReactNode }[] }) {
   return (
     <Card>
       <dl className="grid grid-cols-1 gap-3 md:grid-cols-2">
         {items.map((t) => (
-          <div key={t.zh} className="rounded-xl bg-slate-50 p-3">
+          <div key={t.term} className="rounded-xl bg-slate-50 p-3">
             <dt className="text-sm font-bold text-slate-900">
-              {t.zh}
-              {t.en && <span className="font-normal text-slate-500">（{t.en}）</span>}
+              {t.term}
+              {t.gloss && <span className="font-normal text-slate-500">（{t.gloss}）</span>}
             </dt>
             <dd className="mt-1 text-sm leading-relaxed text-slate-700">{t.def}</dd>
           </div>

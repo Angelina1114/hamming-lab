@@ -13,11 +13,11 @@ const MAP: [string, string, string][] = [
   ['2-3', '長除法', 'a(x) = q(x)g(x) + \\rho(x)'],
   ['2-4', 'Syndrome', 'S(x) = r(x) \\bmod g(x) = e(x) \\bmod g(x)'],
   ['2-5', '查表', 'x^i \\bmod g(x)\\ \\text{兩兩相異}'],
-  ['2-6', 'Key Equation', 'S_1 = \\alpha^i,\\ \\sigma(z) = 1 + S_1z'],
-  ['2-7', 'Chien Search', '\\sigma(\\alpha^{-i}) = 0 \\Rightarrow \\text{位置} = 7 - i'],
+  ['2-6', 'Key equation', 'S_1 = \\alpha^i,\\ \\sigma(z) = 1 + S_1z'],
+  ['2-7', 'Chien search', '\\sigma(\\alpha^{-i}) = 0 \\Rightarrow \\text{位置} = 7 - i'],
   ['2-8', 'XOR 更正', '\\hat c = r \\oplus \\hat e,\\ \\hat c(\\alpha) = 0'],
-  ['2-9', '兩個錯誤', 'd_{\\min}=3 \\Rightarrow t = 1:\\ \\text{誤更正}'],
-  ['2-10', '三個錯誤', 'e \\in C \\Rightarrow S = 0:\\ \\text{未偵測}'],
+  ['2-9', '兩個錯誤', 'd_{\\min}=3 \\Rightarrow t = 1:\\ \\text{miscorrection}'],
+  ['2-10', '三個錯誤', 'e \\in C \\Rightarrow S = 0:\\ \\text{undetected error}'],
   ['2-11', 'SECDED', '(S, q)\\ \\text{四種判斷，}d_{\\min}=4'],
   ['2-12', '實際參數', 'n = 2^m-1,\\ k = n - m'],
 ];
@@ -69,8 +69,8 @@ export default function L2Quiz() {
           <Card>
             <ul className="list-disc space-y-1 pl-5 text-sm text-slate-700">
               <li>先確認位元順序：最左邊是最高次項，位置 p ↔ 次方 7 − p。</li>
-              <li>Syndrome、GF(8) 元素、σ(z) 是三種不同的物件，不要用「二進位數」直接解讀。</li>
-              <li>看到兩個以上的錯誤，先問：解碼器知道嗎？（S 是否為 0）它會怎麼做？</li>
+              <li>把 syndrome、GF(8) 元素、σ(z) 當成三種不同的物件，不要用「二進位數」直接解讀。</li>
+              <li>看到兩個以上的錯誤，先問：decoder 知道嗎？（S 是否為 0）它會怎麼做？</li>
               <li>選完答案後，把每個錯誤選項的解析都讀一遍——它們就是最常見的誤解。</li>
             </ul>
           </Card>
@@ -130,7 +130,7 @@ export default function L2Quiz() {
       }}
       next={
         <p>
-          恭喜完成第二課！可以到「報告模式」把整個流程投影出來，或回到 <a className="text-indigo-700 underline" href="#/l2-13">2-13 完整互動實驗室</a> 自由實驗。延伸方向：把單一根 <M>{'\\alpha'}</M> 推廣成多個連續的根，就得到能更正多個錯誤的 BCH Code。
+          恭喜完成第二課！可以到「報告模式」把整個流程投影出來，或回到 <a className="text-indigo-700 underline" href="#/l2-13">2-13 完整互動實驗室</a> 自由實驗。延伸方向：把單一根 <M>{'\\alpha'}</M> 推廣成多個連續的根，就得到能更正多個錯誤的 BCH code。
         </p>
       }
     />

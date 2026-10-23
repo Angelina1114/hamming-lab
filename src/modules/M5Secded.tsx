@@ -205,7 +205,7 @@ function PathTable() {
           <thead>
             <tr className="text-left text-xs text-slate-500">
               <th className="py-1 pr-2">雜訊翻了</th>
-              <th className="pr-2">收到的字</th>
+              <th className="pr-2">Received word</th>
               <th className="pr-2">離 A</th>
               <th className="pr-2">離 B</th>
               <th className="pr-2">{RE} 盞燈（s 與 q）</th>
@@ -290,14 +290,14 @@ function SilentMiscorrection() {
           </span>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <span className={label}>解碼器輸出</span>
+          <span className={label}>Decoder 輸出</span>
           <BitString bits={out} className="text-base font-bold" highlight={(j) => (wrong.includes(j) ? 'text-rose-600' : undefined)} />
           <Lamps s={matVec(H74, out)} size="sm" />
           <span className="text-xs text-slate-600">{isCodeword74(out) ? '燈全暗：合法 codeword' : '✗'}</span>
         </div>
       </div>
       <p className="mt-3 text-sm leading-relaxed text-slate-700">
-        解碼器以為只錯 1 位，去翻位置 {d.position}：錯誤從 2 個變成 {wrong.length} 個，交出去的是 <strong>m = {outMsg.join('')}</strong> 的 codeword。它本身就是合法的 codeword，再檢查一次燈也全暗，<strong>沒有任何記號說它被改過</strong>。
+        decoder 以為只錯 1 位，去翻位置 {d.position}：錯誤從 2 個變成 {wrong.length} 個，交出去的是 <strong>m = {outMsg.join('')}</strong> 的 codeword。它本身就是合法的 codeword，再檢查一次燈也全暗，<strong>沒有任何記號說它被改過</strong>。
       </p>
       <div className="mt-3">
         <Stat label={`Hamming(${N},${K}) 翻 2 位（全部 ${TWO7.total} 種）`} value={`${TWO7.mis}/${TWO7.total}`} sub="全部被改成另一個 codeword" tone="rose" />
@@ -358,15 +358,15 @@ export default function M5Secded() {
   };
 
   const compareRows: { k: string; label: ReactNode; a: string; b: string }[] = [
-    { k: 'n', label: '碼長 n', a: String(N), b: String(NE) },
-    { k: 'k', label: '資料位元數 k', a: String(K), b: String(K) },
+    { k: 'n', label: 'Code length n', a: String(N), b: String(NE) },
+    { k: 'k', label: 'Data bit 數 k', a: String(K), b: String(K) },
     { k: 'lamps', label: '接收端的燈', a: `${L} 盞`, b: `${RE} 盞（多 ${P0}）` },
-    { k: 'rate', label: '碼率 k/n', a: fmt(RATE7), b: fmt(RATE8) },
+    { k: 'rate', label: 'Code rate k/n', a: fmt(RATE7), b: fmt(RATE8) },
     {
       k: 'dmin',
       label: (
         <>
-          最小距離 <M>{'d_{\\min}'}</M>（窮舉）
+          Minimum distance <M>{'d_{\\min}'}</M>（窮舉）
         </>
       ),
       a: String(D7),
@@ -393,26 +393,26 @@ export default function M5Secded() {
       a: D7 >= SECDED_NEED ? '✓' : '✗',
       b: D8 >= SECDED_NEED ? '✓（SECDED）' : '✗',
     },
-    { k: 'two', label: '翻 2 位時', a: `誤更正（${TWO7.mis}/${TWO7.total}）`, b: `回報（${TWO8.detected}/${TWO8.total}）` },
-    { k: 'perfect', label: '完美碼？', a: HB7.equality ? `是（${HB7.lhs} = ${HB7.rhs}）` : '否', b: HB8.equality ? '是' : `否（${HB8.lhs} < ${HB8.rhs}）` },
+    { k: 'two', label: '翻 2 位時', a: `Miscorrection（${TWO7.mis}/${TWO7.total}）`, b: `回報（${TWO8.detected}/${TWO8.total}）` },
+    { k: 'perfect', label: 'Perfect code？', a: HB7.equality ? `是（${HB7.lhs} = ${HB7.rhs}）` : '否', b: HB8.equality ? '是' : `否（${HB8.lhs} < ${HB8.rhs}）` },
   ];
 
   return (
     <div>
       <ModuleHeader moduleId={ID}>
         <p>
-          第 4 章的結尾：Hamming({N},{K}) 是完美碼，{L} 盞燈的 {STATES} 種狀態全部用掉，沒有一種能說「錯了兩個」；翻 2 位時，解碼器只能照著燈號翻，結果誤更正。這一章從伺服器的 ECC 記憶體出發：錯了兩個時，寧可回報，也不要誤更正。做法是多一盞燈。
+          第 4 章的結尾：Hamming({N},{K}) 是 perfect code，{L} 盞燈的 {STATES} 種狀態全部用掉，沒有一種能說「錯了兩個」；翻 2 位時，decoder 只能照著燈號翻，結果造成 miscorrection。這一章從伺服器的 ECC 記憶體出發：錯了兩個時，寧可回報，也不要造成 miscorrection。做法是多一盞燈。
         </p>
       </ModuleHeader>
-      <KeyPoint>多一盞燈數翻轉個數的奇偶：錯 1 個照樣修好，錯 2 個就舉手回報，而不是悄悄誤更正。</KeyPoint>
+      <KeyPoint>多一盞燈數翻轉個數的奇偶：錯 1 個照樣修好，錯 2 個就舉手回報，而不是悄悄造成 miscorrection。</KeyPoint>
       <FlowBar moduleId={ID} />
 
       <div className="space-y-12">
-        <Stage kind="why" moduleId={ID} title="ECC 記憶體：寧可回報，也不要誤更正">
+        <Stage kind="why" moduleId={ID} title="ECC 記憶體：寧可回報，也不要造成 miscorrection">
           <Card title="伺服器的 ECC 記憶體">
             <div className="space-y-2 text-sm leading-relaxed text-slate-700">
               <p>
-                伺服器的記憶體整天都在讀寫，宇宙射線、電壓雜訊偶爾會翻轉其中一個位元。<strong>ECC 記憶體</strong>（Error-Correcting Code memory）每存一筆資料，就多存幾個檢查位元；讀出來的時候，記憶體控制器就是接收端：算燈號、修好錯，再把資料交給程式。
+                伺服器的記憶體整天都在讀寫，宇宙射線、電壓雜訊偶爾會翻轉其中一個位元。<strong>ECC 記憶體</strong>（error-correcting code memory）每存一筆資料，就多存幾個 parity bit；讀出來的時候，記憶體控制器就是接收端：算燈號、修好錯，再把資料交給程式。
               </p>
               <p>翻 1 位最常見：當場修好，程式完全不知道。翻 2 位少見得多，但伺服器日夜在跑、記憶體又大，遲早會遇到。這時 Hamming({N},{K}) 會怎麼做？</p>
             </div>
@@ -421,7 +421,7 @@ export default function M5Secded() {
             <SilentMiscorrection />
             <div className="grid grid-cols-1 gap-4 lg:grid-rows-2">
               <div className="rounded-xl border border-rose-300 bg-rose-50/70 p-4 text-sm leading-relaxed text-rose-950">
-                <div className="mb-1 font-bold text-rose-800">悄悄誤更正：沒有人知道</div>
+                <div className="mb-1 font-bold text-rose-800">悄悄的 miscorrection：沒有人知道</div>
                 輸出是合法的 codeword，之後任何檢查都看不出來。錯的資料被當成正確的繼續計算、寫回硬碟、傳給別台機器，等發現時已經找不到源頭。
               </div>
               <div className="rounded-xl border border-emerald-300 bg-emerald-50/70 p-4 text-sm leading-relaxed text-emerald-950">
@@ -431,11 +431,11 @@ export default function M5Secded() {
             </div>
           </div>
           <p className="text-sm leading-relaxed text-slate-700">
-            要回報，接收端得分得出「錯 1 個」和「錯 2 個」。第 4 章已經看到：{L} 盞燈的 {STATES} 種狀態都有主人，翻 2 位亮出的燈號，和某個位置翻 1 位一模一樣。光靠這 {L} 盞燈做不到，所以要<strong>多一盞燈</strong>。修 1 個、偵測 2 個的碼叫 <strong>SECDED</strong>：<strong>S</strong>ingle <strong>E</strong>rror <strong>C</strong>orrection, <strong>D</strong>ouble <strong>E</strong>rror <strong>D</strong>etection。
+            要回報，接收端得分得出「錯 1 個」和「錯 2 個」。第 4 章已經看到：{L} 盞燈的 {STATES} 種狀態都有主人，翻 2 位亮出的燈號，和某個位置翻 1 位一模一樣。光靠這 {L} 盞燈做不到，所以要<strong>多一盞燈</strong>。修 1 個、偵測 2 個的 code 叫 <strong>SECDED</strong>：<strong>S</strong>ingle <strong>E</strong>rror <strong>C</strong>orrection, <strong>D</strong>ouble <strong>E</strong>rror <strong>D</strong>etection。
           </p>
         </Stage>
 
-        <Stage kind="definition" moduleId={ID} title={`多一盞燈：${P0}（整體同位位元）與 Extended Hamming(${NE},${K})`}>
+        <Stage kind="definition" moduleId={ID} title={`多一盞燈：${P0}（overall parity bit）與 extended Hamming(${NE},${K})`}>
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <Card title={`第 ${RE} 盞燈：翻了奇數位還是偶數位`}>
               <div className="space-y-2 text-sm leading-relaxed text-slate-700">
@@ -444,16 +444,16 @@ export default function M5Secded() {
                 </p>
                 <ul className="list-disc space-y-1.5 pl-5">
                   <li>
-                    <strong>發送端</strong>：多送一個 {P0}（整體同位位元），讓全部 {NE} 個位元一定有偶數個 1。
+                    <strong>發送端</strong>：多送一個 {P0}（overall parity bit），讓全部 {NE} 個位元一定有偶數個 1。
                   </li>
                   <li>
                     <strong>接收端</strong>：第 {RE} 盞燈 q 看全部 {NE} 位，1 的個數是奇數就亮：翻奇數位亮，沒翻或翻偶數位暗。
                   </li>
                   <li>
-                    <strong>放在第 {P0_POS} 位</strong>：前 {N} 位和 Hamming({N},{K}) 一模一樣，原本的 {L} 盞燈、第 2 章 H 的設計 ①–⑤、第 3 章「燈號讀成二進位、接上 {L}-to-{STATES} 解碼器」都不用改；第 {RE} 盞燈只是另外一棵 XOR 樹，由它決定解碼器的輸出要照翻、翻 {P0}，還是改成回報（四格見下）。
+                    <strong>放在第 {P0_POS} 位</strong>：前 {N} 位和 Hamming({N},{K}) 一模一樣，原本的 {L} 盞燈、第 2 章 H 的設計 ①–⑤、第 3 章「燈號讀成二進位、接上 {L}-to-{STATES} decoder」都不用改；第 {RE} 盞燈只是另外一棵 XOR 樹，由它決定 decoder 的輸出要照翻、翻 {P0}，還是改成回報（四格見下）。
                   </li>
                   <li>
-                    <strong>代價</strong>：每 {K} 個資料位元多送 1 位，碼率 <M>{`\\tfrac{${K}}{${N}} \\approx ${fmt(RATE7)} \\to \\tfrac{${K}}{${NE}} = ${fmt(RATE8)}`}</M>。
+                    <strong>代價</strong>：每 {K} 個 data bit 多送 1 位，code rate <M>{`\\tfrac{${K}}{${N}} \\approx ${fmt(RATE7)} \\to \\tfrac{${K}}{${NE}} = ${fmt(RATE8)}`}</M>。
                   </li>
                 </ul>
               </div>
@@ -466,11 +466,11 @@ export default function M5Secded() {
               </div>
               <MatrixView matrix={H84} name={<M>{'H_8 ='}</M>} colLabels={LAYOUT_84.map((p) => p.label)} rowLabels={[...LAMP, P0]} highlightRows={[RE - 1]} rowHighlightClass="bg-overall-100 text-overall-800" />
               <p className="mt-2 text-sm text-slate-600">
-                原本的 H 補一個零欄（{P0} 不參加 {LAMP.join('、')} 的檢查），再加一列全 1：第 {RE} 盞燈。<M>{`\\operatorname{rank} = ${RANK8}`}</M>，維度仍是 <M>{`${NE} - ${RANK8} = ${NE - RANK8}`}</M>：{P0} 由前 {N} 位決定，不帶新資訊。
+                原本的 H 補一個零欄（{P0} 不參加 {LAMP.join('、')} 的檢查），再加一列全 1：第 {RE} 盞燈。<M>{`\\operatorname{rank} = ${RANK8}`}</M>，dimension 仍是 <M>{`${NE} - ${RANK8} = ${NE - RANK8}`}</M>：{P0} 由前 {N} 位決定，不帶新資訊。
               </p>
               <Tex block>{`\\begin{aligned} H_8\\,r^T &= \\begin{pmatrix} s \\\\ q \\end{pmatrix} \\\\ s &= H\\,(r_1,\\dots,r_${N})^T \\in \\mathbb{F}_2^${L} \\\\ q &= r_1 + \\cdots + r_${NE} \\in \\mathbb{F}_2 \\end{aligned}`}</Tex>
               <Tex block>{`(${N},${K}),\\ d_{\\min} = ${D7} \\;\\longrightarrow\\; (${NE},${K}),\\ d_{\\min} = ${D8}`}</Tex>
-              <p className="text-sm text-slate-600">長度 +1（多了 {P0}）、資料位元仍是 {K} 個、最小距離 {D7} → {D8}（下一張卡片）。</p>
+              <p className="text-sm text-slate-600">長度 +1（多了 {P0}）、data bit 仍是 {K} 個、minimum distance {D7} → {D8}（下一張卡片）。</p>
             </Card>
           </div>
 
@@ -493,7 +493,7 @@ export default function M5Secded() {
               </div>
               <div className="rounded-xl border border-orange-300 bg-orange-50/70 p-3 text-sm leading-relaxed text-orange-950">
                 <div className="mb-1 font-bold text-orange-800">翻 2 位：停在正中間 → 回報</div>
-                離 A {STEP_MID.dA}、離 B {STEP_MID.dB}，沒有哪一邊比較近。{L} 盞燈（{lampText(STEP_MID.dec.syndrome)}）不是全暗（s ≠ 0，有錯），第 {RE} 盞燈暗（翻了偶數位）：接收端知道錯的不只 1 位，不猜，回報。第 4 章同樣翻位置 {STEP_MID.flipped.map((i) => i + 1).join('、')} 時，字被推到 B：誤更正。
+                離 A {STEP_MID.dA}、離 B {STEP_MID.dB}，沒有哪一邊比較近。{L} 盞燈（{lampText(STEP_MID.dec.syndrome)}）不是全暗（s ≠ 0，有錯），第 {RE} 盞燈暗（翻了偶數位）：接收端知道錯的不只 1 位，不猜，回報。第 4 章同樣翻位置 {STEP_MID.flipped.map((i) => i + 1).join('、')} 時，字被推到 B：miscorrection。
               </div>
             </div>
             <p className="mt-4 text-sm leading-relaxed text-slate-700">
@@ -634,14 +634,14 @@ export default function M5Secded() {
                   </li>
                 </ul>
                 <p className="mt-3 text-xs leading-relaxed text-slate-500">
-                  四種情況落在四個不同的格子，所以接收端看 (s, q) 就知道是哪一種。少了 q，「1 個錯在位置 j」和「2 個錯、和是 <M>{'h_j'}</M>」亮的燈一模一樣：這就是第 3 章的誤更正。
+                  四種情況落在四個不同的格子，所以接收端看 (s, q) 就知道是哪一種。少了 q，「1 個錯在位置 j」和「2 個錯、和是 <M>{'h_j'}</M>」亮的燈一模一樣：這就是第 3 章的 miscorrection。
                 </p>
               </Card>
             }
           />
         </Stage>
 
-        <Stage kind="experiment" moduleId={ID} title="SECDED 實驗器：同一個錯誤，兩種解碼器">
+        <Stage kind="experiment" moduleId={ID} title="SECDED 實驗器：同一個錯誤，兩種 decoder">
           <Card
             title="錯誤情境"
             actions={
@@ -666,7 +666,7 @@ export default function M5Secded() {
             </div>
             <div className="flex flex-wrap items-center gap-3 text-sm text-slate-600">
               <span>
-                錯誤向量 e = <span className="mono font-semibold text-rose-600">{e.join('')}</span>（{weight(e)} 個錯誤）
+                Error vector e = <span className="mono font-semibold text-rose-600">{e.join('')}</span>（{weight(e)} 個錯誤）
               </span>
               <RoleLegend overall errors />
             </div>
@@ -674,7 +674,7 @@ export default function M5Secded() {
 
           <div className={`grid grid-cols-1 gap-4 ${mode === 'both' ? 'lg:grid-cols-2' : ''}`}>
             {(mode === 'h84' || mode === 'both') && (
-              <Card title={`Extended Hamming(${NE},${K}) + SECDED 解碼器`}>
+              <Card title={`Extended Hamming(${NE},${K}) + SECDED decoder`}>
                 <DecoderPanel sent={c8} received={o8.received} error={e} output={r.corrected} flippedIdx={r.correctedPosition - 1} layout8 onToggle={flip} />
                 <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
                   <Lamps s={r.syndrome} q={r.overallParity} size="sm" />
@@ -685,13 +685,13 @@ export default function M5Secded() {
                   <span className="text-slate-500">→ {CASE_INFO[r.case].title}</span>
                 </div>
                 <motion.div key={st8 + e.join('')} initial={{ scale: 0.97, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="mt-3">
-                  <StatusBadge status={st8} large zh={st8 === 'wrong' ? (r.case === 'no-error' ? '未偵測錯誤' : '誤更正') : undefined} en={st8 === 'wrong' ? (r.case === 'no-error' ? 'Undetected error' : 'Miscorrection') : undefined} />
+                  <StatusBadge status={st8} large zh={st8 === 'wrong' ? (r.case === 'no-error' ? 'Undetected error' : 'Miscorrection') : undefined} en={st8 === 'wrong' ? '' : undefined} />
                 </motion.div>
                 <OutcomeNote weightE={weight(e)} status={st8} />
               </Card>
             )}
             {(mode === 'h74' || mode === 'both') && (
-              <Card title={`Hamming(${N},${K}) Syndrome 解碼器（只看前 ${N} 位元）`}>
+              <Card title={`Hamming(${N},${K}) syndrome decoder（只看前 ${N} 位元）`}>
                 <DecoderPanel sent={c7} received={o7.received} error={e.slice(0, N)} output={o7.decoded.corrected} flippedIdx={o7.decoded.position - 1} onToggle={flip} />
                 <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
                   <Lamps s={o7.decoded.syndrome} size="sm" />
@@ -701,7 +701,7 @@ export default function M5Secded() {
                   <span className="text-slate-500">→ {o7.decoded.position === 0 ? '判定無錯誤' : `翻轉位置 ${o7.decoded.position}`}</span>
                 </div>
                 <motion.div key={st7 + e.join('')} initial={{ scale: 0.97, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="mt-3">
-                  <StatusBadge status={st7} large zh={st7 === 'wrong' ? (o7.undetected ? '未偵測錯誤' : '誤更正') : undefined} en={st7 === 'wrong' ? (o7.undetected ? 'Undetected error' : 'Miscorrection') : undefined} />
+                  <StatusBadge status={st7} large zh={st7 === 'wrong' ? (o7.undetected ? 'Undetected error' : 'Miscorrection') : undefined} en={st7 === 'wrong' ? '' : undefined} />
                 </motion.div>
                 {e[OVERALL_INDEX] === 1 && <p className="mt-2 text-xs text-slate-500">（第 {P0_POS} 位的錯誤在 Hamming({N},{K}) 中不存在，已忽略。）</p>}
                 {weight(e.slice(0, N)) === 2 && <p className="mt-2 text-sm text-rose-700">Hamming({N},{K}) 分不出「1 個錯」與「2 個錯」，於是把 2 個錯誤當成 1 個來修正。</p>}
@@ -712,12 +712,12 @@ export default function M5Secded() {
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <Stat label={`SECDED 翻 1 位（全部 ${ONE8.total} 種，含 ${P0}）`} value={`${ONE8.ok}/${ONE8.total}`} sub="修好" tone="emerald" />
             <Stat label={`SECDED 翻 2 位（全部 ${TWO8.total} 種）`} value={`${TWO8.detected}/${TWO8.total}`} sub="回報，不修正" tone="amber" />
-            <Stat label={`Hamming(${N},${K}) 翻 2 位（全部 ${TWO7.total} 種）`} value={`${TWO7.mis}/${TWO7.total}`} sub="悄悄誤更正" tone="rose" />
+            <Stat label={`Hamming(${N},${K}) 翻 2 位（全部 ${TWO7.total} 種）`} value={`${TWO7.mis}/${TWO7.total}`} sub="悄悄的 miscorrection" tone="rose" />
           </div>
 
           <Callout kind="warning" title="保證只在「最多 2 個錯誤」時成立">
             <p>
-              四種分類假設錯誤數 ≤ 2。若有 3 個以上的錯誤，保證就不成立。錯 3 個時會誤更正：例如「{presetLabel(TRIPLE)}」，前 {N} 位的錯誤 {TRIPLE_E7.join('')} 本身是 Hamming({N},{K}) 的 codeword{isCodeword74(TRIPLE_E7) ? '' : '（✗）'}，所以 <M>{'s = 0'}</M>，而 3 是奇數使 <M>{'q = 1'}</M>，解碼器以為是 {P0} 出錯並「修正」它，結果仍是錯的。錯 4 個時甚至可能根本沒發現（未偵測錯誤）：再多翻 {P0}（位置 {P0_POS}），錯誤 {QUAD_E.join('')} 的 <M>{'s = 0'}</M>、<M>{'q = 0'}</M>{secdedDecode(QUAD_E).case === 'no-error' ? '' : '（✗）'}，解碼器判定沒有錯，原樣輸出。
+              四種分類假設錯誤數 ≤ 2。若有 3 個以上的錯誤，保證就不成立。錯 3 個時會造成 miscorrection：例如「{presetLabel(TRIPLE)}」，前 {N} 位的錯誤 {TRIPLE_E7.join('')} 本身是 Hamming({N},{K}) 的 codeword{isCodeword74(TRIPLE_E7) ? '' : '（✗）'}，所以 <M>{'s = 0'}</M>，而 3 是奇數使 <M>{'q = 1'}</M>，decoder 以為是 {P0} 出錯並「修正」它，結果仍是錯的。錯 4 個時甚至可能根本沒發現（undetected error）：再多翻 {P0}（位置 {P0_POS}），錯誤 {QUAD_E.join('')} 的 <M>{'s = 0'}</M>、<M>{'q = 0'}</M>{secdedDecode(QUAD_E).case === 'no-error' ? '' : '（✗）'}，decoder 判定沒有錯，原樣輸出。
             </p>
           </Callout>
           <Misconceptions
@@ -734,7 +734,7 @@ export default function M5Secded() {
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
               <div className="space-y-2 text-sm leading-relaxed text-slate-700">
                 <p>
-                  ECC 記憶體每次讀寫 {SERVER.k} 個資料位元。要更正 1 個錯，ℓ 盞燈得分出「沒錯」加上 n = {SERVER.k} + ℓ 個位置（第 4 章的 <M>{'2^{\\ell} \\ge n + 1'}</M>）：
+                  ECC 記憶體每次讀寫 {SERVER.k} 個 data bit。要更正 1 個錯，ℓ 盞燈得分出「沒錯」加上 n = {SERVER.k} + ℓ 個位置（第 4 章的 <M>{'2^{\\ell} \\ge n + 1'}</M>）：
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2">
                   <Tex block>{`2^{${SERVER.r - 1}} = ${2 ** (SERVER.r - 1)} < ${SERVER.k} + ${SERVER.r - 1} + 1 = ${SERVER.k + SERVER.r}`}</Tex>
@@ -744,7 +744,7 @@ export default function M5Secded() {
                   所以要 {SERVER.r} 盞燈：Hamming({SERVER.parentN},{SERVER.parentK}) 只用其中 {SERVER.k} 個資料位置（其餘 {SERVER.shortenedBy} 個固定為 0、不送），得到 ({SERVER.n},{SERVER.k})；再加 1 個 {P0}，就是 <strong>({SERVER.nSecded},{SERVER.k})</strong>。判斷規則和本章的四格完全一樣：修 1 個、回報 2 個。
                 </p>
                 <p className="text-slate-600">
-                  它不是完美碼：{SERVER.r} 盞燈的 {2 ** SERVER.r} 種狀態只用到 {SERVER.n + 1} 種。實際晶片常把 {P0} 併進檢查矩陣（例如 Hsiao 碼），參數同樣是 ({SERVER.nSecded},{SERVER.k})、修 1 個、偵測 2 個。縮短碼的做法見{' '}
+                  它不是 perfect code：{SERVER.r} 盞燈的 {2 ** SERVER.r} 種狀態只用到 {SERVER.n + 1} 種。實際晶片常把 {P0} 併進 parity-check matrix（例如 Hsiao code），參數同樣是 ({SERVER.nSecded},{SERVER.k})、修 1 個、偵測 2 個。shortened code 的做法見{' '}
                   <a href="#/l2-12" className="font-semibold text-overall-700 hover:underline">
                     第二課 2-12
                   </a>
@@ -753,14 +753,14 @@ export default function M5Secded() {
               </div>
               <div className="grid grid-cols-2 gap-2 self-start">
                 <Stat label="每筆資料" value={`${SERVER.k} 位`} />
-                <Stat label="檢查位元" value={`${SERVER.r} + 1 = ${SERVER_CHECK}`} sub={`${SERVER.r} 盞燈 + ${P0}`} tone="indigo" />
+                <Stat label="Parity bit" value={`${SERVER.r} + 1 = ${SERVER_CHECK}`} sub={`${SERVER.r} 盞燈 + ${P0}`} tone="indigo" />
                 <Stat label="多存的比例" value={pct(SERVER_CHECK / SERVER.k)} sub={`(${NE},${K}) 是 ${pct((NE - K) / K)}`} tone="emerald" />
-                <Stat label="碼率 k/n" value={pct(SERVER.rateSecded)} sub={`(${NE},${K}) 是 ${pct(RATE8)}`} tone="emerald" />
+                <Stat label="Code rate k/n" value={pct(SERVER.rateSecded)} sub={`(${NE},${K}) 是 ${pct(RATE8)}`} tone="emerald" />
               </div>
             </div>
           </Card>
 
-          <Card title={`比較總表：Hamming(${N},${K}) 與 Extended Hamming(${NE},${K})`}>
+          <Card title={`比較總表：Hamming(${N},${K}) 與 extended Hamming(${NE},${K})`}>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[480px] text-sm">
                 <thead>
@@ -789,10 +789,10 @@ export default function M5Secded() {
 
           <Callout kind="key" title="結論">
             <p>
-              <strong>情境</strong>：ECC 記憶體翻 2 位時，Hamming({N},{K}) 會把它改成另一個合法的 codeword，之後任何檢查都看不出來，資料被悄悄毀掉。寧可回報，也不要誤更正。
+              <strong>情境</strong>：ECC 記憶體翻 2 位時，Hamming({N},{K}) 會把它改成另一個合法的 codeword，之後任何檢查都看不出來，資料被悄悄毀掉。寧可回報，也不要造成 miscorrection。
             </p>
             <p>
-              <strong>做法</strong>：多一個 {P0}（整體同位位元），放在第 {P0_POS} 位。第 {RE} 盞燈 q 說翻了奇數還是偶數位，原本的 {L} 盞燈 s 照舊指出位置。代價 1 個位元，換來 <M>{`d_{\\min}: ${D7} \\to ${D8}`}</M>：雙錯停在兩個 codeword 的正中間，不會被推到別人那邊。
+              <strong>做法</strong>：多一個 {P0}（overall parity bit），放在第 {P0_POS} 位。第 {RE} 盞燈 q 說翻了奇數還是偶數位，原本的 {L} 盞燈 s 照舊指出位置。代價 1 個位元，換來 <M>{`d_{\\min}: ${D7} \\to ${D8}`}</M>：雙錯停在兩個 codeword 的正中間，不會被推到別人那邊。
             </p>
             <p>
               <strong>結果</strong>：至多 2 個錯時，翻 1 位一定修好（{ONE8.ok}/{ONE8.total}），翻 2 位一定回報（{TWO8.detected}/{TWO8.total}）。伺服器的 ({SERVER.nSecded},{SERVER.k}) 用的是同一套規則。
@@ -803,25 +803,25 @@ export default function M5Secded() {
               {
                 wrong: (
                   <>
-                    <M>{`d_{\\min} = ${D8}`}</M>，所以 t = ⌊{D8 - 1}/2⌋ = {T8}，Extended Hamming 沒有比較好。
+                    <M>{`d_{\\min} = ${D8}`}</M>，所以 t = ⌊{D8 - 1}/2⌋ = {T8}，extended Hamming code 沒有比較好。
                   </>
                 ),
                 right: (
                   <>
-                    修正能力確實仍是 {T8}，但多了「同時偵測 2 個錯誤」的能力：<M>{`d_{\\min} = ${D8} \\ge`}</M>（修正數）+（偵測數）+ 1 = 1 + 2 + 1。
+                    error-correcting capability 確實仍是 {T8}，但多了「同時偵測 2 個錯誤」的能力：<M>{`d_{\\min} = ${D8} \\ge`}</M>（修正數）+（偵測數）+ 1 = 1 + 2 + 1。
                   </>
                 ),
               },
-              { wrong: `${P0} 是第 ${K + 1} 個資料位元。`, right: `${P0} 完全由其他 ${N} 個位元決定，k 仍是 ${K}。` },
+              { wrong: `${P0} 是第 ${K + 1} 個 data bit。`, right: `${P0} 完全由其他 ${N} 個位元決定，k 仍是 ${K}。` },
             ]}
           />
           <Card>
             <RelatedLinks
               title="延伸"
               links={[
-                { to: 'distance', text: `回顧：最小距離 ${D7} 與完美碼的代價` },
-                { to: 'l2-11', text: 'SECDED 放到循環碼上：雙錯時的輸出與旗標' },
-                { to: 'l2-12', text: `更長的 Hamming Code、縮短碼與 (${SERVER.nSecded},${SERVER.k})` },
+                { to: 'distance', text: `回顧：minimum distance ${D7} 與 perfect code 的代價` },
+                { to: 'l2-11', text: 'SECDED 放到 cyclic code 上：雙錯時的輸出與旗標' },
+                { to: 'l2-12', text: `更長的 Hamming code、shortened code 與 (${SERVER.nSecded},${SERVER.k})` },
               ]}
             />
           </Card>
@@ -948,15 +948,15 @@ function OutcomeNote({ weightE, status }: { weightE: number; status: DecodeStatu
   if (weightE <= 2) {
     return (
       <p className="mt-2 text-xs text-slate-500">
-        {weightE === 0 && '沒有錯誤，解碼器原樣輸出。'}
+        {weightE === 0 && '沒有錯誤，decoder 原樣輸出。'}
         {weightE === 1 && '單一錯誤：保證被定位並修正。'}
-        {weightE === 2 && '兩個錯誤：保證被偵測，解碼器不會亂改資料。'}
+        {weightE === 2 && '兩個錯誤：保證被偵測，decoder 不會亂改資料。'}
       </p>
     );
   }
   return (
     <p className="mt-2 text-xs text-rose-700">
-      {weightE} 個錯誤超出保證範圍。{status === 'detected' ? '這次剛好被偵測到，但不是保證。' : '解碼器做出了錯誤的判斷。'}
+      {weightE} 個錯誤超出保證範圍。{status === 'detected' ? '這次剛好被偵測到，但不是保證。' : 'decoder 做出了錯誤的判斷。'}
     </p>
   );
 }
@@ -974,34 +974,34 @@ function Advanced() {
           <Layers className="h-3.5 w-3.5" />
           進階 <span className="opacity-60">Advanced</span>
         </span>
-        <h2 className="text-lg font-bold text-slate-900 sm:text-xl">重量、距離與窮舉驗證</h2>
+        <h2 className="text-lg font-bold text-slate-900 sm:text-xl">Weight、distance 與窮舉驗證</h2>
       </div>
-      <p className="text-sm text-slate-600">主線只用一條 A → B 的路和 (s, q) 四格。這裡收著重量與距離的分佈、<M>{`d_{\\min} = ${D8}`}</M> 的證明，以及對全部錯誤向量的窮舉。</p>
+      <p className="text-sm text-slate-600">主線只用一條 A → B 的路和 (s, q) 四格。這裡收著 weight distribution、distance 分佈、<M>{`d_{\\min} = ${D8}`}</M> 的證明，以及對全部 error vector 的窮舉。</p>
       <div className="space-y-2">
-        <Expandable title={`重量分佈：加上 ${P0} 後，重量 ${MD7.dmin} 消失了`}>
+        <Expandable title={`Weight distribution：加上 ${P0} 後，weight ${MD7.dmin} 消失了`}>
           <WeightView />
         </Expandable>
         <Expandable
           title={
             <>
-              證明：Extended Hamming({NE},{K}) 的 <M>{`d_{\\min} = ${D8}`}</M>
+              證明：extended Hamming({NE},{K}) 的 <M>{`d_{\\min} = ${D8}`}</M>
             </>
           }
         >
           <p>
-            1. 這是線性碼，所以 <M>{'d_{\\min}'}</M> = 最小非零 codeword 重量。
+            1. 這是 linear code，所以 <M>{'d_{\\min}'}</M> = 最小非零 codeword weight。
           </p>
           <p>
-            2. 每個延伸 codeword <M>{'(c, P_0)'}</M> 滿足 <M>{'\\mathrm{wt}(c, P_0) = \\mathrm{wt}(c) + P_0'}</M>，而 <M>{'P_0 \\equiv \\mathrm{wt}(c) \\pmod 2'}</M>，所以 <M>{'\\mathrm{wt}(c, P_0)'}</M> 必為偶數。
+            2. 每個 extended codeword <M>{'(c, P_0)'}</M> 滿足 <M>{'\\mathrm{wt}(c, P_0) = \\mathrm{wt}(c) + P_0'}</M>，而 <M>{'P_0 \\equiv \\mathrm{wt}(c) \\pmod 2'}</M>，所以 <M>{'\\mathrm{wt}(c, P_0)'}</M> 必為偶數。
           </p>
           <p>
-            3. 原 code 非零 codeword 重量 ≥ {D7}，因此 <M>{`\\mathrm{wt}(c, P_0) \\ge ${D7}`}</M> 且為偶數 ⇒ <M>{`\\mathrm{wt}(c, P_0) \\ge ${D7 + (D7 % 2)}`}</M>。
+            3. 原 code 非零 codeword weight ≥ {D7}，因此 <M>{`\\mathrm{wt}(c, P_0) \\ge ${D7}`}</M> 且為偶數 ⇒ <M>{`\\mathrm{wt}(c, P_0) \\ge ${D7 + (D7 % 2)}`}</M>。
           </p>
           <p>
-            4. 重量 {D8} 的 codeword 確實存在（例如 {DEFAULT_MESSAGE.join('')} → {encode84(DEFAULT_MESSAGE).join('')}，重量 {weight(encode84(DEFAULT_MESSAGE))}），所以 <M>{`d_{\\min} = ${D8}`}</M>。∎
+            4. weight {D8} 的 codeword 確實存在（例如 {DEFAULT_MESSAGE.join('')} → {encode84(DEFAULT_MESSAGE).join('')}，weight {weight(encode84(DEFAULT_MESSAGE))}），所以 <M>{`d_{\\min} = ${D8}`}</M>。∎
           </p>
         </Expandable>
-        <Expandable title={`任兩個 codeword 在 (${N},${K}) 與 (${NE},${K}) 中的距離`}>
+        <Expandable title={`任兩個 codeword 在 (${N},${K}) 與 (${NE},${K}) 中的 distance`}>
           <PairDistance />
         </Expandable>
         <Expandable
@@ -1018,13 +1018,13 @@ function Advanced() {
             用路徑來看：兩個最近的 codeword 隔 {D8} 步，各自的「修得回來」範圍是半徑 {T8}。翻 2 位的字離自己 2，離別人至少 {D8} − 2 = {D8 - 2}，不在任何人的半徑 {T8} 之內，所以不會被拉走，只會被偵測。Hamming({N},{K}) 只隔 {D7} 步：翻 2 位就落進別人的半徑 {T7}。
           </p>
           <p className="text-slate-600">
-            只偵測、不修正的話，<M>{`d_{\\min} = ${D8}`}</M> 能偵測 {detectionCapability(D8)} 個錯；但同一個解碼器只要決定「翻 1 位就修」，偵測範圍就只剩 2 個。
+            只偵測、不修正的話，<M>{`d_{\\min} = ${D8}`}</M> 能偵測 {detectionCapability(D8)} 個錯；但同一個 decoder 只要決定「翻 1 位就修」，偵測範圍就只剩 2 個。
           </p>
         </Expandable>
-        <Expandable title={`${HB8.rhs} 個 ${NE} 位元字串：${HB8.codewords} 顆球之外的 ${outside} 個`}>
+        <Expandable title={`${HB8.rhs} 個 ${NE} 位元字串：${HB8.codewords} 顆 ball 之外的 ${outside} 個`}>
           <BallsOutside />
         </Expandable>
-        <Expandable title={`窮舉：全部 ${2 ** NE} 種與 ${2 ** N} 種錯誤向量`}>
+        <Expandable title={`窮舉：全部 ${2 ** NE} 種與 ${2 ** N} 種 error vector`}>
           <ExhaustiveTables />
         </Expandable>
       </div>
@@ -1041,15 +1041,15 @@ function WeightView() {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <Card title={`Hamming(${N},${K}) codeword 重量分佈`}>
-          <Bars data={wd7} xLabel="重量 w" yLabel="Codeword 數" highlight={(x) => Number(x) === D7} tooltipLabel={(x, y) => `${y} 個 codeword 重量為 ${x}`} />
+        <Card title={`Hamming(${N},${K}) codeword weight distribution`}>
+          <Bars data={wd7} xLabel="Weight w" yLabel="Codeword 數" highlight={(x) => Number(x) === D7} tooltipLabel={(x, y) => `${y} 個 codeword 的 weight 為 ${x}`} />
         </Card>
-        <Card title={`Extended(${NE},${K}) codeword 重量分佈`}>
-          <Bars data={wd8} xLabel="重量 w" yLabel="Codeword 數" highlight={(x) => Number(x) === D8} accent="#7638dc" tooltipLabel={(x, y) => `${y} 個 codeword 重量為 ${x}`} />
+        <Card title={`Extended(${NE},${K}) codeword weight distribution`}>
+          <Bars data={wd8} xLabel="Weight w" yLabel="Codeword 數" highlight={(x) => Number(x) === D8} accent="#7638dc" tooltipLabel={(x, y) => `${y} 個 codeword 的 weight 為 ${x}`} />
         </Card>
       </div>
       <p>
-        奇數重量（{oddWeights.join('、')}）的 codeword 加上 {P0} = 1 後重量 +1，共 {lifted} 個；偶數重量的 codeword {P0} = 0，重量不變。所以重量 {D7} 的 codeword 全部變成重量 {D8}，和原本重量 {D8} 的合計 {weightDistribution(W8, NE)[D8]} 個：<strong>重量 {D7} 消失了</strong>。
+        奇數 weight（{oddWeights.join('、')}）的 codeword 加上 {P0} = 1 後 weight +1，共 {lifted} 個；偶數 weight 的 codeword {P0} = 0，weight 不變。所以 weight {D7} 的 codeword 全部變成 weight {D8}，和原本 weight {D8} 的合計 {weightDistribution(W8, NE)[D8]} 個：<strong>weight {D7} 消失了</strong>。
       </p>
       <Card title={`全部 ${C8.length} 個 codeword 並排`}>
         <div className="overflow-x-auto">
@@ -1100,7 +1100,7 @@ function PairDistance() {
   return (
     <LabGrid
       main={
-        <Card title="選兩個訊息，比較它們在兩種 code 中的距離">
+        <Card title="選兩個訊息，比較它們在兩種 code 中的 distance">
           <div className="mb-3 flex flex-wrap items-center gap-3 text-sm">
             {[0, 1].map((slot) => (
               <label key={slot} className="flex items-center gap-2">
@@ -1132,7 +1132,7 @@ function PairDistance() {
                 ({N},{K}) B
               </span>
               <BitString bits={W7[pair[1]]} highlight={(j) => (diff7.includes(j) ? 'text-fuchsia-600 font-bold' : undefined)} />
-              <span className="text-xs text-slate-500">距離</span>
+              <span className="text-xs text-slate-500">Distance</span>
               <span className="font-mono font-bold">{diff7.length}</span>
             </div>
             <div className="grid grid-cols-[90px_1fr] items-center gap-2 border-t border-slate-200 pt-2">
@@ -1144,12 +1144,12 @@ function PairDistance() {
                 ({NE},{K}) B
               </span>
               <BitString bits={W8[pair[1]]} highlight={(j) => (diff8.includes(j) ? 'text-fuchsia-600 font-bold' : undefined)} />
-              <span className="text-xs text-slate-500">距離</span>
+              <span className="text-xs text-slate-500">Distance</span>
               <span className="font-mono font-bold">{diff8.length}</span>
             </div>
           </div>
           <p className="mt-2 text-xs text-slate-500">
-            預設是主線的 A、B：在 ({N},{K}) 中距離 {D_AB7}（奇數），{P0} 不同，所以延伸後距離變 {D_AB}。
+            預設是主線的 A、B：在 ({N},{K}) 中 distance {D_AB7}（奇數），{P0} 不同，所以 extended 之後 distance 變 {D_AB}。
           </p>
         </Card>
       }
@@ -1175,8 +1175,8 @@ function PairDistance() {
               tone="emerald"
             />
           </div>
-          <Card title={`Extended(${NE},${K})：所有 codeword 對的距離`}>
-            <Bars data={hist8} xLabel="距離 d" yLabel="Codeword 對數" highlight={(x) => x === D8} accent="#7638dc" height={180} />
+          <Card title={`Extended(${NE},${K})：所有 codeword 對的 distance`}>
+            <Bars data={hist8} xLabel="Distance d" yLabel="Codeword 對數" highlight={(x) => x === D8} accent="#7638dc" height={180} />
           </Card>
           <Card title="所有 codeword 都滿足 H₈cᵀ = 0">
             <p className="text-sm text-slate-600">
@@ -1197,14 +1197,14 @@ function BallsOutside() {
   return (
     <>
       <p>
-        每個 codeword 周圍「翻 {T8} 位以內」的球有 {terms.join(' + ')} = {HB8.volume} 個字串，{HB8.codewords} 顆球共 {HB8.lhs} 個，比全部 <M>{`2^{${NE}} = ${HB8.rhs}`}</M> 個少：
+        每個 codeword 周圍「翻 {T8} 位以內」的 ball 有 {terms.join(' + ')} = {HB8.volume} 個字串，{HB8.codewords} 顆 ball 共 {HB8.lhs} 個，比全部 <M>{`2^{${NE}} = ${HB8.rhs}`}</M> 個少：
       </p>
       <Tex block>{`${HB8.codewords} \\times ${HB8.volume} = ${HB8.lhs} < ${HB8.rhs} = 2^{${NE}}`}</Tex>
       <p>
-        所以 Extended({NE},{K}) 不是完美碼。不在任何球裡的 {HB8.rhs} − {HB8.lhs} = {outside.length} 個字串（依最近 codeword 分組時的平手字串：{part.ties.length} 個），每一個都離 {tied} 個 codeword 一樣是距離 2：正是翻 2 位時會落進去的地方，接收端看到它們就回報。
+        所以 Extended({NE},{K}) 不是 perfect code。不在任何 ball 裡的 {HB8.rhs} − {HB8.lhs} = {outside.length} 個字串（依最近 codeword 分組時的平手字串：{part.ties.length} 個），每一個都離 {tied} 個 codeword 一樣是 distance 2：正是翻 2 位時會落進去的地方，接收端看到它們就回報。
       </p>
       <p className="text-slate-600">
-        Hamming({N},{K}) 的球剛好鋪滿（{HB7.lhs} = {HB7.rhs}），沒有留下這種空間：這就是第 4 章說的「沒有燈號留給錯了兩個」。逐格的分組圖在
+        Hamming({N},{K}) 的 ball 剛好鋪滿（{HB7.lhs} = {HB7.rhs}），沒有留下這種空間：這就是第 4 章說的「沒有燈號留給錯了兩個」。逐格的分組圖在
         <a href="#/distance" className="mx-1 font-semibold text-overall-700 hover:underline">
           第 4 章
         </a>
@@ -1247,7 +1247,7 @@ function ExhaustiveTables() {
   }, [c7]);
   return (
     <>
-      <p>對目前的共用訊息 m = {message.join('')}，把每一種錯誤向量都試一次。wt(e) = 1、2 這兩列就是主線的保證：SECDED 翻 1 位全部修好、翻 2 位全部回報；Hamming 翻 2 位全部誤更正。</p>
+      <p>對目前的共用訊息 m = {message.join('')}，把每一種 error vector 都試一次。wt(e) = 1、2 這兩列就是主線的保證：SECDED 翻 1 位全部修好、翻 2 位全部回報；Hamming 翻 2 位全部造成 miscorrection。</p>
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <StatsTable title={`SECDED：對 ${c8.join('')} 窮舉全部 ${2 ** NE} 種錯誤`} rows={stats8} showDetected />
         <StatsTable title={`Hamming(${N},${K})：對 ${c7.join('')} 窮舉全部 ${2 ** N} 種錯誤`} rows={stats7} />
@@ -1264,7 +1264,7 @@ function StatsTable({ title, rows, showDetected = false }: { title: string; rows
           <thead>
             <tr className="text-left text-xs text-slate-500">
               <th className="py-1">wt(e)</th>
-              <th>錯誤向量數</th>
+              <th>Error vector 數</th>
               <th className="text-emerald-700">正常</th>
               <th className="text-sky-700">已修正</th>
               {showDetected && <th className="text-orange-700">回報未修正</th>}

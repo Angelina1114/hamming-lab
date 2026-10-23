@@ -35,7 +35,7 @@ export default function L2Chien() {
       id={ID}
       lead={
         <p>
-          Chien Search 是一個「暴力但規律」的方法：把 <M>{'z = 1, \\alpha, \\alpha^2, \\dots, \\alpha^6'}</M> 依序代入 <M>{'\\sigma(z)'}</M>，哪個讓它等於 0，哪個就是根。硬體上每個時脈測一個，剛好對應一個位元位置。
+          Chien search 是一個「暴力但規律」的方法：把 <M>{'z = 1, \\alpha, \\alpha^2, \\dots, \\alpha^6'}</M> 依序代入 <M>{'\\sigma(z)'}</M>，哪個讓它等於 0，哪個就是根。硬體上每個時脈測一個，剛好對應一個位元位置。
         </p>
       }
       goals={[
@@ -43,7 +43,7 @@ export default function L2Chien() {
         <>
           理解根與位置的關係：<M>{'z = \\alpha^{-i}'}</M> ⇒ 錯在 <M>{'x^i'}</M>
         </>,
-        '確認 Lookup 與 Chien Search 得到相同結果',
+        '確認 Lookup 與 Chien search 得到相同結果',
         '比較兩種方法的用途與計算成本',
       ]}
       intuition={{
@@ -54,7 +54,7 @@ export default function L2Chien() {
               σ(z) 的設計是：如果錯誤在 <M>{'x^i'}</M>，那麼 <M>{'z = \\alpha^{-i}'}</M> 會讓 σ 變成 0。所以只要對每個可能的位置「問一次」：σ 在這裡是 0 嗎？答案是「是」的那個位置就是錯誤。
             </p>
             <p>
-              GF(8) 只有 7 個非零元素，所以最多試 7 次。一般的 BCH Code 也一樣：n 個位置就試 n 次，而且每次的計算都很規律（乘以固定的 <M>{'\\alpha'}</M>），很適合硬體。
+              GF(8) 只有 7 個非零元素，所以最多試 7 次。一般的 BCH code 也一樣：n 個位置就試 n 次，而且每次的計算都很規律（乘以固定的 <M>{'\\alpha'}</M>），很適合硬體。
             </p>
           </div>
         ),
@@ -72,7 +72,7 @@ export default function L2Chien() {
         ),
       }}
       algorithm={{
-        title: 'Chien Search 演算法',
+        title: 'Chien search 演算法',
         body: (
           <AlgoSteps
             steps={[
@@ -89,7 +89,7 @@ export default function L2Chien() {
         ),
       }}
       interactive={{
-        title: '兩種模式：A. Syndrome Lookup　B. Key Equation + Chien Search',
+        title: '兩種模式：A. Syndrome lookup　B. Key equation + Chien search',
         body: (
           <Card
             title="選擇錯誤位置，再切換兩種解碼模式"
@@ -102,8 +102,8 @@ export default function L2Chien() {
                     setKey((k) => k + 1);
                   }}
                   options={[
-                    { value: 'lookup', label: 'A. Syndrome Lookup' },
-                    { value: 'chien', label: 'B. Chien Search' },
+                    { value: 'lookup', label: 'A. Syndrome lookup' },
+                    { value: 'chien', label: 'B. Chien search' },
                   ]}
                 />
                 <ResetButton
@@ -130,11 +130,11 @@ export default function L2Chien() {
             {mode === 'chien' ? <ChienSim key={key} S1={S1} /> : <LookupTable highlightPos={dl.position} />}
             <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className={`rounded-xl border-2 p-3 ${mode === 'lookup' ? 'border-slate-900' : 'border-slate-200'}`}>
-                <div className="text-xs font-semibold text-slate-500">A. Syndrome Lookup</div>
+                <div className="text-xs font-semibold text-slate-500">A. Syndrome lookup</div>
                 <div className="text-lg font-bold">位置 {dl.position}（<M>{`x^{${dl.exponent}}`}</M>）</div>
               </div>
               <div className={`rounded-xl border-2 p-3 ${mode === 'chien' ? 'border-slate-900' : 'border-slate-200'}`}>
-                <div className="text-xs font-semibold text-slate-500">B. Chien Search</div>
+                <div className="text-xs font-semibold text-slate-500">B. Chien search</div>
                 <div className="text-lg font-bold">位置 {dc.position}（<M>{`x^{${dc.exponent}}`}</M>）</div>
               </div>
             </div>
@@ -152,14 +152,14 @@ export default function L2Chien() {
                 { label: <>預設例子：σ(α²) = 0，i = 5，位置 2</>, pass: chienSearch(errorLocator(bitsToField([1, 1, 1]))).find((c) => c.isRoot)?.j === 2 },
               ]}
             />
-            <Card title="計算成本比較（以「要儲存/檢查的錯誤樣式數」估計）">
+            <Card title="計算成本比較（以「要儲存/檢查的 error vector 數」估計）">
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[520px] text-sm">
                   <thead>
                     <tr className="text-left text-xs text-slate-500">
                       <th className="py-1">Code</th>
                       <th>查表大小 Σ C(n,i), i ≤ t</th>
-                      <th>Chien Search 代入次數</th>
+                      <th>Chien search 代入次數</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -178,18 +178,18 @@ export default function L2Chien() {
                 </table>
               </div>
               <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-slate-600">
-                <li>查表：一次查詢就有答案、延遲最低；但表格大小隨可更正的錯誤數爆炸，只適合單錯更正的短碼。</li>
-                <li>Chien Search：每個位置做一次固定的 GF 乘法與加法，硬體規則、面積小，可擴展到多錯誤的 BCH / RS Code；代價是需要 n 個時脈（或平行化成多份電路）。</li>
-                <li>Hamming Code（t = 1）兩種都可行；實務的 Hamming 解碼器通常直接用查表或組合邏輯，Chien Search 在這裡主要是為了理解 BCH 的一般方法。</li>
+                <li>查表：一次查詢就有答案、延遲最低；但表格大小隨可更正的錯誤數爆炸，只適合單錯更正、而且 code length 短的情況。</li>
+                <li>Chien search：每個位置做一次固定的 GF 乘法與加法，硬體規則、面積小，可擴展到多錯誤的 BCH / RS code；代價是需要 n 個時脈，或是複製多份電路、做成 parallel（平行）架構。</li>
+                <li>Hamming code（t = 1）兩種都可行；實務的 Hamming decoder 通常直接用查表或組合邏輯，Chien search 在這裡主要是為了理解 BCH 的一般方法。</li>
               </ul>
             </Card>
           </>
         ),
       }}
-      related={[{ to: 'a-10', text: '代數背景：S₁ = r(α) 與錯誤定位數' }, { to: 'a-7', text: '共軛根與陪集（BCH 的基礎）' }]}
+      related={[{ to: 'a-10', text: '代數背景：S₁ = r(α) 與 error-location number（錯誤定位數）' }, { to: 'a-7', text: 'Conjugate roots（共軛根）與 cyclotomic cosets（分圓陪集）：BCH 的基礎' }]}
       next={
         <p>
-          我們知道錯在第 2 個 bit。最後一步是真正「改回來」：產生錯誤向量 <span className="mono">0100000</span>，與 r 做 XOR，並驗證結果是合法 codeword。
+          我們知道錯在第 2 個 bit。最後一步是真正「改回來」：產生 error vector <span className="mono">0100000</span>，與 r 做 XOR，並驗證結果是合法 codeword。
         </p>
       }
     />

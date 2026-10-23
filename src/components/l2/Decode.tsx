@@ -133,8 +133,8 @@ export function XorView({ r, e, stepper, large = false }: { r: Bit[]; e: Bit[]; 
 export function outcomeStatus(o: L2Outcome): { status: DecodeStatus; zh?: string; en?: string } {
   if (o.errorCount === 0 && !o.detected) return { status: 'ok' };
   if (o.success) return { status: 'corrected' };
-  if (o.undetected) return { status: 'wrong', zh: '未偵測錯誤', en: 'Undetected error' };
-  return { status: 'wrong', zh: '誤更正', en: 'Miscorrection' };
+  if (o.undetected) return { status: 'wrong', zh: 'Undetected error', en: '' };
+  return { status: 'wrong', zh: 'Miscorrection', en: '' };
 }
 
 export function receivedStates(e: Bit[]): BitState[] {
@@ -165,7 +165,7 @@ export function DecodeReport({ o, method, large = false, onToggle }: { o: L2Outc
       <Line label="原始 codeword c">
         <BitStrip bits={o.c} size={size} groups={false} />
       </Line>
-      <Line label="錯誤向量 e">
+      <Line label="Error vector e">
         <BitStrip bits={o.e} roles="plain" size={size} showExp={false} states={o.e.map((b) => (b ? 'error' : 'muted'))} />
       </Line>
       <Line label={onToggle && !presenting ? '接收 r = c ⊕ e（點擊注入）' : '接收 r = c ⊕ e'}>
@@ -206,7 +206,7 @@ export function DecodeReport({ o, method, large = false, onToggle }: { o: L2Outc
       <div className="flex flex-wrap items-center gap-2 pt-1">
         <StatusBadge status={st.status} large zh={st.zh} en={st.en} />
         <span className="chip border border-slate-200 bg-white text-slate-600">偵測到錯誤：{o.detected ? '是' : '否'}</span>
-        <span className="chip border border-slate-200 bg-white text-slate-600">誤更正：{o.miscorrection ? '是' : '否'}</span>
+        <span className="chip border border-slate-200 bg-white text-slate-600">Miscorrection：{o.miscorrection ? '是' : '否'}</span>
         <span className="chip border border-slate-200 bg-white text-slate-600">錯誤數：{o.errorCount}</span>
       </div>
     </div>

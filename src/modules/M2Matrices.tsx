@@ -222,9 +222,9 @@ function Pipeline({ message }: { message: readonly Bit[] }) {
   );
   return (
     <div className="flex flex-col items-center justify-center gap-x-3 gap-y-2 rounded-xl bg-slate-50 p-3 sm:flex-row sm:flex-wrap">
-      {stop(`${K} 個資料位元`, <BitString bits={message} className="font-bold text-data-700" />)}
+      {stop(`${K} 個 data bit`, <BitString bits={message} className="font-bold text-data-700" />)}
       {arrow()}
-      {machine('border-data-300 bg-data-50 text-data-700', '發送端：編碼器', <>接線圖 = G</>)}
+      {machine('border-data-300 bg-data-50 text-data-700', '發送端：encoder', <>接線圖 = G</>)}
       {arrow()}
       {stop(`送出 ${N} 個位元`, <BitString bits={c} className="font-bold" highlight={(j) => (LAYOUT_74[j].role === 'parity' ? 'text-parity-600' : 'text-data-600')} />)}
       {arrow('雜訊')}
@@ -251,7 +251,7 @@ function PassGrid({ message }: { message: readonly Bit[] }) {
     label: k === 0 ? '不看燈' : k === L ? `${L} 盞全暗` : `${LAMP.slice(0, k).join('、')} 暗`,
   }));
   return (
-    <Card title={`${MESSAGES.length} 種訊息 × ${PARITY_CHOICES.length} 種同位位元填法：接收端放行哪幾格？`} actions={<Segmented value={checks} onChange={setChecks} ariaLabel="要求哪幾盞燈保持暗" options={options} />}>
+    <Card title={`${MESSAGES.length} 種訊息 × ${PARITY_CHOICES.length} 種 parity bit 填法：接收端放行哪幾格？`} actions={<Segmented value={checks} onChange={setChecks} ariaLabel="要求哪幾盞燈保持暗" options={options} />}>
       <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[auto_minmax(0,1fr)]">
         <div className="min-w-0 overflow-x-auto">
           <table className="border-separate border-spacing-[3px] text-xs">
@@ -294,7 +294,7 @@ function PassGrid({ message }: { message: readonly Bit[] }) {
             <Stat label="要求保持暗的燈" value={need} sub={need === 0 ? '—' : LAMP.slice(0, need).join('、')} />
           </div>
           <p>
-            每一列是一組資料位元 D1–D4，每一欄是一種 {LAMP.join('、')} 的填法，一格就是一個 {N} 位元字串；綠色 = 接收端的燈全暗、放行。按上方的按鈕，一盞一盞加上檢查：
+            每一列是一組 data bit D1–D4，每一欄是一種 {LAMP.join('、')} 的填法，一格就是一個 {N} 位元字串；綠色 = 接收端的燈全暗、放行。按上方的按鈕，一盞一盞加上檢查：
           </p>
           <p>
             每多要求一盞燈保持暗，放行的字串就少一半：
@@ -302,7 +302,7 @@ function PassGrid({ message }: { message: readonly Bit[] }) {
             。每一盞燈都是一個獨立的檢查，{L} 盞燈把 <M>{`2^{${N}}`}</M> 個字串砍成 <M>{`2^{${N} - ${L}} = ${ALL_WORDS / STATES}`}</M> 個。
           </p>
           <p>
-            {L} 盞全暗時，每一列恰好剩一格（深綠），就是發送端用 G 編出來的那個 codeword：H 的設計 ⑤ 讓每條檢查只含一個同位位元，{L} 盞燈正好把 {LAMP.join('、')} 各決定一次。接收端放行的 {ALL_WORDS / STATES} 個字串，就是發送端造得出的 {TABLE_ROWS} 個
+            {L} 盞全暗時，每一列恰好剩一格（深綠），就是發送端用 G 編出來的那個 codeword：H 的設計 ⑤ 讓每條檢查只含一個 parity bit，{L} 盞燈正好把 {LAMP.join('、')} 各決定一次。接收端放行的 {ALL_WORDS / STATES} 個字串，就是發送端造得出的 {TABLE_ROWS} 個
             codeword。
           </p>
         </div>
@@ -367,38 +367,38 @@ export default function M2Matrices() {
           <a href="#/encode" className={LINK}>
             第 1 章
           </a>
-          的編碼只用到 {L} 個 XOR 公式。真的做成電路時，兩端各需要一個：發送端要一個把 {K} 個資料位元變成 {N} 個位元的<strong>編碼器</strong>，接收端要一個檢查這 {N} 個位元、點亮警示燈的<strong>檢查電路</strong>
-          。這一章把兩個電路寫成兩個矩陣：生成矩陣 G（Generator Matrix）與同位檢查矩陣 H（Parity-check Matrix），並從電路的角度說明它們的每一個設計換來了什麼。
+          的編碼只用到 {L} 個 XOR 公式。真的做成電路時，兩端各需要一個：發送端要一個把 {K} 個 data bit 變成 {N} 個位元的 <strong>encoder</strong>，接收端要一個檢查這 {N} 個位元、點亮警示燈的<strong>檢查電路</strong>
+          。這一章把兩個電路寫成兩個矩陣：generator matrix（生成矩陣）G 與 parity-check matrix（同位檢查矩陣）H，並從電路的角度說明它們的每一個設計換來了什麼。
         </p>
       </ModuleHeader>
-      <KeyPoint>G 是發送端的編碼器接線圖，H 是接收端的 {L} 盞警示燈：沒有雜訊時，送出的每個 codeword 都讓燈全暗。</KeyPoint>
+      <KeyPoint>G 是發送端的 encoder 接線圖，H 是接收端的 {L} 盞警示燈：沒有雜訊時，送出的每個 codeword 都讓燈全暗。</KeyPoint>
       <FlowBar moduleId={ID} />
 
       <div className="space-y-12">
-        <Stage kind="why" moduleId={ID} title="發送端要一個編碼器，接收端要一個檢查器">
+        <Stage kind="why" moduleId={ID} title="發送端要一個 encoder，接收端要一個檢查器">
           <Card title="兩端各一個 XOR 電路，寫下來就是兩個矩陣">
             <Pipeline message={message} />
             <div className="mt-3 grid grid-cols-1 gap-3 text-sm leading-relaxed text-slate-700 md:grid-cols-2">
               <div className="rounded-xl border border-data-300 bg-data-50/60 p-3">
                 <div className="mb-1 font-bold text-data-700">發送端：怎麼造</div>
-                拿到 {K} 個資料位元，要送出 {N} 個位元。第 1 章的 {L} 個公式（
+                拿到 {K} 個 data bit，要送出 {N} 個位元。第 1 章的 {L} 個公式（
                 <M>{`${texName(PARITY_CHECKS[0].name)} = ${PARITY_CHECKS[0].dataTerms.map(texName).join(' \\oplus ')}`}</M>
-                ……）就是這台<strong>編碼器</strong>
-                ：每一條輸出線都是幾個資料位元的 XOR。把「哪條資料線接到哪條輸出線」記成 0/1 表格，就是
-                <strong>生成矩陣 G</strong>。
+                ……）就是這台 <strong>encoder</strong>
+                ：每一條輸出線都是幾個 data bit 的 XOR。把「哪條資料線接到哪條輸出線」記成 0/1 表格，就是
+                <strong>generator matrix G</strong>。
               </div>
               <div className="rounded-xl border border-parity-300 bg-parity-50/60 p-3">
                 <div className="mb-1 font-bold text-parity-700">接收端：怎麼驗</div>
                 收到 {N} 個位元，卻不知道原本送了什麼，只能檢查。{L} 個<strong>檢查器</strong>各做一組 XOR、各接一盞
-                <strong>警示燈</strong>：每一組都是偶數個 1，燈全暗；有一組變成奇數，那盞燈就亮。把「每個檢查器盯著哪些位置」記成 0/1 表格，就是<strong>同位檢查矩陣 H</strong>。
+                <strong>警示燈</strong>：每一組都是偶數個 1，燈全暗；有一組變成奇數，那盞燈就亮。把「每個檢查器盯著哪些位置」記成 0/1 表格，就是 <strong>parity-check matrix H</strong>。
               </div>
             </div>
-            <p className="mt-3 text-sm text-slate-600">兩個電路都只用 XOR，而 XOR 就是 GF(2) 的加法，所以電路可以一格不漏地寫成矩陣：編碼與檢查都變成矩陣乘法，碼長變成 {LONG.n} 甚至上千位元，算法也完全一樣。</p>
+            <p className="mt-3 text-sm text-slate-600">兩個電路都只用 XOR，而 XOR 就是 GF(2) 的加法，所以電路可以一格不漏地寫成矩陣：編碼與檢查都變成矩陣乘法，code length（碼長）變成 {LONG.n} 甚至上千位元，算法也完全一樣。</p>
           </Card>
 
-          <Card title="發送端：G 是編碼器的接線圖">
+          <Card title="發送端：G 是 encoder 的接線圖">
             <p className="mb-3 text-sm text-slate-600">
-              G 的第 i 列 <M>{'g_i'}</M>，就是只有 <M>{'D_i = 1'}</M> 的訊息（只按下第 i 個開關）送進編碼器時送出的 codeword。用第 1 章的規則把這 {K} 個訊息各編一次：
+              G 的第 i 列 <M>{'g_i'}</M>，就是只有 <M>{'D_i = 1'}</M> 的訊息（只按下第 i 個開關）送進 encoder 時送出的 codeword。用第 1 章的規則把這 {K} 個訊息各編一次：
             </p>
             <div className="flex flex-wrap items-center gap-x-8 gap-y-3">
               <div className="min-w-0 flex-1 basis-[26rem] overflow-x-auto">
@@ -406,7 +406,7 @@ export default function M2Matrices() {
                   <thead>
                     <tr className="text-left text-xs text-slate-500">
                       <th className="py-1 pr-4">只有 Dᵢ = 1 的訊息</th>
-                      <th className="pr-4">用第 1 章的規則算同位位元</th>
+                      <th className="pr-4">用第 1 章的規則算 parity bit</th>
                       <th>codeword = G 的這一列</th>
                     </tr>
                   </thead>
@@ -445,7 +445,7 @@ export default function M2Matrices() {
                 </ul>
               </div>
               <div className="min-w-0 rounded-xl bg-slate-50 p-3 text-sm text-slate-700">
-                <div className="mb-1 font-semibold text-slate-900">按欄讀：第 j 條輸出線是哪幾個資料位元的 XOR</div>
+                <div className="mb-1 font-semibold text-slate-900">按欄讀：第 j 條輸出線是哪幾個 data bit 的 XOR</div>
                 <ul className="space-y-0.5">
                   {LAYOUT_74.map((p, j) => (
                     <li key={p.index}>
@@ -457,14 +457,14 @@ export default function M2Matrices() {
               </div>
             </div>
             <p className="mt-3 text-sm text-slate-600">
-              兩種讀法是同一張接線圖：按列看，是 {K} 條資料線各接到哪幾條輸出；按欄看，是 {N} 條輸出線各是哪幾個資料位元的 XOR。
+              兩種讀法是同一張接線圖：按列看，是 {K} 條資料線各接到哪幾條輸出；按欄看，是 {N} 條輸出線各是哪幾個 data bit 的 XOR。
             </p>
           </Card>
 
           <Card title="接收端：H 的每一列是一個檢查器">
             <p className="mb-3 text-sm text-slate-600">
               接收端把第 1 章的 {L} 個檢查做成 {L} 個<strong>檢查器</strong>
-              ：每個檢查器是一組 XOR，把它盯著的位置（包含同位位元自己）全部加起來，結果是 0 燈不亮，結果是 1 燈亮。把「盯著的位置記 1、沒盯著記 0」，每個檢查器就是 H 的一列：
+              ：每個檢查器是一組 XOR，把它盯著的位置（包含 parity bit 自己）全部加起來，結果是 0 燈不亮，結果是 1 燈亮。把「盯著的位置記 1、沒盯著記 0」，每個檢查器就是 H 的一列：
             </p>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[560px] text-sm">
@@ -496,7 +496,7 @@ export default function M2Matrices() {
               <MatrixView matrix={hRows} name="H =" colLabels={POSITIONS} rowLabels={LAMP} />
               <div className="min-w-0 flex-1 basis-72 space-y-2 text-sm text-slate-600">
                 <p>
-                  {L} 個檢查器的輸出就是 {L} 盞警示燈，合起來是一個 {L} 位元的訊號，叫做 <strong>Syndrome（徵狀）</strong>：<M>{`s = Hr^{T} = (${S_TEX})^{T}`}</M>，r 是接收端收到的 {N} 個位元，<M>{S_TEX}</M> 依序是 {LAMP.join('、')} 三盞燈。收到合法的 codeword
+                  {L} 個檢查器的輸出就是 {L} 盞警示燈，合起來是一個 {L} 位元的訊號，叫做 <strong>syndrome（徵狀）</strong>：<M>{`s = Hr^{T} = (${S_TEX})^{T}`}</M>，r 是接收端收到的 {N} 個位元，<M>{S_TEX}</M> 依序是 {LAMP.join('、')} 三盞燈。收到合法的 codeword
                   時，每一組都是偶數個 1，燈全暗：
                   <M>{'Hc^{T} = 0'}</M>。{hMatches ? '（✓ 和本站的 H 完全一致。）' : '（✗ 與 H74 不一致）'}
                 </p>
@@ -520,7 +520,7 @@ export default function M2Matrices() {
                 <a href="#/syndrome" className={LINK}>
                   第 3 章
                 </a>
-                會用 <M>{'r = c + e_j'}</M>（<M>{'e_j'}</M>：只在位置 j 出錯的錯誤向量）證明 <M>{'Hr^{T} = Hc^{T} + He_j^{T} = 0 + h_j'}</M>
+                會用 <M>{'r = c + e_j'}</M>（<M>{'e_j'}</M>：只在位置 j 出錯的 error vector）證明 <M>{'Hr^{T} = Hc^{T} + He_j^{T} = 0 + h_j'}</M>
                 ，並用它解碼。下一節 H 的五個設計，都從這一句推出來。
               </p>
             </div>
@@ -528,20 +528,20 @@ export default function M2Matrices() {
         </Stage>
 
         <Stage kind="definition" moduleId={ID} title="G 的三個設計，H 的五個設計">
-          <p className="text-sm text-slate-600">發送端的 G 有三個設計，讓編碼器只是幾條 XOR 接線、資料拿得回來；接收端的 H 有五個設計，讓燈號指得出錯在哪裡。每一個都先說它在電路上換來什麼，再看數學。</p>
+          <p className="text-sm text-slate-600">發送端的 G 有三個設計，讓 encoder 只是幾條 XOR 接線、資料拿得回來；接收端的 H 有五個設計，讓燈號指得出錯在哪裡。每一個都先說它在電路上換來什麼，再看數學。</p>
           <LabGrid
             main={
-              <Card title={`G 的設計 ①：XOR 可以疊加，編碼器只要記 ${K} 列`}>
+              <Card title={`G 的設計 ①：XOR 可以疊加，encoder 只要記 ${K} 列`}>
                 <div className="space-y-2 text-sm leading-relaxed text-slate-700">
                   <p>
-                    {TABLE_ROWS} 種訊息，最直接的編碼器是查表：每種訊息各存一個 {N} 位元的 codeword。可是每個同位位元都是資料位元的 XOR，而 XOR 滿足<strong>疊加</strong>：兩個訊息逐位相加，編出來的 codeword 也跟著相加。任何訊息都拆得成幾個「只有一個{' '}
+                    {TABLE_ROWS} 種訊息，最直接的 encoder 是查表：每種訊息各存一個 {N} 位元的 codeword。可是每個 parity bit 都是 data bit 的 XOR，而 XOR 滿足<strong>疊加</strong>：兩個訊息逐位相加，編出來的 codeword 也跟著相加。任何訊息都拆得成幾個「只有一個{' '}
                     <M>{'D_i = 1'}</M>」的訊息，所以 G 的 {K} 列就拼得出任何 codeword：
                   </p>
                   <Tex block>{superTex}</Tex>
                   <p>
                     按下哪幾個開關，就把那幾列加起來：
                     <M>{`c = ${Array.from({ length: K }, (_, i) => `D_${i + 1} g_${i + 1}`).join(' + ')} = mG`}</M>
-                    。編碼器只是一組 XOR 接線，不用存一張表；碼越長，省下的越多。
+                    。這樣 encoder 只是一組 XOR 接線，不用存一張表；code 越長，省下的越多。
                   </p>
                 </div>
               </Card>
@@ -588,7 +588,7 @@ export default function M2Matrices() {
                   </p>
                   <p className="mt-2 text-xs text-slate-500">c 跟著共用範例訊息 m 變化（可在下方「實驗」區修改）；c′ 從上方選單挑。</p>
                 </Card>
-                <Card title="查表 vs. G：編碼器要存多少">
+                <Card title="查表 vs. G：encoder 要存多少">
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
@@ -628,22 +628,22 @@ export default function M2Matrices() {
           <Card title="G 的設計 ②③：資料原封不動，不同訊息就不會撞在一起">
             <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
               <div className="min-w-0 space-y-2 text-sm leading-relaxed text-slate-700">
-                <div className="font-semibold text-slate-900">② 資料欄是單位矩陣：系統碼（Systematic Code）</div>
+                <div className="font-semibold text-slate-900">② 資料欄是 identity matrix（單位矩陣）：systematic code</div>
                 <MatrixView matrix={G74} name="G =" colLabels={colLabels74} rowLabels={DATA_LABELS} cellClass={(_, j, v) => (LAYOUT_74[j].role === 'data' ? (v ? 'bg-data-100 text-data-700' : 'bg-data-50 text-data-300') : undefined)} />
                 <p>
                   位置 {DATA_POS}（{DATA_LABELS.join('、')}）那 {K} 欄合起來是 <M>{`I_${K}`}</M>
-                  {gDataIsIdentity ? '' : '（✗ 不是單位矩陣）'}：這 {K} 條輸出線都是直通的導線，codeword 原封不動地帶著訊息。接收端把錯誤更正之後，直接從位置 {DATA_POS} 取出資料，不需要任何反運算。
+                  {gDataIsIdentity ? '' : '（✗ 不是 identity matrix）'}：這 {K} 條輸出線都是直通的導線，codeword 原封不動地帶著訊息。接收端把錯誤更正之後，直接從位置 {DATA_POS} 取出資料，不需要任何反運算。
                 </p>
               </div>
               <div className="min-w-0 space-y-2 text-sm leading-relaxed text-slate-700">
                 <div className="font-semibold text-slate-900">③ 跟著 ② 成立：不同訊息 → 不同 codeword</div>
                 <p>
                   訊息不同，位置 {DATA_POS} 上的位元就不同，codeword 也就不同：G 的 {K} 列互相獨立，rank G = {RANK_G}（
-                  <PrimerLink k={1} label="生成與維度" />
+                  <PrimerLink k={1} label="Span 與 dimension" />
                   ），資訊沒有在編碼時遺失。
                 </p>
                 <p>
-                  反過來，要讓兩個訊息撞在一起，就得先破壞 ②。把 D{K} 接得和 D1 一模一樣（第 {K} 列換成第 1 列），D{K} 那一欄就不再是單位欄：
+                  反過來，要讓兩個訊息撞在一起，就得先破壞 ②。把 D{K} 接得和 D1 一模一樣（第 {K} 列換成第 1 列），D{K} 那一欄就不再是 identity column：
                 </p>
                 <table className="text-sm">
                   <tbody className="font-mono">
@@ -700,8 +700,8 @@ export default function M2Matrices() {
                 </p>
                 <p>硬要多保護第 {PATTERNS + 1} 個位置，它的欄只剩兩種選擇：全暗（違反 ①，它出錯時錯誤隱形），或和某個位置一樣（違反 ②，兩者出錯時分不出是誰）。</p>
                 <p>
-                  Hamming 把 {PATTERNS} 種亮法全部用上，碼長 <M>{`n = 2^{${L}} - 1 = ${PATTERNS}`}</M>
-                  ：要能指出是哪一位出錯，{L} 個檢查器能保護的長度已經到最大。第 1 章的 <M>{'k + \\ell \\le 2^{\\ell} - 1'}</M>（ℓ = 同位位元的個數）就是同一件事：{N} 個位置扣掉 {L} 個同位位元，剩 {N - L} 個資料位元。
+                  Hamming 把 {PATTERNS} 種亮法全部用上，code length <M>{`n = 2^{${L}} - 1 = ${PATTERNS}`}</M>
+                  ：要能指出是哪一位出錯，{L} 個檢查器能保護的長度已經到最大。第 1 章的 <M>{'k + \\ell \\le 2^{\\ell} - 1'}</M>（ℓ = parity bit 的個數）就是同一件事：{N} 個位置扣掉 {L} 個 parity bit，剩 {N - L} 個 data bit。
                 </p>
                 <p className="text-slate-600">
                   多一盞燈，能看的位置變成 <M>{`2^{${L + 1}} - 1 = ${hammingN(L + 1)}`}</M> 個；{LONG.m} 盞燈可以看 {LONG.n} 個位置（
@@ -730,7 +730,7 @@ export default function M2Matrices() {
             <div className="space-y-2 text-sm leading-relaxed text-slate-700">
               <p>
                 ①②③ 只要求 {N} 欄是 {N} 種不同的非零亮法，並沒有規定誰排在哪。數學上欄的順序可以任意排：把 H 的欄換個順序，只是把 codeword 的位置重新編號，得到的是
-                <strong>等價的碼</strong>（Equivalent Code），能修幾個錯、偵測幾個錯都一樣。
+                <strong>equivalent code</strong>，能修幾個錯、偵測幾個錯都一樣。
               </p>
               <p>
                 Hamming 讓第 j 欄等於 j 的二進位（{LAMP[0]} 是最低位），是工程上的選擇：{L} 盞燈讀成二進位數字，就直接是出錯位置的編號，接收端不用存「燈號 → 位置」的對照表。第 1 章的規則（{LAMP.join('、')} 各管二進位含 {LAMP_VALUES}{' '}
@@ -758,7 +758,7 @@ export default function M2Matrices() {
               </span>
             </div>
             <p className="mt-3 text-sm text-slate-700">
-              換成別的欄順序也解得出來，只是燈號和位置對不上，要多一張對照表。把 {L} 盞燈直接接上解碼器、翻回錯的那一位，是
+              換成別的欄順序也解得出來，只是燈號和位置對不上，要多一張對照表。把 {L} 盞燈直接接上 decoder（解碼器）、翻回錯的那一位，是
               <a href="#/syndrome" className={`mx-1 ${LINK}`}>
                 第 3 章
               </a>
@@ -766,18 +766,18 @@ export default function M2Matrices() {
             </p>
           </Card>
 
-          <Card title={`H 的設計 ⑤：同位位元放在 ${PARITY_POS}`}>
+          <Card title={`H 的設計 ⑤：parity bit 放在 ${PARITY_POS}`}>
             <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-2">
               <div className="min-w-0 space-y-2 text-sm leading-relaxed text-slate-700">
                 <p>
-                  位置 {PARITY_POS} 的二進位只有一個 1，所以 H 的這 {L} 欄都只有一個 1：每個同位位元只出現在一條檢查裡。每條檢查方程只有一個未知數，移項就能只用資料位元把它算出來，公式直接從 H 的那一列讀出來，也就是第 1 章的 {L} 個公式。編碼器因此是 {L}{' '}
+                  位置 {PARITY_POS} 的二進位只有一個 1，所以 H 的這 {L} 欄都只有一個 1：每個 parity bit 只出現在一條檢查裡。每條 parity-check equation（同位檢查方程）只有一個未知數，移項就能只用 data bit 把它算出來，公式直接從 H 的那一列讀出來，也就是第 1 章的 {L} 個公式。所以 encoder 是 {L}{' '}
                   組獨立的 XOR，同時算完，彼此不用互相等。
                 </p>
                 <MatrixView matrix={H74} name="H =" size="sm" colLabels={POSITIONS} rowLabels={LAMP} highlightCols={PARITY_INDICES.slice()} colHighlightClass="bg-parity-100 text-parity-700" />
                 <ul className="space-y-0.5">
                   {PARITY_CHECKS.map((pc, k) => (
                     <li key={pc.name}>
-                      {pc.name} 那一列只含 {unknownsPerRow(STD_PARITY)[k]} 個同位位元 → <M>{`${texName(pc.name)} = ${pc.dataTerms.map(texName).join(' \\oplus ')}`}</M>
+                      {pc.name} 那一列只含 {unknownsPerRow(STD_PARITY)[k]} 個 parity bit → <M>{`${texName(pc.name)} = ${pc.dataTerms.map(texName).join(' \\oplus ')}`}</M>
                     </li>
                   ))}
                 </ul>
@@ -786,7 +786,7 @@ export default function M2Matrices() {
                 <div className="font-semibold text-slate-900">如果改放在最後的 {ALT_PARITY.join('、')}</div>
                 <MatrixView matrix={H74} name="H =" size="sm" colLabels={POSITIONS} rowLabels={LAMP} highlightCols={ALT_PARITY.map((p) => p - 1)} colHighlightClass="bg-rose-100 text-rose-800" />
                 <p>
-                  {L} 條檢查分別含 {unknownsPerRow(ALT_PARITY).join('、')} 個同位位元：每條方程都有好幾個未知數。照方程直接接線，同位位元彼此牽連，一個要等另一個算完；想讓它們同時算，得先解一次聯立方程（高斯消去），把每個同位位元改寫成資料位元的 XOR
+                  {L} 條檢查分別含 {unknownsPerRow(ALT_PARITY).join('、')} 個 parity bit：每條方程都有好幾個未知數。照方程直接接線，parity bit 彼此牽連，一個要等另一個算完；想讓它們同時算，得先用 Gaussian elimination（高斯消去）解一次聯立方程，把每個 parity bit 改寫成 data bit 的 XOR
                   {ALT_SOLVABLE ? '' : '（✗ 這幾欄甚至不獨立，解不出來）'}
                   。解完也做得到，只是公式不能再從 H 直接讀出來。
                 </p>
@@ -797,7 +797,7 @@ export default function M2Matrices() {
 
         <Stage kind="calculation" moduleId={ID} title="HGᵀ = 0：發送端造的，接收端都放行">
           <Card title="HGᵀ = 0：沒有雜訊時，燈全暗">
-            <p className="mb-3 text-sm leading-relaxed text-slate-700">發送端送出的任何東西，只要途中沒有雜訊，接收端的 {L} 盞燈全部不亮。寫成矩陣，就是 H 乘上 G 的轉置等於零矩陣：</p>
+            <p className="mb-3 text-sm leading-relaxed text-slate-700">發送端送出的任何東西，只要途中沒有雜訊，接收端的 {L} 盞燈全部不亮。寫成矩陣，就是 H 乘上 G 的 transpose（轉置）等於零矩陣：</p>
             <div className="flex flex-wrap items-center gap-4">
               <MatrixView matrix={H74} name="H" size="sm" rowLabels={LAMP} />
               <span>·</span>
@@ -815,7 +815,7 @@ export default function M2Matrices() {
                 </p>
                 <Tex block>{'Hc^T = H(mG)^T = H\\,G^T m^T = (HG^T)\\,m^T = 0'}</Tex>
                 <p>
-                  兩邊轉置，同一件事也常寫成 <M>{'GH^{T} = 0'}</M>。
+                  兩邊取 transpose，同一件事也常寫成 <M>{'GH^{T} = 0'}</M>。
                 </p>
               </div>
             </div>
@@ -825,51 +825,51 @@ export default function M2Matrices() {
             <Tex block>{`C = \\{\\, mG : m \\in \\mathbb{F}_2^{${K}} \\,\\} = \\{\\, c \\in \\mathbb{F}_2^{${N}} : Hc^{T} = 0 \\,\\} = \\ker H`}</Tex>
             <p>
               <M>{'\\mathbb{F}_2'}</M> 就是導論的 GF(2)（只有 0、1，加法 mod 2），<M>{`\\mathbb{F}_2^{${N}}`}</M> 就是全部 <M>{`2^{${N}}`}</M> 個 {N} 位元字串。左邊是發送端造得出的全部 codeword，右邊是接收端放行（燈全暗）的全部 {N} 位元字串。
-              <M>{'HG^T = 0'}</M> 只說了「造出來的都會被放行」；反過來，放行的也一定造得出來：兩邊都是剛好 {2 ** RANK_G} 個，一個不多、一個不少。<M>{'c = mG'}</M> 與 <M>{'Hc^{T} = 0'}</M> 是同一個碼的兩個視角。
+              <M>{'HG^T = 0'}</M> 只說了「造出來的都會被放行」；反過來，放行的也一定造得出來：兩邊都是剛好 {2 ** RANK_G} 個，一個不多、一個不少。<M>{'c = mG'}</M> 與 <M>{'Hc^{T} = 0'}</M> 是同一個 code 的兩個視角。
             </p>
           </Callout>
-          <Expandable title="進階：用維度證明兩者相等">
+          <Expandable title="進階：用 dimension（維度）證明兩者相等">
             <p>
-              G 從「生成」的角度描述 code（G 的<strong>列空間</strong>），H 從「檢查」的角度描述 code（H 的<strong>核空間</strong>）。
+              G 從「生成」的角度描述 code：code 是 G 各列的 span（生成空間），也就是 G 的 <strong>row space（列空間）</strong>；H 從「檢查」的角度描述 code：code 是 H 的 <strong>kernel</strong>。
               <M>{'HG^T = 0'}</M> 只說明了 <M>{'\\{mG\\} \\subseteq \\ker H'}</M>
-              。兩者剛好相等，靠的是比較維度：
+              。兩者剛好相等，靠的是比較 dimension：
             </p>
             <ul className="list-disc space-y-1 pl-5">
               <li>
-                G 的 D1–D4 那 {K} 欄是單位矩陣，所以 G 的 {K} 列線性獨立，
+                G 的 D1–D4 那 {K} 欄是 identity matrix，所以 G 的 {K} 列是 linearly independent（線性獨立），
                 <M>{`\\dim\\{mG\\} = \\operatorname{rank} G = ${RANK_G}`}</M>（
-                <PrimerLink k={1} label="生成與維度" />
+                <PrimerLink k={1} label="Span 與 dimension" />
                 ）。
               </li>
               <li>
-                H 的 {LAMP.join('、')} 那 {L} 欄是單位矩陣，所以 rank H = {RANK_H}；由 Rank–Nullity Theorem <M>{`\\dim \\ker H = ${N} - ${RANK_H} = ${N - RANK_H}`}</M>（
-                <PrimerLink k={2} label="核空間" />
+                H 的 {LAMP.join('、')} 那 {L} 欄是 identity matrix，所以 rank H = {RANK_H}；由 rank–nullity theorem（秩–零度定理）<M>{`\\dim \\ker H = ${N} - ${RANK_H} = ${N - RANK_H}`}</M>（
+                <PrimerLink k={2} label="Kernel" />
                 ）。
               </li>
             </ul>
             <p>
-              一個 {RANK_G} 維子空間包含在一個 {N - RANK_H} 維子空間裡，維度又相同，兩者只能相等（在 <M>{'\\mathbb{F}_2'}</M> 上就是：<M>{`2^{${RANK_G}}`}</M> 個元素的集合包含在 <M>{`2^{${N - RANK_H}}`}</M> 個元素的集合裡）。
+              一個 {RANK_G} 維 subspace（子空間）包含在一個 {N - RANK_H} 維 subspace 裡，dimension 又相同，兩者只能相等（在 <M>{'\\mathbb{F}_2'}</M> 上就是：<M>{`2^{${RANK_G}}`}</M> 個元素的集合包含在 <M>{`2^{${N - RANK_H}}`}</M> 個元素的集合裡）。
             </p>
           </Expandable>
           <div id={`${ID}-toolbox`} className="scroll-mt-28">
-            <Expandable key={primerOpens} defaultOpen={primerOpens > 0} title="進階：線性代數工具箱（矩陣乘向量、生成與維度、核空間）">
+            <Expandable key={primerOpens} defaultOpen={primerOpens > 0} title="進階：線性代數工具箱（矩陣乘向量、span 與 dimension、kernel）">
               <p className="text-slate-600">
-                發送端造得出哪些字、接收端放行哪些字，線性代數各有一個名字：G 的<strong>列空間</strong>與 H 的<strong>核空間</strong>
+                發送端造得出哪些字、接收端放行哪些字，線性代數各有一個名字：G 的 <strong>row space</strong> 與 H 的 <strong>kernel</strong>
                 。工具箱整理這一章用到的幾個概念（頂端的選單切換），每個都有即時計算的小例子。
               </p>
               <LinAlgPrimer tab={primerTab} onTab={setPrimerTab} framed={false} />
             </Expandable>
           </div>
 
-          <Card title="線性碼（Linear Code）：兩個 codeword 疊加，燈照樣全暗">
+          <Card title="Linear code（線性碼）：兩個 codeword 疊加，燈照樣全暗">
             <div className="space-y-2 text-sm text-slate-600">
               <p>
                 每個檢查器只做 XOR：兩個讓燈全暗的字疊加，每個檢查器看到的是「偶數個 1」加「偶數個 1」，還是偶數，燈照樣全暗。寫成算式：若 c、c′ 都是 codeword，<M>{"H(c+c')^{T} = Hc^{T} + Hc'^{T} = 0 + 0 = 0"}</M>。
               </p>
               <div className="rounded-lg bg-slate-50 p-2 text-center font-semibold text-slate-800">任兩個 codeword 相加，還是 codeword。</div>
               <p>
-                所以 <M>{'C = \\ker H'}</M> 是 <M>{`\\mathbb{F}_2^{${N}}`}</M> 的<strong>子空間</strong>；codeword 的集合是子空間的 code，稱為
-                <strong>線性碼</strong>。<M>k</M> 是子空間的維度，所以有 <M>{'2^k'}</M> 個 codeword；Hamming({N},{K}) 就是 <M>{`k = ${K}`}</M> 的線性碼，第 4 章再看它的最小距離 <M>{'d_{\\min}'}</M>。
+                所以 <M>{'C = \\ker H'}</M> 是 <M>{`\\mathbb{F}_2^{${N}}`}</M> 的 <strong>subspace</strong>；codeword 的集合是 subspace 的 code，稱為
+                <strong>linear code</strong>。<M>k</M> 是 subspace 的 dimension，所以有 <M>{'2^k'}</M> 個 codeword；Hamming({N},{K}) 就是 <M>{`k = ${K}`}</M> 的 linear code，第 4 章再看它的 minimum distance <M>{'d_{\\min}'}</M>。
               </p>
             </div>
           </Card>
@@ -983,7 +983,7 @@ export default function M2Matrices() {
                 body: <Tex block>{`c = (${message.join(',')})\\,${matrixToTex(G74)}`}</Tex>,
               },
               {
-                title: '列的線性組合',
+                title: '列的 linear combination',
                 body: <Tex block>{`c = ${message.map((b, i) => `${b}\\cdot g_${i + 1}`).join(' + ')} = ${c.join('')}`}</Tex>,
               },
               {
@@ -992,25 +992,25 @@ export default function M2Matrices() {
               },
             ]}
           />
-          <Expandable title="進階：秩、零度與線性代數實驗區">
+          <Expandable title="進階：rank、nullity（零度）與線性代數實驗區">
             <RankNullityPrimer />
             <div className="pt-3">
               <h3 className="text-base font-bold text-slate-900">線性代數實驗區：換成任何矩陣</h3>
-              <p className="text-sm text-slate-600">高斯消去、秩、核空間與 Rank–Nullity Theorem，可以在任何 0/1 矩陣上試。預設是 H，按「有相依列」等按鈕換成其他例子。</p>
+              <p className="text-sm text-slate-600">Gaussian elimination、rank、kernel 與 rank–nullity theorem，可以在任何 0/1 矩陣上試。預設是 H，按「有相依列」等按鈕換成其他例子。</p>
             </div>
             <LinearAlgebraLab />
           </Expandable>
         </Stage>
 
-        <Stage kind="conclusion" moduleId={ID} title="同一個碼：G 怎麼造，H 怎麼驗">
+        <Stage kind="conclusion" moduleId={ID} title="同一個 code：G 怎麼造，H 怎麼驗">
           <Callout kind="key" title="結論">
             <p>
-              <strong>發送端</strong>：G 的 {K} 列就是編碼器的接線圖，
+              <strong>發送端</strong>：G 的 {K} 列就是 encoder 的接線圖，
               <M>{'c = mG'}</M>；XOR 可以疊加，所以只要記 {K} 列，不用存表；資料欄是 <M>{`I_${K}`}</M>，codeword 原封不動地帶著訊息，不同訊息也就一定送出不同的 codeword。
             </p>
             <p>
-              <strong>接收端</strong>：H 的 {L} 列就是 {L} 個檢查器、{L} 盞警示燈，第 j 欄是位置 j 出錯時亮的燈。五個設計（非零、互不相同、用滿 {PATTERNS} 種亮法、二進位順序、同位位元在 {PARITY_POS}
-              ）讓每個位置都有一種專屬、能直接讀成位置編號的亮法，編碼器也只是 {L} 組各算各的 XOR。
+              <strong>接收端</strong>：H 的 {L} 列就是 {L} 個檢查器、{L} 盞警示燈，第 j 欄是位置 j 出錯時亮的燈。五個設計（非零、互不相同、用滿 {PATTERNS} 種亮法、二進位順序、parity bit 在 {PARITY_POS}
+              ）讓每個位置都有一種專屬、能直接讀成位置編號的亮法，encoder 也只是 {L} 組各算各的 XOR。
             </p>
             <p>
               <M>{'HG^T = 0'}</M>：沒有雜訊時燈全暗；而且 {ALL_WORDS} 個字串裡，燈全暗的正好是造得出的 {2 ** RANK_G} 個：
@@ -1025,11 +1025,11 @@ export default function M2Matrices() {
                 right: `燈全暗只代表收到的是某個 codeword。雜訊若剛好把一個 codeword 變成另一個（至少要翻 ${D_MIN} 個位元），燈照樣全暗（第 4 章）。`,
               },
               {
-                wrong: 'H 的第 j 欄一定要是 j 的二進位，否則就不是 Hamming Code。',
-                right: '欄的順序可以任意排，排列後是等價的碼，能力完全一樣；二進位順序只是讓燈號直接讀成位置。第二課的循環 Hamming Code 就用另一種排法。',
+                wrong: 'H 的第 j 欄一定要是 j 的二進位，否則就不是 Hamming code。',
+                right: '欄的順序可以任意排，排列後是 equivalent code，能力完全一樣；二進位順序只是讓燈號直接讀成位置。第二課把 Hamming code 寫成 cyclic code（循環碼），用的就是另一種排法。',
               },
               {
-                wrong: 'G 和 H 描述兩個不同的碼。',
+                wrong: 'G 和 H 描述兩個不同的 code。',
                 right: `G 告訴發送端怎麼造、H 告訴接收端怎麼驗，描述的是同一組 ${2 ** RANK_G} 個 codeword：C = {mG} = ker H。`,
               },
             ]}
@@ -1039,12 +1039,12 @@ export default function M2Matrices() {
               links={[
                 {
                   to: 'a-5',
-                  text: '生成矩陣 G → 生成多項式（循環碼的編碼器）',
+                  text: 'Generator matrix G → generator polynomial（生成多項式）：cyclic code 的 encoder',
                 },
                 { to: 'a-9', text: '用 GF(8) 推導 H：一條方程 c(α) = 0' },
                 { to: 'a-1', text: '這些矩陣運算都在 GF(2) 中' },
               ]}
-              title="延伸：代數基礎與循環碼"
+              title="延伸：代數基礎與 cyclic codes"
             />
           </Card>
         </Stage>
@@ -1129,7 +1129,7 @@ function LinearAlgebraLab() {
             </div>
           </Card>
 
-          <Card title="2. 高斯消去（Gaussian elimination）：GF(2) 版本">
+          <Card title="2. Gaussian elimination：GF(2) 版本">
             <div className="flex flex-wrap items-center gap-4">
               <MatrixView
                 matrix={shownMatrix}
@@ -1146,8 +1146,8 @@ function LinearAlgebraLab() {
                 <div className="text-xs text-slate-500">
                   步驟 {shownStep} / {res.steps.length}
                 </div>
-                <div className="mt-1 min-h-[28px]">{res.steps.length === 0 ? '原始矩陣已是 RREF，不需要列運算' : shownStep === 0 ? '原始矩陣' : <Tex>{formatRowOp(res.steps[shownStep - 1].op)}</Tex>}</div>
-                {shownStep === res.steps.length && <div className="mt-1 text-xs text-indigo-700">簡化列梯形（RREF）；樞紐欄（pivot columns）以藍色標示</div>}
+                <div className="mt-1 min-h-[28px]">{res.steps.length === 0 ? '原始矩陣已是 RREF，不需要 row operation（列運算）' : shownStep === 0 ? '原始矩陣' : <Tex>{formatRowOp(res.steps[shownStep - 1].op)}</Tex>}</div>
+                {shownStep === res.steps.length && <div className="mt-1 text-xs text-indigo-700">RREF；pivot column 以藍色標示</div>}
                 <div className="mt-2 flex gap-2">
                   <button className="btn-ghost" disabled={shownStep === 0} onClick={() => setStep(shownStep - 1)}>
                     <ChevronLeft className="h-4 w-4" />
@@ -1163,7 +1163,7 @@ function LinearAlgebraLab() {
             </div>
           </Card>
 
-          <Card title={`3. 核空間 ker M 的全部元素（共 ${kernel.length} 個）`}>
+          <Card title={`3. Kernel ker M 的全部元素（共 ${kernel.length} 個）`}>
             <div className="flex flex-wrap gap-1.5">
               {kernel.map((v) => (
                 <span key={bitsToString(v)} className={`rounded-md border px-1.5 py-0.5 font-mono text-xs ${v.every((b) => b === 0) ? 'border-slate-200 text-slate-400' : 'border-indigo-200 bg-indigo-50 text-indigo-800'}`}>
@@ -1182,30 +1182,30 @@ function LinearAlgebraLab() {
       aside={
         <>
           <div className="grid grid-cols-2 gap-2">
-            <Stat label="秩 rank(M)" value={res.rank} sub="樞紐欄數" tone="indigo" />
-            <Stat label="零度 nullity(M)" value={cols - res.rank} sub="= dim ker M" tone="amber" />
+            <Stat label="rank(M)" value={res.rank} sub="pivot column 數" tone="indigo" />
+            <Stat label="nullity(M)" value={cols - res.rank} sub="= dim ker M" tone="amber" />
             <Stat label="欄數" value={cols} />
             <Stat label="|ker M|（元素個數）" value={kernel.length} sub={<M>{`2^{${cols - res.rank}}`}</M>} tone="emerald" />
           </div>
-          <Card title="Rank–Nullity Theorem">
+          <Card title="Rank–nullity theorem">
             <Tex block>{`\\operatorname{rank}(M) + \\operatorname{nullity}(M) = \\text{欄數}`}</Tex>
             <Tex block>{`${res.rank} + ${cols - res.rank} = ${cols}\\ \\checkmark`}</Tex>
           </Card>
-          <Card title="核空間的基底（Basis of ker M）">
+          <Card title="ker M 的 basis">
             {basis.length === 0 ? (
-              <p className="text-sm text-slate-500">ker M = {'{0}'}，基底為空集合。</p>
+              <p className="text-sm text-slate-500">ker M = {'{0}'}，basis 為空集合。</p>
             ) : (
               <div className="space-y-1">
                 {basis.map((b, k) => (
                   <div key={k} className="flex items-center gap-2 text-sm">
                     <M>{`v_{${k + 1}} =`}</M>
                     <span className="mono">{bitsToString(b)}</span>
-                    <span className="text-xs text-slate-400">（自由變數 x{res.freeCols[k] + 1} = 1）</span>
+                    <span className="text-xs text-slate-400">（free variable x{res.freeCols[k] + 1} = 1）</span>
                   </div>
                 ))}
               </div>
             )}
-            <p className="mt-2 text-xs text-slate-500">每個自由欄（free column）產生一個基底向量；基底向量的個數就是維度。</p>
+            <p className="mt-2 text-xs text-slate-500">每個 free column 產生一個 basis 向量；basis 向量的個數就是 dimension。</p>
           </Card>
           <Misconceptions
             items={[
@@ -1213,20 +1213,20 @@ function LinearAlgebraLab() {
                 wrong: `nullity(H) = ${N - RANK_H}，所以 ker H 有 ${N - RANK_H} 個元素。`,
                 right: (
                   <>
-                    nullity 是維度。{N - RANK_H} 維的 GF(2) 向量空間有 <M>{`2^{${N - RANK_H}} = ${2 ** (N - RANK_H)}`}</M> 個元素（每個基底係數可選 0 或 1）。
+                    nullity 是 dimension。{N - RANK_H} 維的 GF(2) vector space（向量空間）有 <M>{`2^{${N - RANK_H}} = ${2 ** (N - RANK_H)}`}</M> 個元素（每個 basis 係數可選 0 或 1）。
                   </>
                 ),
               },
               {
-                wrong: 'ker H 的基底是唯一的。',
-                right: `基底不唯一（例如 G 的 ${G74.length} 列也是一組基底），但基底向量的個數（維度）是唯一的。`,
+                wrong: 'ker H 的 basis 是唯一的。',
+                right: `ker H 的 basis 不唯一（例如 G 的 ${G74.length} 列也是一組 basis），但 basis 向量的個數（dimension）是唯一的。`,
               },
             ]}
           />
           <Expandable title="證明：|ker M| = 2^nullity">
             <p>
-              設 ker M 的基底是 <M>{'v_1, v_2, \\dots'}</M>，共 nullity M 個向量，則每個元素可唯一寫成 <M>{'a_1v_1 + a_2v_2 + \\cdots'}</M>
-              ，其中每個係數 <M>{'\\in \\{0,1\\}'}</M>。係數有 <M>{'2^{\\operatorname{nullity} M}'}</M> 種選法，且由線性獨立性，不同係數給出不同向量。
+              設 ker M 的 basis 是 <M>{'v_1, v_2, \\dots'}</M>，共 nullity M 個向量，則每個元素可唯一寫成 <M>{'a_1v_1 + a_2v_2 + \\cdots'}</M>
+              ，其中每個係數 <M>{'\\in \\{0,1\\}'}</M>。係數有 <M>{'2^{\\operatorname{nullity} M}'}</M> 種選法，且由 linear independence，不同係數給出不同向量。
             </p>
           </Expandable>
         </>

@@ -198,7 +198,7 @@ export function ModuleHeader({ moduleId, children }: { moduleId: string; childre
   return (
     <header className="mb-4">
       <div className="mb-1 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
-        {m.lesson === 2 ? `第二課 Lesson 2 · ${m.num}` : m.group === 'algebra' ? `代數基礎與循環碼 Algebra · ${m.num}` : m.advanced ? '進階數學 Advanced' : `第一課 Lesson 1 · ${m.num === '0' ? '導論' : `第 ${m.num} 章`}`}
+        {m.lesson === 2 ? `第二課 Lesson 2 · ${m.num}` : m.group === 'algebra' ? `代數基礎與 cyclic codes · ${m.num}` : m.advanced ? '進階數學 Advanced' : `第一課 Lesson 1 · ${m.num === '0' ? '導論' : `第 ${m.num} 章`}`}
         <span className="h-px flex-1 bg-slate-200" />
       </div>
       <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">{m.title}</h1>

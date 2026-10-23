@@ -28,43 +28,43 @@ export default function A1GF2() {
   return (
     <AlgebraUnit
       id={ID}
-      lead={<p>這一章要回答一個問題：「線性代數已經能處理 Hamming Code，為什麼還需要多項式、GF(8)、循環碼？」第一步，先把我們一直在用、卻沒有正式命名的運算規則說清楚——GF(2)。</p>}
+      lead={<p>這一章要回答一個問題：「線性代數已經能處理 Hamming code，為什麼還需要多項式、GF(8)、cyclic code？」第一步，先把我們一直在用、卻沒有正式命名的運算規則說清楚——GF(2)。</p>}
       takeaway={<>GF(2) 加法是 XOR 閘、乘法是 AND 閘；雜訊翻轉位元就是加 1，再加一次就復原。</>}
       why={{
-        title: 'Hamming Code 早就在用 GF(2)',
+        title: 'Hamming code 早就在用 GF(2)',
         body: (
           <Plain>
             <p>
-              先看位元在硬體裡是什麼：一條導線上的高、低電壓，或記憶體單元裡有沒有電荷。雜訊、干擾、宇宙射線會讓 0 變 1、1 變 0，這就是位元翻轉（bit flip）。如果規定 <M>{'1 + 1 = 0'}</M>，「翻轉」就正好是「加 1」：<M>{'0 + 1 = 1'}</M>、<M>{'1 + 1 = 0'}</M>。所以接收端拿到的 r，就是送出的 c 加上一個標出翻轉位置的錯誤向量 e：<M>{'r = c + e'}</M>。
+              先看位元在硬體裡是什麼：一條導線上的高、低電壓，或記憶體單元裡有沒有電荷。雜訊、干擾、宇宙射線會讓 0 變 1、1 變 0，這就是位元翻轉（bit flip）。如果規定 <M>{'1 + 1 = 0'}</M>，「翻轉」就正好是「加 1」：<M>{'0 + 1 = 1'}</M>、<M>{'1 + 1 = 0'}</M>。所以接收端拿到的 r，就是送出的 c 加上一個標出翻轉位置的 error vector e：<M>{'r = c + e'}</M>。
             </p>
             <p>
-              第一課計算同位位元時，我們寫 <M>{'P_1 = D_1 \\oplus D_2 \\oplus D_4'}</M>；檢查 codeword 時寫 <M>{'Hc^T = 0'}</M>。這些「加法」其實都不是普通加法：<M>{'1 + 1'}</M> 我們都當成 <M>0</M>。
+              第一課計算 parity bit 時，我們寫 <M>{'P_1 = D_1 \\oplus D_2 \\oplus D_4'}</M>；檢查 codeword 時寫 <M>{'Hc^T = 0'}</M>。這些「加法」其實都不是普通加法：<M>{'1 + 1'}</M> 我們都當成 <M>0</M>。
             </p>
             <p>
-              如果用普通加法，<M>{'Hc^T'}</M> 可能算出 2、3 這種數字，就沒辦法說「等於 0 代表合法」。所以 Hamming Code 從一開始就生活在一個只有 0 和 1、而且 <M>{'1 + 1 = 0'}</M> 的世界。這個世界有名字：<strong>GF(2)</strong>。
+              如果用普通加法，<M>{'Hc^T'}</M> 可能算出 2、3 這種數字，就沒辦法說「等於 0 代表合法」。所以 Hamming code 從一開始就生活在一個只有 0 和 1、而且 <M>{'1 + 1 = 0'}</M> 的世界。這個世界有名字：<strong>GF(2)</strong>。
             </p>
             <p>
-              這個選擇在電路上也最便宜。普通的整數加法會產生進位：<M>{'1 + 1'}</M> 在二進位是 10，要多一條線放進位，而且進位得一位接一位往高位傳（進位鏈，carry chain）。GF(2) 的加法把進位丟掉，剩下的正好是一個 XOR 閘，也就是半加器（half adder）的「和」輸出；半加器的「進位」輸出是一個 AND 閘，恰好就是 GF(2) 的乘法。沒有進位，每個位元位置各算各的：兩個向量相加，每個位置各用一個 XOR 閘、同時完成，不必等旁邊的位置。同位位元也一樣：整數的 <M>{'D_1 + D_2 + D_4'}</M> 可能是 0 到 3，要兩個位元和進位才存得下；GF(2) 的 <M>{'P_1 = D_1 \\oplus D_2 \\oplus D_4'}</M> 永遠只有一個位元，正好放進一條線。
+              這個選擇在電路上也最便宜。普通的整數加法會產生進位：<M>{'1 + 1'}</M> 在二進位是 10，要多一條線放進位，而且進位得一位接一位往高位傳，形成 carry chain（進位鏈）。GF(2) 的加法把進位丟掉，剩下的正好是一個 XOR 閘，也就是 half adder（半加器）的「和」輸出；half adder 的「進位」輸出是一個 AND 閘，恰好就是 GF(2) 的乘法。沒有進位，每個位元位置各算各的：兩個向量相加，每個位置各用一個 XOR 閘、同時完成，不必等旁邊的位置。parity bit 也一樣：整數的 <M>{'D_1 + D_2 + D_4'}</M> 可能是 0 到 3，要兩個位元和進位才存得下；GF(2) 的 <M>{'P_1 = D_1 \\oplus D_2 \\oplus D_4'}</M> 永遠只有一個位元，正好放進一條線。
             </p>
           </Plain>
         ),
       }}
       what={{
-        title: 'GF(2)、體、特徵與模運算',
+        title: 'GF(2)、field、characteristic 與 modular arithmetic',
         body: (
           <>
             <Terms
               items={[
-                { zh: '模運算', en: 'Modular Arithmetic', def: <>只看除以 2 的餘數：<M>{'3 \\equiv 1 \\pmod 2'}</M>。GF(2) 的加法與乘法就是「先照常算，再取 mod 2」。</> },
-                { zh: '有限體', en: 'Finite Field / Galois Field', def: <>一個有限集合，可以做加、減、乘、除（除數不為 0），而且滿足交換律、結合律、分配律。GF(2) = <M>{'\\{0, 1\\}'}</M> 是最小的體。</> },
-                { zh: '特徵', en: 'Characteristic', def: <>把 1 一直加，第一次得到 0 時加了幾次。GF(2) 中 <M>{'1 + 1 = 0'}</M>，特徵是 2。所以同一個位元被翻轉兩次，等於沒有翻：<M>{'e + e = 0'}</M>。</> },
-                { zh: '互斥或', en: 'XOR', def: <>GF(2) 的加法表與 XOR 真值表完全相同；乘法表與 AND 相同。所以 GF(2) 的加法器就是一個 XOR 閘，乘法器就是一個 AND 閘。</> },
+                { term: 'Modular arithmetic', gloss: '模運算', def: <>只看除以 2 的餘數：<M>{'3 \\equiv 1 \\pmod 2'}</M>。GF(2) 的加法與乘法就是「先照常算，再取 mod 2」。</> },
+                { term: 'Finite field / Galois field', def: <>一個有限集合，可以做加、減、乘、除（除數不為 0），而且滿足 commutativity（交換律）、associativity（結合律）、distributivity（分配律）。GF(2) = <M>{'\\{0, 1\\}'}</M> 是最小的 field。</> },
+                { term: 'Characteristic', gloss: '特徵', def: <>把 1 一直加，第一次得到 0 時加了幾次。GF(2) 中 <M>{'1 + 1 = 0'}</M>，characteristic 是 2。所以同一個位元被翻轉兩次，等於沒有翻：<M>{'e + e = 0'}</M>。</> },
+                { term: 'XOR', def: <>GF(2) 的加法表與 XOR 真值表完全相同；乘法表與 AND 相同。所以 GF(2) 的加法器就是一個 XOR 閘，乘法器就是一個 AND 閘。</> },
               ]}
             />
-            <Card title="GF(2) 真的是一個體嗎？（程式逐條窮舉檢查）">
-              <Checks title="體的公理（Field Axioms）" items={axioms.map((x) => ({ label: x.zh, pass: x.holds, detail: x.counterexample }))} />
+            <Card title="GF(2) 真的是一個 field 嗎？（程式逐條窮舉檢查）">
+              <Checks title="Field axioms（體的公理）" items={axioms.map((x) => ({ label: x.zh, pass: x.holds, detail: x.counterexample }))} />
               <p className="mt-2 text-sm text-slate-600">
-                特徵（由程式計算）：<strong>{characteristic(GF2)}</strong>。下一個單元會看到 <M>{'\\mathbb{Z}/8\\mathbb{Z}'}</M> 在同樣的檢查中失敗。
+                由程式計算的 characteristic：<strong>{characteristic(GF2)}</strong>。下一個單元會看到 <M>{'\\mathbb{Z}/8\\mathbb{Z}'}</M> 在同樣的檢查中失敗。
               </p>
             </Card>
           </>
@@ -144,7 +144,7 @@ export default function A1GF2() {
                 </Card>
               }
               aside={
-                <Card title="特徵 = 2：把 1 一直加">
+                <Card title="Characteristic = 2：把 1 一直加">
                   <StepControls s={charSteps} />
                   <div className="mt-3 space-y-1 font-mono text-lg">
                     {['1', '1 + 1', '1 + 1 + 1'].slice(0, charSteps.step + 1).map((t, k) => {
@@ -165,7 +165,7 @@ export default function A1GF2() {
             />
             <Plain>
               <p>
-                計算器裡「整數運算」那一行，正是 GF(2) 丟掉的東西：<M>{'1 + 1 = 2'}</M> 在二進位要寫成 10，多出來的那一位就是進位。少了進位，加法器不必等前一位算完，每個位元各用一個 XOR 閘就好。減法也不需要另外的電路：因為 <M>{'-1 = 1'}</M>，「把錯誤減掉」和「把錯誤加上」是同一個動作，解碼器要修正一個翻轉的位元，只要再把它翻一次（再 XOR 一個 1）。
+                計算器裡「整數運算」那一行，正是 GF(2) 丟掉的東西：<M>{'1 + 1 = 2'}</M> 在二進位要寫成 10，多出來的那一位就是進位。少了進位，加法器不必等前一位算完，每個位元各用一個 XOR 閘就好。減法也不需要另外的電路：因為 <M>{'-1 = 1'}</M>，「把錯誤減掉」和「把錯誤加上」是同一個動作，decoder 要修正一個翻轉的位元，只要再把它翻一次（再 XOR 一個 1）。
               </p>
             </Plain>
           </>
@@ -214,10 +214,10 @@ export default function A1GF2() {
                     <div className="text-lg">
                       <M>{`Hr^T = (${s.join(', ')})^T`}</M>
                     </div>
-                    <p className={`mt-1 text-sm ${s.some(Boolean) ? 'text-rose-700' : 'text-emerald-700'}`}>{s.some(Boolean) ? '不是 0：至少有一個同位檢查失敗（第一課第 3 章的 Syndrome）' : '全部是 0：合法 codeword'}</p>
-                    <p className="mt-2 text-sm text-slate-600">如果把「mod 2」拿掉，整數結果會出現 2、4 這種數字，「= 0」就不再代表「同位檢查通過」。</p>
+                    <p className={`mt-1 text-sm ${s.some(Boolean) ? 'text-rose-700' : 'text-emerald-700'}`}>{s.some(Boolean) ? '不是 0：至少有一個 parity check 失敗（第一課第 3 章的 syndrome）' : '全部是 0：合法 codeword'}</p>
+                    <p className="mt-2 text-sm text-slate-600">如果把「mod 2」拿掉，整數結果會出現 2、4 這種數字，「= 0」就不再代表「parity check 通過」。</p>
                     <p className="mt-2 text-sm text-slate-600">
-                      在電路裡，H 的每一列就是一棵 XOR 樹：第 1 列把 <M>{'r_1, r_3, r_5, r_7'}</M> 接進去，輸出 1 就表示這條同位檢查失敗。{H74.length} 列一共 {hammingSyndromeXors(3)} 個 XOR 閘；第一課的編碼器也是同樣的 XOR 網路，{H74.length} 個同位位元一共 {hammingEncoderXors(3)} 個 XOR 閘。
+                      在電路裡，H 的每一列就是一棵 XOR 樹：第 1 列把 <M>{'r_1, r_3, r_5, r_7'}</M> 接進去，輸出 1 就表示這條 parity check 失敗。{H74.length} 列一共 {hammingSyndromeXors(3)} 個 XOR 閘；第一課的 encoder 也是同樣的 XOR 網路，{H74.length} 個 parity bit 一共 {hammingEncoderXors(3)} 個 XOR 閘。
                     </p>
                   </Card>
                   <Derivation
@@ -233,7 +233,7 @@ export default function A1GF2() {
             />
             <Plain>
               <p>
-                點一下位元製造錯誤，就是在扮演通道上的雜訊：<M>{'r = c + e'}</M>。GF(2) 上的矩陣乘法是線性的，所以 <M>{'Hr^T = Hc^T + He^T = He^T'}</M>：Syndrome 只看得到雜訊 e，看不到送出的資料。換了訊息再製造同一個位置的錯誤，Syndrome 不會變，接收端不必知道原本的訊息，就能從這 {H74.length} 個位元判斷是哪裡被翻轉。
+                點一下位元製造錯誤，就是在扮演通道上的雜訊：<M>{'r = c + e'}</M>。GF(2) 上的矩陣乘法是線性的，所以 <M>{'Hr^T = Hc^T + He^T = He^T'}</M>：syndrome 只看得到雜訊 e，看不到送出的資料。換了訊息再製造同一個位置的錯誤，syndrome 不會變，接收端不必知道原本的訊息，就能從這 {H74.length} 個位元判斷是哪裡被翻轉。
               </p>
             </Plain>
           </>
@@ -244,7 +244,7 @@ export default function A1GF2() {
         body: (
           <Card>
             <p className="text-sm leading-relaxed text-slate-700">
-              第一課所有的矩陣乘法、rank、kernel 都是「GF(2) 上的線性代數」。從電路的角度看，GF(2) 就是「XOR 閘和 AND 閘能直接實現的算術」，雜訊造成的位元翻轉則是在這套算術裡加上一個錯誤向量。從下一單元 A2 開始，我們要把 GF(2) <strong>擴大</strong>成一個有 8 個元素的體 GF(8)，讓我們能用多項式和「根」來描述同一個 Hamming Code，同時保住這個好處：加法仍然是 XOR，乘法也只用 AND 和 XOR 閘。
+              第一課所有的矩陣乘法、rank（秩）、kernel（核空間）都是「GF(2) 上的線性代數」。從電路的角度看，GF(2) 就是「XOR 閘和 AND 閘能直接實現的算術」，雜訊造成的位元翻轉則是在這套算術裡加上一個 error vector。從下一單元 A2 開始，我們要把 GF(2) <strong>擴大</strong>成一個有 8 個元素的 field GF(8)，讓我們能用多項式和「根」來描述同一個 Hamming code，同時保住這個好處：加法仍然是 XOR，乘法也只用 AND 和 XOR 閘。
             </p>
           </Card>
         ),
@@ -256,9 +256,9 @@ export default function A1GF2() {
         ],
         misconceptions: [
           { wrong: '1 + 1 = 2，只是我們「假裝」它是 0。', right: '在 GF(2) 中 1 + 1 就是 0，這是加法的定義，不是近似。2 這個符號根本不在集合裡。' },
-          { wrong: '減法要特別處理正負號。', right: 'GF(2) 的特徵是 2，−1 = 1，所以 a − b = a + b。所有「減」都可以寫成 XOR。' },
+          { wrong: '減法要特別處理正負號。', right: 'GF(2) 的 characteristic 是 2，−1 = 1，所以 a − b = a + b。所有「減」都可以寫成 XOR。' },
           { wrong: 'XOR 和 GF(2) 加法是兩種不同的運算。', right: '它們的運算表完全相同；XOR 是 GF(2) 加法在電路裡的名字。' },
-          { wrong: 'GF(2) 只是數學上的抽象，真正的電路用的是普通加法器。', right: '同位位元和 Syndrome 的電路只用 XOR 閘，沒有進位線；GF(2) 正是這些電路實際在做的運算。' },
+          { wrong: 'GF(2) 只是數學上的抽象，真正的電路用的是普通加法器。', right: 'parity bit 和 syndrome 的電路只用 XOR 閘，沒有進位線；GF(2) 正是這些電路實際在做的運算。' },
         ],
       }}
     />

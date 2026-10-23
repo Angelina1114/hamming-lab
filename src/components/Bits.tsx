@@ -125,13 +125,13 @@ export function MessageInput({ message, onToggle, size = 'lg' }: { message: read
 
 export function RoleLegend({ overall = false, errors = false }: { overall?: boolean; errors?: boolean }) {
   const items: [string, string][] = [
-    ['bg-data-50 border-data-300', '資料位元（Data bit）'],
-    ['bg-parity-50 border-parity-300', '同位位元（Parity bit）'],
+    ['bg-data-50 border-data-300', 'Data bit'],
+    ['bg-parity-50 border-parity-300', 'Parity bit'],
   ];
-  if (overall) items.push(['bg-overall-50 border-overall-300', '整體同位位元（Overall parity）']);
+  if (overall) items.push(['bg-overall-50 border-overall-300', 'Overall parity bit']);
   if (errors) {
     items.push(['bg-rose-50 border-rose-500', '被翻轉的位元（Flipped）']);
-    items.push(['bg-emerald-50 border-emerald-500', '解碼器修正（Corrected）']);
+    items.push(['bg-emerald-50 border-emerald-500', 'Corrected by decoder']);
   }
   return (
     <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-slate-500">

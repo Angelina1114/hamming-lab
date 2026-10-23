@@ -45,18 +45,18 @@ export function MessageSizeLab() {
   const fixed = lamps >= 1 && lamps <= n ? flipBit(recv, lamps - 1) : recv;
   const why =
     k === 1
-      ? `${l} 個同位位元有 ${outcomes} 種「有錯」的結果，剛好對上 ${n} 個位置。其實 P1、P2 都會等於 D1：就是把資料重複送 ${n} 次。`
+      ? `${l} 個 parity bit 有 ${outcomes} 種「有錯」的結果，剛好對上 ${n} 個位置。其實 P1、P2 都會等於 D1：就是把資料重複送 ${n} 次。`
       : k < K4
-        ? `如果只用 ${l - 1} 個同位位元，只有 ${2 ** (l - 1) - 1} 種結果，卻要分辨 ${k + l - 1} 個位置，不夠；所以還是得用 ${l} 個同位位元。${l} 個有 ${outcomes} 種結果，這裡只用到 ${n} 種，${wasted} 種浪費掉。`
-        : `${l} 個同位位元的 ${outcomes} 種結果全部用上，一種都沒浪費：這就是 ${l} 個同位位元最多能保護的資料量。`;
+        ? `如果只用 ${l - 1} 個 parity bit，只有 ${2 ** (l - 1) - 1} 種結果，卻要分辨 ${k + l - 1} 個位置，不夠；所以還是得用 ${l} 個 parity bit。${l} 個有 ${outcomes} 種結果，這裡只用到 ${n} 種，${wasted} 種浪費掉。`
+        : `${l} 個 parity bit 的 ${outcomes} 種結果全部用上，一種都沒浪費：這就是 ${l} 個 parity bit 最多能保護的資料量。`;
 
   return (
     <Card
-      title={`資料位元 1–${K4} 個：各要幾個同位位元？`}
+      title={`Data bit 1–${K4} 個：各要幾個 parity bit？`}
       actions={
         <>
           <Segmented
-            ariaLabel="資料位元數"
+            ariaLabel="Data bit 數"
             value={kStr}
             onChange={(v) => {
               setK(v);
@@ -74,7 +74,7 @@ export function MessageSizeLab() {
       }
     >
       <p className="mb-3 text-sm text-slate-700">
-        資料少於 {K4} 個位元也行：只用 Hamming({hammingN(L)},{K4}) 排列的前 <M>n</M> 個位置（少掉的資料位元當成 0、不送出去）。{!presenting && '用上面的按鈕切換資料有幾個位元，看要付幾個同位位元，也可以點 codeword 製造一個錯，確認它照樣能修正。'}
+        資料少於 {K4} 個位元也行：只用 Hamming({hammingN(L)},{K4}) 排列的前 <M>n</M> 個位置（少掉的 data bit 當成 0、不送出去）。{!presenting && '用上面的按鈕切換資料有幾個位元，看要付幾個 parity bit，也可以點 codeword 製造一個錯，確認它照樣能修正。'}
       </p>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -101,7 +101,7 @@ export function MessageSizeLab() {
           </div>
           <div>
             <div className="mb-1 text-xs text-slate-500">
-              送出的 codeword：{n} 個位元，其中 {l} 個是同位位元{!presenting && '（點擊製造錯誤）'}
+              送出的 codeword：{n} 個位元，其中 {l} 個是 parity bit{!presenting && '（點擊製造錯誤）'}
             </div>
             <div className="flex flex-wrap gap-1 sm:gap-1.5">
               {recv.map((b, j) => {
@@ -134,7 +134,7 @@ export function MessageSizeLab() {
               <>
                 失敗的檢查讀成 {lampOrder(l)} = <span className="font-mono font-bold">{bin(lamps, l)}₂</span> = {lamps} → 指向位置 {lamps}（{label(lamps)}），翻回來得到{' '}
                 <span className="font-mono font-bold">{fixed.join('')}</span>
-                {flips.length === 1 ? (fixed.join('') === sent.join('') ? <span className="text-emerald-700">　✓ 修正成功</span> : null) : <span className="text-rose-700">　✗ 錯了不只一個：誤更正</span>}
+                {flips.length === 1 ? (fixed.join('') === sent.join('') ? <span className="text-emerald-700">　✓ 修正成功</span> : null) : <span className="text-rose-700">　✗ 錯了不只一個：miscorrection</span>}
               </>
             ) : (
               <>
@@ -147,7 +147,7 @@ export function MessageSizeLab() {
         <div className="min-w-0 space-y-3">
           <div>
             <div className="mb-1 text-xs text-slate-500">
-              {l} 個同位位元 → {outcomes} 種「有錯」的檢查結果（{lampOrder(l)}），分給 {n} 個位置
+              {l} 個 parity bit → {outcomes} 種「有錯」的檢查結果（{lampOrder(l)}），分給 {n} 個位置
             </div>
             <div className="flex flex-wrap gap-1.5">
               {Array.from({ length: outcomes }, (_, i) => i + 1).map((p) => (
@@ -167,8 +167,8 @@ export function MessageSizeLab() {
                 <tr className="text-left text-xs text-slate-500">
                   <th className="py-1 pr-2">資料</th>
                   <th className="pr-2">code</th>
-                  <th className="pr-2">同位位元</th>
-                  <th className="pr-2">每個資料位元配幾個同位位元</th>
+                  <th className="pr-2">Parity bit</th>
+                  <th className="pr-2">每個 data bit 配幾個 parity bit</th>
                   <th>浪費的結果</th>
                 </tr>
               </thead>
@@ -196,9 +196,9 @@ export function MessageSizeLab() {
       <div className="mt-4 rounded-xl border border-emerald-300 bg-emerald-50 p-3 text-sm text-emerald-900">
         <p>
           <strong>
-            {K4} 個資料位元剛好用滿 {PATTERNS} 種結果。
+            {K4} 個 data bit 剛好用滿 {PATTERNS} 種結果。
           </strong>
-          資料少於 {K4} 個位元也能修正錯誤，但同位位元省不下來：{K4 - 2} 或 {K4 - 1} 個資料位元一樣要 {MID.l} 個同位位元，等於花一樣的成本送更少的資料。只有降到 1 個資料位元才省成 {ONE.l} 個同位位元，可是那時同位位元是資料的 {ONE.l} 倍。所以 {K4} 是「{L} 個同位位元最划算」的資料量：每個資料位元只要配 {(L / K4).toFixed(2)} 個同位位元，而且 {PATTERNS} 種檢查結果一種都沒浪費。
+          資料少於 {K4} 個位元也能修正錯誤，但 parity bit 省不下來：{K4 - 2} 或 {K4 - 1} 個 data bit 一樣要 {MID.l} 個 parity bit，等於花一樣的成本送更少的資料。只有降到 1 個 data bit 才省成 {ONE.l} 個 parity bit，可是那時 parity bit 是資料的 {ONE.l} 倍。所以 {K4} 是「{L} 個 parity bit 最划算」的資料量：每個 data bit 只要配 {(L / K4).toFixed(2)} 個 parity bit，而且 {PATTERNS} 種檢查結果一種都沒浪費。
         </p>
       </div>
     </Card>
@@ -220,7 +220,7 @@ export function CodeSizeTable() {
     <Expandable title="資料更多的話呢？">
       <div className="space-y-2">
         <p>
-          規則和上面一樣：<M>{'\\ell'}</M> 個同位位元有 <M>{'2^\\ell - 1'}</M> 種「有錯」的檢查結果，要分給 <M>{'n = k + \\ell'}</M> 個位置（<M>k</M> 個資料位元加 <M>{'\\ell'}</M> 個同位位元），所以必須
+          規則和上面一樣：<M>{'\\ell'}</M> 個 parity bit 有 <M>{'2^\\ell - 1'}</M> 種「有錯」的檢查結果，要分給 <M>{'n = k + \\ell'}</M> 個位置（<M>k</M> 個 data bit 加 <M>{'\\ell'}</M> 個 parity bit），所以必須
         </p>
         <Tex block>{'k + \\ell \\le 2^\\ell - 1'}</Tex>
         <p>
@@ -238,7 +238,7 @@ export function CodeSizeTable() {
               )}
             </span>
           ))}
-          。資料超過 {K4} 個位元，就要第 {L + 1} 個同位位元。
+          。資料超過 {K4} 個位元，就要第 {L + 1} 個 parity bit。
         </p>
       </div>
       <div className="overflow-x-auto">
@@ -246,10 +246,10 @@ export function CodeSizeTable() {
           <thead>
             <tr className="text-left text-xs text-slate-500">
               <th className="py-1 pr-3">
-                資料位元 <M>k</M>
+                Data bit <M>k</M>
               </th>
               <th className="pr-3">
-                同位位元 <M>{'\\ell'}</M>
+                Parity bit <M>{'\\ell'}</M>
               </th>
               <th className="pr-3">
                 code <M>(n, k)</M>
@@ -257,7 +257,7 @@ export function CodeSizeTable() {
               <th className="pr-3">
                 可用結果 <M>{'2^\\ell - 1'}</M>
               </th>
-              <th className="hidden pr-3 sm:table-cell">碼率 k/n</th>
+              <th className="hidden pr-3 sm:table-cell">Code rate k/n</th>
               <th>用滿了嗎</th>
             </tr>
           </thead>
@@ -281,10 +281,10 @@ export function CodeSizeTable() {
       </div>
       <div className="space-y-1">
         <p>
-          資料一多到 {next.k} 個，如果還用 {L} 個同位位元，<M>{`n = ${next.k} + ${L} = ${next.k + L}`}</M> 已經超過 {PATTERNS} 種結果，只好加到 {next.l} 個同位位元（<M>{`n = ${next.n}`}</M>），一直到 ({hammingN(next.l)},{hammingK(next.l)}) 才又剛好用滿。
+          資料一多到 {next.k} 個，如果還用 {L} 個 parity bit，<M>{`n = ${next.k} + ${L} = ${next.k + L}`}</M> 已經超過 {PATTERNS} 種結果，只好加到 {next.l} 個 parity bit（<M>{`n = ${next.n}`}</M>），一直到 ({hammingN(next.l)},{hammingK(next.l)}) 才又剛好用滿。
         </p>
         <p>
-          ({hammingN(L)},{K4}) 是最常用來入門的 Hamming Code，因為它是除了重複碼之外<strong>最小的完整 Hamming Code</strong>：小到可以手算、畫成 Venn 圖，又已經有「重疊檢查定位錯誤」的全部精神。實際系統用的是更長的版本：家族表與 Hamming Bound 見
+          ({hammingN(L)},{K4}) 是最常用來入門的 Hamming code，因為它是除了 repetition code 之外<strong>最小的完整 Hamming code</strong>：小到可以手算、畫成 Venn 圖，又已經有「重疊檢查定位錯誤」的全部精神。實際系統用的是更長的版本：家族表與 Hamming bound 見
           <a href="#/distance" className="mx-1 font-semibold text-overall-700 hover:underline">
             第 4 章
           </a>

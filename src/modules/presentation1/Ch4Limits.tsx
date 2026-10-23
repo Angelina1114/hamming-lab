@@ -212,7 +212,7 @@ function PerfectSlide({ s }: { s: Stepper }) {
               <li>· 錯在 n 個位置之一：n 種（翻那一位）</li>
             </ul>
             <p className="mt-2">
-              ℓ 個同位位元 = ℓ 盞警示燈，只有 <M>{'2^{\\ell}'}</M> 種亮法：
+              ℓ 個 parity bit = ℓ 盞警示燈，只有 <M>{'2^{\\ell}'}</M> 種亮法：
             </p>
             <div className="text-2xl">
               <Tex block>{'2^{\\ell} \\ge n + 1'}</Tex>
@@ -242,11 +242,11 @@ function PerfectSlide({ s }: { s: Stepper }) {
               })}
             </div>
             <p className="mt-2">
-              {STATES} 種燈號全部用到，沒有一種浪費：<strong>完美碼</strong>。
+              {STATES} 種燈號全部用到，沒有一種浪費：<strong>perfect code（完美碼）</strong>。
             </p>
             <p className="mt-1 text-slate-600">
               {HB.codewords} 個 codeword × {HB.volume} 種接收結果 = {HB.lhs} = 2<sup>{N}</sup>
-              {IS_PARTITION ? '' : ' ✗'}：收到任何 {N} 位元字串，燈號都有明確的動作（教科書的 Hamming Bound <M>{'2^{k}(1 + n) \\le 2^{n}'}</M> 取等號）。
+              {IS_PARTITION ? '' : ' ✗'}：收到任何 {N} 位元字串，燈號都有明確的動作。這就是教科書的 Hamming bound（球填充界）<M>{'2^{k}(1 + n) \\le 2^{n}'}</M> 取等號。
             </p>
           </Box>
         </Reveal>
@@ -266,8 +266,8 @@ function PerfectSlide({ s }: { s: Stepper }) {
 
 export const CH4_SLIDES: DeckSlide<null>[] = [
   {
-    title: `第 4 章：最小距離 ${D_MIN}：A 走到 B 要 ${D_AB} 步`,
-    sub: '雜訊每翻一位，收到的字就往前推一步',
+    title: `第 4 章：Minimum distance（最小距離）為 ${D_MIN}：A 走到 B 要 ${D_AB} 步`,
+    sub: '雜訊每翻一位，received word 就往前推一步',
     steps: () => 4,
     render: (s) => <PathSlide s={s} />,
     takeaway: (
@@ -280,12 +280,12 @@ export const CH4_SLIDES: DeckSlide<null>[] = [
     notes: (
       <ul className={NOTES_UL}>
         <li>
-          雜訊每翻一位，收到的字就往前推一步
+          雜訊每翻一位，received word 就往前推一步
           <ul className={NOTES_SUB}>
             <li>
               A = 訊息 {bits(A_ENTRY.message)} 的 codeword，B = 訊息 {bits(B_ENTRY.message)} 的 codeword：差 {D_AB} 位（位置 {AB_DIFF.join('、')}）
             </li>
-            <li>接收端看不到雜訊，只能猜「離收到的字最近的 codeword」：翻得少比翻得多常見</li>
+            <li>接收端看不到雜訊，只能猜「離 received word 最近的 codeword」：翻得少比翻得多常見</li>
           </ul>
         </li>
         <li>
@@ -300,13 +300,13 @@ export const CH4_SLIDES: DeckSlide<null>[] = [
           → 翻 2 位（再翻位置 {posList(STEP2.flipped.slice(1))}）：離 A {STEP2.dA}、離 B {STEP2.dB} → 過了中線
           <ul className={NOTES_SUB}>
             <li>
-              只偵測：燈會亮，知道有錯；硬要更正：燈號指向位置 {STEP2.dec.position} → 改成 B（誤更正）
+              只偵測：燈會亮，知道有錯；硬要更正：燈號指向位置 {STEP2.dec.position} → 改成 B（miscorrection）
             </li>
             <li>對 Hamming({N},{K})，每一種雙錯都會落在別人旁邊（網頁進階）</li>
           </ul>
         </li>
         <li>
-          → 最小距離 {D_MIN}：窮舉 {MD.pairsChecked} 對，最近的一對也差 {D_MIN} 位
+          → minimum distance {D_MIN}：窮舉 {MD.pairsChecked} 對，最近的一對也差 {D_MIN} 位
           <ul className={NOTES_SUB}>
             <li>
               t = ⌊({D_MIN} − 1)/2⌋ = {T}；第 2 章 H 的設計 ①② 保證至少 {D_MIN} 步：翻 1、2 位燈一定亮
@@ -317,7 +317,7 @@ export const CH4_SLIDES: DeckSlide<null>[] = [
     ),
   },
   {
-    title: `第 4 章：完美碼：${STATES} 種燈號剛好用完`,
+    title: `第 4 章：Perfect code：${STATES} 種燈號剛好用完`,
     sub: '要更正 1 個錯，ℓ 盞燈要分辨 n + 1 種情況',
     steps: () => 3,
     render: (s) => <PerfectSlide s={s} />,
@@ -339,21 +339,21 @@ export const CH4_SLIDES: DeckSlide<null>[] = [
           <ul className={NOTES_SUB}>
             <li>沒錯 1 種（不動）＋錯在 n 個位置之一（翻那一位）</li>
             <li>
-              ℓ 個同位位元 = ℓ 盞燈，只有 2<sup>ℓ</sup> 種狀態 → 2<sup>ℓ</sup> ≥ n + 1（ℓ = n − k）
+              ℓ 個 parity bit = ℓ 盞燈，只有 2<sup>ℓ</sup> 種狀態 → 2<sup>ℓ</sup> ≥ n + 1（ℓ = n − k）
             </li>
             <li>
-              導論（要幾個同位位元）、第 2 章 H 的設計 ③ 見過同一件事：ℓ = {FAMILY.map((f) => f.l).join(', ')} → n = {FAMILY.map((f) => f.n).join(', ')}（k = {FAMILY.map((f) => f.k).join(', ')}）
+              導論（要幾個 parity bit）、第 2 章 H 的設計 ③ 見過同一件事：ℓ = {FAMILY.map((f) => f.l).join(', ')} → n = {FAMILY.map((f) => f.n).join(', ')}（k = {FAMILY.map((f) => f.k).join(', ')}）
             </li>
           </ul>
         </li>
         <li>
-          → Hamming({N},{K})：2<sup>{L}</sup> = {STATES} = {N} + 1，等號成立 = 完美碼
+          → Hamming({N},{K})：2<sup>{L}</sup> = {STATES} = {N} + 1，等號成立 = perfect code
           <ul className={NOTES_SUB}>
             <li>
               全暗 = 不動，其餘 {PATTERNS} 種各翻一個位置
             </li>
             <li>
-              {HB.codewords} × {HB.volume} = {HB.lhs} = 2<sup>{N}</sup>：教科書的 Hamming Bound 2<sup>k</sup>(1 + n) ≤ 2<sup>n</sup> 取等號
+              {HB.codewords} × {HB.volume} = {HB.lhs} = 2<sup>{N}</sup>：教科書的 Hamming bound 2<sup>k</sup>(1 + n) ≤ 2<sup>n</sup> 取等號
             </li>
           </ul>
         </li>

@@ -22,14 +22,14 @@ export default function L2Xor() {
       id={ID}
       lead={
         <p>
-          知道錯誤位置之後，更正只需要一個 XOR。但真正負責任的解碼器還要<strong>驗證</strong>：更正後的字是否真的是合法 codeword？還原的訊息是否可信？
+          知道錯誤位置之後，更正只需要一個 XOR。但真正負責任的 decoder 還要<strong>驗證</strong>：更正後的字是否真的是合法 codeword？還原的訊息是否可信？
         </p>
       }
       goals={[
-        <>由錯誤位置產生估計錯誤向量 <M>{'\\hat e'}</M></>,
+        <>由錯誤位置產生估計的 error vector <M>{'\\hat e'}</M></>,
         <>計算 <M>{'\\hat c = r \\oplus \\hat e'}</M></>,
         <>驗證 <M>{'\\hat c(\\alpha) = 0'}</M></>,
-        '從系統碼取出還原訊息，並理解「合法 ≠ 正確」',
+        '從 systematic code 取出還原訊息，並理解「合法 ≠ 正確」',
       ]}
       intuition={{
         title: '翻轉一個開關',
@@ -53,7 +53,7 @@ export default function L2Xor() {
             <p className="text-sm text-slate-700">
               預設例子：<M>{'\\hat c = 1001110,\\ \\hat c(x) = x^6 + x^3 + x^2 + x'}</M>，代入 <M>{'\\alpha'}</M>：<M>{'\\alpha^6 + \\alpha^3 + \\alpha^2 + \\alpha = 101 \\oplus 011 \\oplus 100 \\oplus 010 = 000'}</M>。
             </p>
-            <p className="text-sm text-slate-700">系統碼的前 4 位就是訊息：<M>{'\\hat u = \\hat c_1\\hat c_2\\hat c_3\\hat c_4'}</M>。</p>
+            <p className="text-sm text-slate-700">在 systematic code 中，前 4 位就是訊息：<M>{'\\hat u = \\hat c_1\\hat c_2\\hat c_3\\hat c_4'}</M>。</p>
           </Card>
         ),
       }}
@@ -143,7 +143,7 @@ export default function L2Xor() {
             />
             <Callout kind="warning" title="合法 codeword 檢查通過 ≠ 一定還原原始訊息">
               <p>
-                <M>{'\\hat c(\\alpha) = 0'}</M> 只證明 <M>{'\\hat c'}</M> 是 16 個合法 codeword 之一，不能證明它就是送出的那一個。如果錯誤超過 1 個，解碼器可能把 r 推到另一個合法 codeword——驗證照樣通過，但訊息是錯的。下一章就是這種情況。
+                <M>{'\\hat c(\\alpha) = 0'}</M> 只證明 <M>{'\\hat c'}</M> 是 16 個合法 codeword 之一，不能證明它就是送出的那一個。如果錯誤超過 1 個，decoder 可能把 r 推到另一個合法 codeword——驗證照樣通過，但訊息是錯的。下一章就是這種情況。
               </p>
             </Callout>
           </>
@@ -152,7 +152,7 @@ export default function L2Xor() {
       related={[{ to: 'a-9', text: 'ĉ(α) = 0 ⇔ H_cyc ĉᵀ = 0' }]}
       next={
         <p>
-          到這裡，單一錯誤的完整流程已經走完。接下來兩章故意「超載」：注入兩個、三個錯誤，看看這個解碼器會發生什麼事。
+          到這裡，單一錯誤的完整流程已經走完。接下來兩章故意「超載」：注入兩個、三個錯誤，看看這個 decoder 會發生什麼事。
         </p>
       }
     />

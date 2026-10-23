@@ -69,7 +69,7 @@ export function BitStrip({ bits, roles, states, onToggle, showExp = true, showPo
                 state={states?.[i] ?? 'normal'}
                 size={size}
                 onClick={onToggle ? () => onToggle(i) : undefined}
-                title={isOverall ? '整體同位位元（Overall parity bit）' : `位置 ${i + 1}，${expLabel(e)} 的係數`}
+                title={isOverall ? 'Overall parity bit' : `位置 ${i + 1}，${expLabel(e)} 的係數`}
               />
             </div>
           );
@@ -79,7 +79,7 @@ export function BitStrip({ bits, roles, states, onToggle, showExp = true, showPo
         <div className="mt-1 flex gap-1.5 text-[10px] font-semibold">
           {groupSpans(R).map((g, k) => (
             <div key={k} className={`border-t-2 pt-0.5 text-center ${g.role === 'info' ? 'border-data-300 text-data-600' : g.role === 'parity' ? 'border-parity-300 text-parity-600' : g.role === 'overall' ? 'ml-1.5 border-overall-300 pl-2.5 text-overall-600' : 'border-slate-200 text-slate-400'}`} style={{ width: g.len * w + (g.len - 1) * 6 }}>
-              {g.role === 'info' ? '資訊位元 u' : g.role === 'parity' ? '同位位元 p' : g.role === 'overall' ? '整體同位' : ''}
+              {g.role === 'info' ? 'Data bits u' : g.role === 'parity' ? 'Parity bits p' : g.role === 'overall' ? 'Overall parity' : ''}
             </div>
           ))}
         </div>
@@ -101,10 +101,10 @@ function groupSpans(roles: L2Role[]) {
 /** Legend: every colour also has a symbol/text. */
 export function L2Legend({ overall = false, errors = true }: { overall?: boolean; errors?: boolean }) {
   const items: [string, ReactNode, string][] = [
-    ['bg-data-50 border-data-300', '資訊位元（Information bit）', '下方標「資訊位元 u」'],
-    ['bg-parity-50 border-parity-300', '同位位元（Parity bit）', '下方標「同位位元 p」'],
+    ['bg-data-50 border-data-300', 'Data bit', '下方標「Data bits u」'],
+    ['bg-parity-50 border-parity-300', 'Parity bit', '下方標「Parity bits p」'],
   ];
-  if (overall) items.push(['bg-overall-50 border-overall-300', '整體同位位元（Overall parity bit）', '上方標「P」']);
+  if (overall) items.push(['bg-overall-50 border-overall-300', 'Overall parity bit', '上方標「P」']);
   if (errors) {
     items.push(['bg-rose-50 border-rose-500', <>錯誤位元（Error bit）</>, '⚡ 符號']);
     items.push(['bg-emerald-50 border-emerald-500', <>已更正（Corrected bit）</>, '✓ 符號']);

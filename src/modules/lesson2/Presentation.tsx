@@ -32,15 +32,15 @@ interface Ctx {
 type Slide = DeckSlide<Ctx>;
 
 const SECDED_ROWS = [
-  ['S = 0', '偶（Even）', 'No Error', 'ok'],
-  ['S ≠ 0', '奇（Odd）', 'Single Error → Correct', 'corrected'],
-  ['S ≠ 0', '偶（Even）', 'Double Error → Do Not Correct', 'detected'],
-  ['S = 0', '奇（Odd）', 'Overall Parity Bit Error', 'corrected'],
+  ['S = 0', '偶（Even）', 'No error', 'ok'],
+  ['S ≠ 0', '奇（Odd）', 'Single error → correct', 'corrected'],
+  ['S ≠ 0', '偶（Even）', 'Double error → do not correct', 'detected'],
+  ['S = 0', '奇（Odd）', 'Overall parity bit error', 'corrected'],
 ] as const;
 
 const SLIDES: Slide[] = [
   {
-    title: 'Lesson 2 — Hamming Code 編碼、解碼與錯誤更正',
+    title: 'Lesson 2 — Hamming code 編碼、解碼與錯誤更正',
     sub: 'From Encoding to Error Correction',
     steps: () => 1,
     render: (_s, c) => {
@@ -52,7 +52,7 @@ const SLIDES: Slide[] = [
             <div className="text-base text-slate-500">統一範例</div>
             <div className="mt-3 grid grid-cols-1 gap-4 lg:grid-cols-3">
               <div className="rounded-xl bg-slate-50 p-4">
-                <div className="text-base text-slate-500">生成多項式</div>
+                <div className="text-base text-slate-500">Generator polynomial（生成多項式）</div>
                 <M>{'g(x) = x^3 + x + 1'}</M> = <span className="mono">1011</span>
               </div>
               <div className="rounded-xl bg-data-50 p-4">
@@ -75,8 +75,8 @@ const SLIDES: Slide[] = [
     render: (s, c) => <FlowDiagram u={c.u} errors={c.errors} secded={c.secded} method={c.method} stepper={s} large />,
   },
   {
-    title: '2-2 LFSR：x³u(x) mod g(x)',
-    sub: 'feedback = input ⊕ R₂；R₂′ = R₁、R₁′ = R₀ ⊕ fb、R₀′ = fb',
+    title: '2-2 LFSR（linear feedback shift register，線性回授移位暫存器）',
+    sub: 'x³u(x) mod g(x)；feedback（回授）= input ⊕ R₂；R₂′ = R₁、R₁′ = R₀ ⊕ fb、R₀′ = fb',
     steps: (c) => lfsrTotalFrames(c.u.length, true),
     render: (s, c) => <LfsrSim kind="encoder" input={c.u} stepper={s} detailed large />,
   },
@@ -92,7 +92,7 @@ const SLIDES: Slide[] = [
     render: (s, c) => <LongDivisionView dividend={encodeCyclic(c.u).shifted} stepper={s} large />,
   },
   {
-    title: '2-4 Syndrome：S(x) = r(x) mod g(x)',
+    title: '2-4 Syndrome（徵狀）：S(x) = r(x) mod g(x)',
     sub: '餘式只和錯誤有關',
     steps: () => divisionTotalFrames(7),
     render: (s, c) => {
@@ -123,7 +123,7 @@ const SLIDES: Slide[] = [
     },
   },
   {
-    title: '2-6 GF(8) 與 Key Equation',
+    title: '2-6 GF(8) 與 key equation（關鍵方程式）',
     sub: 'α³ = α + 1，σ(z) = 1 + S₁z',
     steps: () => 8,
     render: (s, c) => {
@@ -141,7 +141,7 @@ const SLIDES: Slide[] = [
     },
   },
   {
-    title: '2-7 Chien Search',
+    title: '2-7 Chien search',
     sub: '依序代入 z = α⁰ … α⁶',
     steps: () => chienTotalFrames,
     render: (s, c) => {
@@ -150,7 +150,7 @@ const SLIDES: Slide[] = [
     },
   },
   {
-    title: '2-8 XOR 更正與驗證',
+    title: '2-8 XOR（exclusive OR，互斥或）更正與驗證',
     steps: () => xorTotalFrames,
     render: (s, c) => {
       const o = simulateL2(c.u, c.errors.filter((p) => p <= 7), c.method);
@@ -163,13 +163,13 @@ const SLIDES: Slide[] = [
     },
   },
   {
-    title: '2-9 兩個錯誤：Miscorrection',
+    title: '2-9 兩個錯誤：Miscorrection（誤更正）',
     sub: '更正後合法 ≠ 還原正確',
     steps: () => 1,
     render: (_s, c) => <FixedScenario u={c.u} method={c.method} initial={[2, 7]} max={2} />,
   },
   {
-    title: '2-10 三個錯誤：Undetected Error',
+    title: '2-10 三個錯誤：Undetected error（未偵測錯誤）',
     sub: 'e(x) = g(x) ⇒ S = 0',
     steps: () => 1,
     render: (_s, c) => <FixedScenario u={c.u} method={c.method} initial={[4, 6, 7]} max={3} />,
@@ -187,10 +187,10 @@ const SLIDES: Slide[] = [
       const a = hammingParams(3);
       const b = hammingParams(7);
       const rows: [string, string, string][] = [
-        ['有限體 / g(x)', 'GF(8), x³+x+1', 'GF(128), x⁷+x³+1'],
+        ['Finite field / g(x)', 'GF(8), x³+x+1', 'GF(128), x⁷+x³+1'],
         ['Hamming', `(${a.n},${a.k},3)`, `(${b.n},${b.k},3)`],
         ['Extended', `(${a.nExt},${a.kExt},4)`, `(${b.nExt},${b.kExt},4)`],
-        ['Code Rate', `4/7 ≈ ${(a.rate * 100).toFixed(2)}%`, `120/128 = ${(b.rateExt * 100).toFixed(2)}%（Ext.）`],
+        ['Code rate', `4/7 ≈ ${(a.rate * 100).toFixed(2)}%`, `120/128 = ${(b.rateExt * 100).toFixed(2)}%（Ext.）`],
         ['H 大小', `${a.hRows}×${a.hCols}`, `${b.hRows}×${b.hCols}`],
       ];
       return (
@@ -206,14 +206,14 @@ const SLIDES: Slide[] = [
               ))}
             </tbody>
           </table>
-          <p className="text-lg text-slate-600">400ZR 的內碼是軟判決（Chase）解碼的 double-extended Hamming(128,119)，與本課的硬判決 Syndrome 解碼不同。</p>
+          <p className="text-lg text-slate-600">400ZR 的 inner code（內碼）是 double-extended Hamming(128,119)，用 soft decision（軟判決）的 Chase 演算法解碼；本課的 syndrome 解碼則是 hard decision（硬判決）。</p>
         </div>
       );
     },
   },
   {
     title: '2-13 現場實驗',
-    sub: '0–3 個錯誤時，解碼器怎麼判斷？',
+    sub: '0–3 個錯誤時，decoder（解碼器）怎麼判斷？',
     steps: () => 1,
     render: (_s, c) => {
       const o = simulateL2(c.u, c.errors.filter((p) => p <= 7), c.method);
@@ -228,8 +228,8 @@ const SLIDES: Slide[] = [
         <Tex block>{'c(x) = x^3u(x) + \\big(x^3u(x) \\bmod g(x)\\big)\\;\\to\\; S(x) = e(x) \\bmod g(x) \\;\\to\\; S_1 = \\alpha^i \\;\\to\\; \\hat c = r \\oplus x^i'}</Tex>
         <ul className="list-disc space-y-1 pl-8">
           <li>1 個錯誤：保證更正（d_min = 3，t = 1）</li>
-          <li>2 個錯誤：誤更正（Miscorrection）</li>
-          <li>3 個錯誤：可能完全未偵測（e ∈ C）</li>
+          <li>2 個錯誤：miscorrection</li>
+          <li>3 個錯誤：可能成為 undetected error（e ∈ C）</li>
           <li>SECDED：再加 1 個 bit，雙錯必偵測</li>
         </ul>
       </div>

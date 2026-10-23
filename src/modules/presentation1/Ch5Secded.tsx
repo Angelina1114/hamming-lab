@@ -212,7 +212,7 @@ function EccSlide({ s }: { s: Stepper }) {
         </Box>
       </Reveal>
       <Reveal on={s.step >= 1}>
-        <Box tone="bg-rose-50 text-rose-950" title="悄悄誤更正：沒有人知道">
+        <Box tone="bg-rose-50 text-rose-950" title="悄悄的 miscorrection：沒有人知道">
           <p>
             解碼後的字{isCodeword74(ECC_OUT) ? '' : ' ✗'}<strong>本身就是合法 codeword</strong>：再檢查一次，燈也全暗。
           </p>
@@ -250,7 +250,7 @@ function ParitySlide({ s }: { s: Stepper }) {
           <p className="text-slate-700">每翻一位，1 的總數奇偶就變一次：翻 1 位變奇數，翻 2 位又變回偶數。</p>
           <Tex block>{`P_0 = c_1 \\oplus c_2 \\oplus \\cdots \\oplus c_${N}`}</Tex>
           <p className="text-slate-700">
-            發送端補上 {P0}（整體同位位元）：{NE} 個位元一定有偶數個 1。
+            發送端補上 overall parity bit {P0}：{NE} 個位元一定有偶數個 1。
           </p>
           <p className="mt-1 text-base">
             m = {bits(message)}：<Word bits={c7} size="text-lg" /> → <Word bits={c8} flipped={[]} size="text-lg" />
@@ -263,11 +263,11 @@ function ParitySlide({ s }: { s: Stepper }) {
       <Reveal on={s.step >= 1}>
         <Box tone="bg-sky-50 text-sky-950" title={`放在第 ${P0_POS} 位，代價 1 位`}>
           <p>
-            前 {N} 位和 Hamming({N},{K}) 一模一樣：{L} 盞燈、H 的設計 ①–⑤、{L}-to-{STATES} 解碼器都不用改。
+            前 {N} 位和 Hamming({N},{K}) 一模一樣：{L} 盞燈、H 的設計 ①–⑤、{L}-to-{STATES} decoder 都不用改。
           </p>
           <p className="mt-2">第 {RE} 盞燈只是另外一棵 XOR 樹，看全部 {NE} 位。</p>
           <p className="mt-2 text-slate-600">
-            {P0} 由前 {N} 位決定，不帶新資訊：k 仍是 {K}，每 {K} 個資料位元多送 1 位。
+            {P0} 由前 {N} 位決定，不帶新資訊：k 仍是 {K}，每 {K} 個 data bit 多送 1 位。
           </p>
         </Box>
       </Reveal>
@@ -378,7 +378,7 @@ function CasesSlide({ s }: { s: Stepper }) {
       <Reveal on={s.step >= 2}>
         <Box tone="bg-slate-50 text-slate-900" title="決策表">
           <DecisionGrid />
-          <p className="mt-2 text-base text-slate-600">錯 3 個以上不在保證範圍：可能被當成 1 個錯而誤更正。</p>
+          <p className="mt-2 text-base text-slate-600">錯 3 個以上不在保證範圍：可能被當成 1 個錯，造成 miscorrection。</p>
         </Box>
       </Reveal>
     </div>
@@ -473,7 +473,7 @@ function DecoderSlide({ s }: { s: Stepper }) {
           <Box tone={tone(status)} title={`SECDED：${cell.label}${cell.where ? `（${cell.where}）` : ''}`}>
             <p className="text-lg">→ {cell.action}</p>
             <div className="mt-2 flex flex-wrap items-center gap-3">
-              <StatusBadge status={status} large zh={status === 'wrong' ? '誤更正' : undefined} en="" />
+              <StatusBadge status={status} large zh={status === 'wrong' ? 'Miscorrection' : undefined} en="" />
             </div>
             <div className="mt-2 text-lg">
               {res.corrected ? <Word bits={res.corrected} flipped={differingPositions(res.corrected, sent)} size="text-xl" /> : <span className="font-semibold">拒絕輸出，回報系統</span>}
@@ -489,7 +489,7 @@ function DecoderSlide({ s }: { s: Stepper }) {
               <span className="text-lg">→ {h7.position ? `翻位置 ${h7.position}` : '不動'}</span>
             </div>
             <div className="mt-2 flex flex-wrap items-center gap-3">
-              <StatusBadge status={h7Status} large zh={h7Status === 'wrong' ? (h7.position ? '誤更正' : '未偵測錯誤') : undefined} en="" />
+              <StatusBadge status={h7Status} large zh={h7Status === 'wrong' ? (h7.position ? 'Miscorrection' : 'Undetected error') : undefined} en="" />
               <Word bits={h7.corrected} flipped={differingPositions(h7.corrected, sent.slice(0, N))} size="text-xl" />
             </div>
           </Box>
@@ -508,7 +508,7 @@ function ServerSlide({ s }: { s: Stepper }) {
     <div className="grid grid-cols-1 gap-4 text-lg lg:grid-cols-3">
       <Reveal on={s.step >= 0}>
         <Box tone="bg-sky-50 text-sky-950" title={`${SERVER.r} 盞燈才夠`}>
-          <p>每次讀寫 {SERVER.k} 個資料位元。更正 1 個錯，ℓ 盞燈要分出 {SERVER.k} + ℓ + 1 種情況（第 4 章）：</p>
+          <p>每次讀寫 {SERVER.k} 個 data bit。更正 1 個錯，ℓ 盞燈要分出 {SERVER.k} + ℓ + 1 種情況（第 4 章）：</p>
           <Tex block>{`2^{${SERVER.r - 1}} = ${2 ** (SERVER.r - 1)} < ${SERVER.k + SERVER.r}`}</Tex>
           <Tex block>{`2^{${SERVER.r}} = ${2 ** SERVER.r} \\ge ${SERVER.k + SERVER.r + 1}`}</Tex>
           <p className="text-slate-600">
@@ -524,7 +524,7 @@ function ServerSlide({ s }: { s: Stepper }) {
           <Tex block>{`(${SERVER.parentN},${SERVER.parentK}) \\to (${SERVER.n},${SERVER.k}) \\xrightarrow{+P_0} (${SERVER.nSecded},${SERVER.k})`}</Tex>
           <p>判斷規則就是這一章的四格：修 1 個、回報 2 個。</p>
           <p className="mt-1 text-slate-600">
-            不是完美碼：{2 ** SERVER.r} 種燈號只用到 {SERVER.n + 1} 種。
+            不是 perfect code：{2 ** SERVER.r} 種燈號只用到 {SERVER.n + 1} 種。
           </p>
         </Box>
       </Reveal>
@@ -544,7 +544,7 @@ function ServerSlide({ s }: { s: Stepper }) {
             </thead>
             <tbody className="font-mono">
               <tr className="border-t border-emerald-200">
-                <td className="py-1 text-left font-sans text-base">檢查位元</td>
+                <td className="py-1 text-left font-sans text-base">Parity bit</td>
                 <td>{NE - K}</td>
                 <td>
                   {SERVER.r} + 1 = {SERVER_CHECK}
@@ -556,13 +556,13 @@ function ServerSlide({ s }: { s: Stepper }) {
                 <td className="font-bold">{pct(SERVER_CHECK / SERVER.k)}</td>
               </tr>
               <tr className="border-t border-emerald-200">
-                <td className="py-1 text-left font-sans text-base">碼率</td>
+                <td className="py-1 text-left font-sans text-base">Code rate</td>
                 <td>{pct(RATE8)}</td>
                 <td className="font-bold">{pct(SERVER.rateSecded)}</td>
               </tr>
             </tbody>
           </table>
-          <p className="mt-2">記憶體每次讀寫 {SERVER.nSecded} 個位元：{SERVER.k} 個資料、{SERVER_CHECK} 個檢查。</p>
+          <p className="mt-2">記憶體每次讀寫 {SERVER.nSecded} 個位元：{SERVER.k} 個 data bit、{SERVER_CHECK} 個 parity bit。</p>
         </Box>
       </Reveal>
     </div>
@@ -575,13 +575,13 @@ function ServerSlide({ s }: { s: Stepper }) {
 
 export const CH5_SLIDES: DeckSlide<null>[] = [
   {
-    title: '第 5 章：寧可回報，不要誤更正',
-    sub: `ECC 記憶體：Hamming(${N},${K}) 遇到 2 個錯會誤更正，而且沒有人知道`,
+    title: '第 5 章：寧可回報，不要造成 miscorrection',
+    sub: `ECC（error-correcting code，錯誤更正碼）記憶體：Hamming(${N},${K}) 遇到 2 個錯會造成 miscorrection，而且沒有人知道`,
     steps: () => 3,
     render: (s) => <EccSlide s={s} />,
     takeaway: (
       <>
-        <Ph>誤更正的資料看起來完全正常；</Ph>
+        <Ph>Miscorrection 後的資料看起來完全正常；</Ph>
         <Ph>回報了，系統才能補救</Ph>
       </>
     ),
@@ -598,7 +598,7 @@ export const CH5_SLIDES: DeckSlide<null>[] = [
           </ul>
         </li>
         <li>
-          → 悄悄誤更正：解碼後是另一個合法 codeword，再檢查燈也全暗
+          → 悄悄的 miscorrection：解碼後是另一個合法 codeword，再檢查燈也全暗
           <ul className={NOTES_SUB}>
             <li>錯的資料被繼續計算、寫回硬碟，事後找不到源頭</li>
             <li>
@@ -619,7 +619,7 @@ export const CH5_SLIDES: DeckSlide<null>[] = [
     ),
   },
   {
-    title: `第 5 章：${P0}（整體同位位元）與第 ${RE} 盞燈`,
+    title: `第 5 章：Overall parity bit ${P0} 與第 ${RE} 盞燈`,
     sub: `(${NE},${K})：第 ${RE} 盞燈 q 數翻轉個數的奇偶`,
     steps: () => 3,
     render: (s) => <ParitySlide s={s} />,
@@ -636,7 +636,7 @@ export const CH5_SLIDES: DeckSlide<null>[] = [
           錯 1 個與錯 2 個，差在翻了幾位：每翻一位，1 的總數奇偶就變一次
           <ul className={NOTES_SUB}>
             <li>
-              發送端多送 {P0}（整體同位位元）= c₁ ⊕ … ⊕ c{N}：{NE} 個位元一定有偶數個 1
+              發送端多送 overall parity bit {P0} = c₁ ⊕ … ⊕ c{N}：{NE} 個位元一定有偶數個 1
             </li>
             <li>
               第 {RE} 盞燈 q 看全部 {NE} 位：翻奇數位亮，翻偶數位（含 0）暗
@@ -647,10 +647,10 @@ export const CH5_SLIDES: DeckSlide<null>[] = [
           → {P0} 放在第 {P0_POS} 位：前 {N} 位和 Hamming({N},{K}) 一樣
           <ul className={NOTES_SUB}>
             <li>
-              {L} 盞燈、第 2 章 H 的設計 ①–⑤、第 3 章的 {L}-to-{STATES} 解碼器都不用改
+              {L} 盞燈、第 2 章 H 的設計 ①–⑤、第 3 章的 {L}-to-{STATES} decoder 都不用改
             </li>
             <li>
-              代價 1 位：碼率 {K}/{N} ≈ {RATE7.toFixed(3)} → {K}/{NE} = {RATE8.toFixed(3)}
+              代價 1 位：code rate {K}/{N} ≈ {RATE7.toFixed(3)} → {K}/{NE} = {RATE8.toFixed(3)}
             </li>
           </ul>
         </li>
@@ -664,7 +664,7 @@ export const CH5_SLIDES: DeckSlide<null>[] = [
               翻 2 位（位置 {PAIR.map((i) => i + 1).join('、')}）：離 A {STEP_MID.dA}、離 B {STEP_MID.dB} → 正中間 → 回報；第 4 章同樣兩位，字被推到 B
             </li>
             <li>
-              窮舉 {MD8.pairsChecked} 對：({N},{K}) 最小距離 {D7} → ({NE},{K}) 最小距離 {D8}；{DOUBLE8.total} 種雙錯，落在別人旁邊的 {DOUBLE8.nearOther} 種
+              窮舉 {MD8.pairsChecked} 對：({N},{K}) minimum distance {D7} → ({NE},{K}) minimum distance {D8}；{DOUBLE8.total} 種雙錯，落在別人旁邊的 {DOUBLE8.nearOther} 種
             </li>
           </ul>
         </li>
@@ -702,7 +702,7 @@ export const CH5_SLIDES: DeckSlide<null>[] = [
               2 個錯一定 s ≠ 0：hⱼ + hⱼ′ ≠ 0（H 的設計 ②：欄互不相同）；其中一個是 {P0} 時 s = hⱼ ≠ 0（H 的設計 ①）
             </li>
             <li>
-              不修：這種字離 {TIED} 個 codeword 都是距離 2，猜不出是哪一個
+              不修：這種字和 {TIED} 個 codeword 的 Hamming distance 都是 2，猜不出是哪一個
             </li>
           </ul>
         </li>
@@ -718,7 +718,7 @@ export const CH5_SLIDES: DeckSlide<null>[] = [
     ),
   },
   {
-    title: '第 5 章：實例：SECDED 解碼器',
+    title: '第 5 章：實例：SECDED decoder',
     sub: 's 說錯在哪，q 說錯了奇數還是偶數個',
     steps: () => 3,
     render: (s) => <DecoderSlide s={s} />,
@@ -743,10 +743,10 @@ export const CH5_SLIDES: DeckSlide<null>[] = [
           → 讀 {RE} 盞燈：s = H(r₁…r{N})ᵀ，q = r₁ + … + r{NE}
         </li>
         <li>
-          → 套進四格：修好、回報，或錯 3 個以上時誤更正
+          → 套進四格：修好、回報，或錯 3 個以上時造成 miscorrection
           <ul className={NOTES_SUB}>
             <li>
-              同一個錯誤，Hamming({N},{K}) 只看 {L} 盞燈：翻 2 位時一律誤更正
+              同一個錯誤，Hamming({N},{K}) 只看 {L} 盞燈：翻 2 位時一律造成 miscorrection
             </li>
             <li>
               SECDED：翻 1 位 {ONE8.ok}/{ONE8.total} 修好（含 {P0}），翻 2 位 {TWO8.detected}/{TWO8.total} 回報
@@ -758,7 +758,7 @@ export const CH5_SLIDES: DeckSlide<null>[] = [
   },
   {
     title: `第 5 章：實際系統：伺服器記憶體 (${SERVER.nSecded},${SERVER.k})`,
-    sub: `${SERVER.k} 位元資料 + ${SERVER_CHECK} 個檢查位元`,
+    sub: `${SERVER.k} 個 data bit + ${SERVER_CHECK} 個 parity bit`,
     steps: () => 3,
     render: (s) => <ServerSlide s={s} />,
     takeaway: (
@@ -772,7 +772,7 @@ export const CH5_SLIDES: DeckSlide<null>[] = [
     notes: (
       <ul className={NOTES_UL}>
         <li>
-          伺服器記憶體每次讀寫 {SERVER.k} 個資料位元
+          伺服器記憶體每次讀寫 {SERVER.k} 個 data bit
           <ul className={NOTES_SUB}>
             <li>
               更正 1 個錯（第 4 章）：2<sup>ℓ</sup> ≥ {SERVER.k} + ℓ + 1 → ℓ = {SERVER.r}（2<sup>{SERVER.r - 1}</sup> = {2 ** (SERVER.r - 1)} &lt; {SERVER.k + SERVER.r}，2<sup>{SERVER.r}</sup> = {2 ** SERVER.r} ≥ {SERVER.k + SERVER.r + 1}）
@@ -786,16 +786,16 @@ export const CH5_SLIDES: DeckSlide<null>[] = [
               不用的 {SERVER.shortenedBy} 個資料位置固定為 0、不送（第二課 2-12）
             </li>
             <li>
-              不是完美碼：{2 ** SERVER.r} 種燈號只用到 {SERVER.n + 1} 種；判斷規則同本章四格
+              不是 perfect code：{2 ** SERVER.r} 種燈號只用到 {SERVER.n + 1} 種；判斷規則同本章四格
             </li>
-            <li>實際晶片常用 Hsiao 碼這類變形，把 {P0} 併進檢查矩陣，參數與能力相同</li>
+            <li>實際晶片常用 Hsiao code 這類變形，把 {P0} 併進 parity-check matrix，參數與能力相同</li>
           </ul>
         </li>
         <li>
           → 代價：每 {SERVER.k} 位多 {SERVER_CHECK} 位 = {pct(SERVER_CHECK / SERVER.k)}；({NE},{K}) 是 {pct((NE - K) / K)}
           <ul className={NOTES_SUB}>
             <li>
-              碼率 {pct(SERVER.rateSecded)}（({NE},{K}) 是 {pct(RATE8)}）
+              code rate {pct(SERVER.rateSecded)}（({NE},{K}) 是 {pct(RATE8)}）
             </li>
             <li>
               所以 ECC 記憶體每次讀寫 {SERVER.nSecded} 個位元

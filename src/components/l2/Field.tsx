@@ -88,7 +88,7 @@ export function ThreeObjects({ S }: { S: Bit[] }) {
         <p className="mt-1 text-xs text-slate-500">在 <M>{'\\mathbb{F}_2[x]/(g(x))'}</M> 中，是 r(x) 除以 g(x) 的餘式。</p>
       </div>
       <div className="rounded-xl border-2 border-indigo-300 bg-indigo-50/50 p-3">
-        <div className="text-xs font-semibold text-indigo-600">② 有限體元素（GF(8) 中的一個數）</div>
+        <div className="text-xs font-semibold text-indigo-600">② Finite field 元素（GF(8) 中的一個數）</div>
         <div className="mt-1 text-2xl font-bold">
           <M>{a === 0 ? 'S_1 = 0' : `S_1 = ${aTex(a)}`}</M>
         </div>
@@ -98,7 +98,7 @@ export function ThreeObjects({ S }: { S: Bit[] }) {
         <p className="mt-1 text-xs text-slate-500">把 <M>x</M> 換成 <M>{'\\alpha'}</M>；因為 <M>{'g(\\alpha)=0'}</M>，<M>{'r(\\alpha) = S(\\alpha)'}</M>。</p>
       </div>
       <div className="rounded-xl border-2 border-fuchsia-300 bg-fuchsia-50/50 p-3">
-        <div className="text-xs font-semibold text-fuchsia-600">③ 錯誤定位多項式（多項式 in z，係數在 GF(8)）</div>
+        <div className="text-xs font-semibold text-fuchsia-600">③ Error-locator polynomial（多項式 in z，係數在 GF(8)）</div>
         <div className="mt-1 text-2xl font-bold">
           <M>{sigma.length === 1 ? '\\sigma(z) = 1' : `\\sigma(z) = 1 + ${aTex(a)}z`}</M>
         </div>
@@ -164,7 +164,7 @@ export function ChienSim({ S1, stepper, large = false }: { S1: GF8; stepper?: St
         <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className={`rounded-xl border-2 border-emerald-300 bg-emerald-50 p-3 ${large ? 'text-lg' : 'text-sm'}`}>
           {root ? (
             <>
-              根 <M>{`z = \\alpha^{${root.j}}`}</M>。錯誤定位數 <M>{`X = z^{-1} = \\alpha^{-${root.j}} = \\alpha^{${root.exponent}}`}</M>，所以錯誤在 <M>{`x^{${root.exponent}}`}</M>，即<strong>從左數第 {exponentToPosition(root.exponent!)} 個 bit</strong>。
+              根 <M>{`z = \\alpha^{${root.j}}`}</M>。error-location number <M>{`X = z^{-1} = \\alpha^{-${root.j}} = \\alpha^{${root.exponent}}`}</M>，所以錯誤在 <M>{`x^{${root.exponent}}`}</M>，即<strong>從左數第 {exponentToPosition(root.exponent!)} 個 bit</strong>。
             </>
           ) : (
             <>σ(z) 沒有根（S = 0），判定沒有錯誤。</>

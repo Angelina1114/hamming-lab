@@ -267,9 +267,9 @@ function SingleFlipCheck({ c }: { c: readonly Bit[] }) {
 function DecoderCircuit({ r, s, corrected, picked, onPick }: { r: readonly Bit[]; s: readonly Bit[]; corrected: readonly Bit[]; picked: number | null; onPick: (pos: number) => void }) {
   const value = syndromeToPosition(s);
   return (
-    <Card title="Hamming 的 H：燈號直接接上解碼器" icon={<Cpu className="h-4 w-4 text-emerald-600" />}>
+    <Card title="Hamming 的 H：燈號直接接上 decoder" icon={<Cpu className="h-4 w-4 text-emerald-600" />}>
       <p className="mb-3 text-sm leading-relaxed text-slate-700">
-        <ChLink to="matrix">第 2 章</ChLink> H 的設計 ④ 讓第 j 欄就是 j 的二進位，所以那張「燈號 → 位置」的對照表變成「燈號 j → 位置 j」，根本不用存：{R} 盞燈讀成二進位，直接接上一個 {R}-to-{STATES} 解碼器（Decoder），第 j 條輸出線去翻轉第 j 位。
+        <ChLink to="matrix">第 2 章</ChLink> H 的設計 ④ 讓第 j 欄就是 j 的二進位，所以那張「燈號 → 位置」的對照表變成「燈號 j → 位置 j」，根本不用存：{R} 盞燈讀成二進位，直接接上一個 {R}-to-{STATES} decoder，第 j 條輸出線去翻轉第 j 位。
       </p>
       <div className="mb-3 flex flex-wrap items-center gap-1.5">
         <span className="text-xs text-slate-500">雜訊只翻：</span>
@@ -296,7 +296,7 @@ function DecoderCircuit({ r, s, corrected, picked, onPick }: { r: readonly Bit[]
           <Lamps bits={s} size="sm" read />
         </Stop>
         <Arrow />
-        <Machine title={`${R}-to-${STATES} 解碼器`} note={<>讀成 {binText(s)} = {value}：第 {value} 條線是 1</>} tone="border-sky-300 bg-sky-50 text-sky-800" />
+        <Machine title={`${R}-to-${STATES} decoder`} note={<>讀成 {binText(s)} = {value}：第 {value} 條線是 1</>} tone="border-sky-300 bg-sky-50 text-sky-800" />
         <Arrow />
         <Machine title="翻轉" note={`每個位置一個 XOR 閘，共 ${FLIP_XORS} 個`} tone="border-emerald-300 bg-emerald-50 text-emerald-800" />
         <Arrow />
@@ -325,7 +325,7 @@ function DecoderCircuit({ r, s, corrected, picked, onPick }: { r: readonly Bit[]
             翻轉用的也是 XOR：第 j 個 XOR 閘的兩個輸入是 <M>{'r_j'}</M> 和第 j 條輸出線。那條線是 1，<M>{'r_j \\oplus 1'}</M> 就把那一位翻過來；其餘的線都是 0，位元原樣通過。燈全暗時只有第 0 條線是 1，它不接任何位置，r 整個原樣送出。
           </p>
           <p className="text-slate-600">
-            整個解碼器是組合邏輯：{SYNDROME_XORS} 個 XOR 閘算燈號、一個 {R}-to-{STATES} 解碼器、{FLIP_XORS} 個 XOR 閘翻轉。r 一進來，一次就算完，不用存表，也不用逐欄比對。
+            整個 decoder 是組合邏輯：{SYNDROME_XORS} 個 XOR 閘算燈號、一個 {R}-to-{STATES} decoder、{FLIP_XORS} 個 XOR 閘翻轉。r 一進來，一次就算完，不用存表，也不用逐欄比對。
           </p>
         </div>
       </div>
@@ -413,19 +413,19 @@ export default function M3Syndrome() {
                 <li>從燈號到「該翻哪一位」，電路要怎麼接？</li>
               </ol>
               <p className="text-slate-600">
-                「設計」一節先定下解碼器的做法；前兩個問題在「推導」一節用一條等式回答，第三個在「圖解」一節接成電路。
+                「設計」一節先定下 decoder 的做法；前兩個問題在「推導」一節用一條等式回答，第三個在「圖解」一節接成電路。
               </p>
             </div>
           </Card>
         </Stage>
 
-        <Stage kind="definition" moduleId={ID} title="解碼器的做法：只用 r，最多翻一位">
+        <Stage kind="definition" moduleId={ID} title="Decoder 的做法：只用 r，最多翻一位">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <Card title={`用 r 重算 ${R} 個檢查：Syndrome`}>
+            <Card title={`用 r 重算 ${R} 個檢查：syndrome`}>
               <Tex block>{`s = Hr^{T} = ${SVEC_TEX}^{T}`}</Tex>
               <div className="space-y-2 text-sm leading-relaxed text-slate-600">
                 <p>
-                  接收端手上只有 r，就把發送端用的 {R} 個檢查（同一張 H，<ChLink to="matrix">第 2 章</ChLink>）在 r 上再做一次。每個檢查的輸出是一盞警示燈，分量照燈命名：<M>{LAMP.map((l) => `s_${l.slice(1)}`).join(', ')}</M> 是 {LAMP.join('、')} 那盞燈，1 = 燈亮 = 那個檢查看到奇數個 1。合起來就是第 2 章的 <strong>Syndrome（徵狀）</strong>。
+                  接收端手上只有 r，就把發送端用的 {R} 個檢查（同一張 H，<ChLink to="matrix">第 2 章</ChLink>）在 r 上再做一次。每個檢查的輸出是一盞警示燈，分量照燈命名：<M>{LAMP.map((l) => `s_${l.slice(1)}`).join(', ')}</M> 是 {LAMP.join('、')} 那盞燈，1 = 燈亮 = 那個檢查看到奇數個 1。合起來就是第 2 章的 <strong>syndrome</strong>。
                 </p>
                 <p className="text-slate-500">硬體上是 {R} 棵 XOR 樹：r 一進來，燈就亮好了。</p>
               </div>
@@ -434,7 +434,7 @@ export default function M3Syndrome() {
               <Tex block>{'r = c + e'}</Tex>
               <div className="space-y-2 text-sm leading-relaxed text-slate-600">
                 <p>
-                  錯誤向量 <M>e</M> 記錄雜訊翻了哪幾位：第 <M>j</M> 位是 1，表示位置 <M>j</M> 被翻轉；錯了幾位 = <M>{'\\mathrm{wt}(e)'}</M>。只在位置 <M>j</M> 出錯的錯誤向量記作 <M>{'e_j'}</M>。
+                  用 error vector <M>e</M> 記錄雜訊翻了哪幾位：第 <M>j</M> 位是 1，表示位置 <M>j</M> 被翻轉；錯了幾位 = <M>{'\\mathrm{wt}(e)'}</M>。只在位置 <M>j</M> 出錯的 error vector 記作 <M>{'e_j'}</M>。
                 </p>
                 <p>
                   翻轉一位就是加 1（1 + 1 = 0），所以雜訊寫得成加法，和檢查器的 XOR 是同一種運算：推導一節就靠這點把 c 和 e 拆開。e 只用來分析，接收端看不到它。
@@ -443,7 +443,7 @@ export default function M3Syndrome() {
             </Card>
             <Card title="燈暗就不動，燈亮就只翻一位">
               <div className="space-y-2 text-sm leading-relaxed text-slate-600">
-                <p>解碼器的決策規則：燈全暗 → r 原樣送出；燈亮 → 認定雜訊只翻了一位，把那一位翻回來。</p>
+                <p>decoder 的決策規則：燈全暗 → r 原樣送出；燈亮 → 認定雜訊只翻了一位，把那一位翻回來。</p>
                 <p>
                   雜訊不多時，只翻一位遠比同時翻兩位常見，所以每個燈號都先當成「只翻了一位」來解讀；Hamming({N},{K}) 也只保證修 {T} 位（<ChLink to="distance">第 4 章</ChLink>）。
                 </p>
@@ -527,7 +527,7 @@ export default function M3Syndrome() {
                 <motion.div key={sKey + String(scanDone)} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className="mt-4 rounded-xl bg-slate-50 p-3 text-sm">
                   {match < 0 ? (
                     <span>
-                      <M>{'s = 0'}</M>：燈全暗，所有檢查都通過，不用比對，解碼器判定「沒有錯誤」。
+                      <M>{'s = 0'}</M>：燈全暗，所有檢查都通過，不用比對，decoder 判定「沒有錯誤」。
                     </span>
                   ) : scanDone ? (
                     <span>
@@ -561,7 +561,7 @@ export default function M3Syndrome() {
           <LabGrid
             main={
               <Card
-                title={`點擊「收到的字」的任意位元製造傳輸錯誤（0–${N} 個）`}
+                title={`點擊 received word 的任意位元製造傳輸錯誤（0–${N} 個）`}
                 actions={
                   <ResetButton
                     onClick={() => {
@@ -585,16 +585,16 @@ export default function M3Syndrome() {
                   <Row label="發送 codeword c">
                     <BitRow bits={c} layout={LAYOUT_74} size="sm" />
                   </Row>
-                  <Row label={<>錯誤向量 e <span className="text-slate-400">wt = {weight(e)}</span></>}>
+                  <Row label={<>Error vector e <span className="text-slate-400">wt = {weight(e)}</span></>}>
                     <BitRow bits={e} plain size="sm" states={e.map((b) => (b ? 'error' : 'muted'))} onToggle={(i) => setE((x) => flipBit(x, i))} showPositions={false} />
                   </Row>
-                  <Row label="收到的字 r = c + e（可點擊）">
+                  <Row label="Received word r = c + e（可點擊）">
                     <BitRow bits={out.received} layout={LAYOUT_74} states={receivedStates} onToggle={(i) => setE((x) => flipBit(x, i))} />
                   </Row>
                   <Row label={`${R} 盞燈 s = Hrᵀ`}>
                     <Lamps bits={s} />
                   </Row>
-                  <Row label="解碼器輸出（修正後）">
+                  <Row label="Decoder 輸出（修正後）">
                     <BitRow bits={out.decoded.corrected} layout={LAYOUT_74} states={correctedStates} size="sm" />
                   </Row>
                 </div>
@@ -605,7 +605,7 @@ export default function M3Syndrome() {
             }
             aside={
               <>
-                <Card title="解碼器的判斷（Decoder decision）">
+                <Card title="Decoder 的判斷">
                   <div className="space-y-2 text-sm">
                     <div>
                       Syndrome <M>{'s = Hr^T'}</M>：<M>{sVecTex(s)}</M>，{lampText(s)}
@@ -626,8 +626,8 @@ export default function M3Syndrome() {
                       <StatusBadge
                         status={status}
                         large
-                        zh={status === 'wrong' ? (out.undetected ? '未偵測錯誤' : '誤更正') : undefined}
-                        en={status === 'wrong' ? (out.undetected ? 'Undetected error' : 'Miscorrection') : undefined}
+                        zh={status === 'wrong' ? (out.undetected ? 'Undetected error' : 'Miscorrection') : undefined}
+                        en={status === 'wrong' ? '' : undefined}
                       />
                     </div>
                   </div>
@@ -636,21 +636,21 @@ export default function M3Syndrome() {
                       <Callout kind="warning" title={`${out.errorWeight} 個錯誤：前提 ②「恰好翻了一位」不成立`}>
                         {out.undetected ? (
                           <p>
-                            這次的錯誤向量 <span className="mono">{e.join('')}</span> 本身就是一個 codeword，所以 <M>{'He^T = 0'}</M>：燈全暗，r 看起來是合法的 codeword，解碼器完全沒有察覺。
+                            這次的 error vector <span className="mono">{e.join('')}</span> 本身就是一個 codeword，所以 <M>{'He^T = 0'}</M>：燈全暗，r 看起來是合法的 codeword，decoder 完全沒有察覺。
                           </p>
                         ) : (
                           <p>
-                            燈號是 {errIdx.length} 欄之和，剛好等於 H 的第 {out.decoded.position} 欄。解碼器以為只錯一位，
+                            燈號是 {errIdx.length} 欄之和，剛好等於 H 的第 {out.decoded.position} 欄。decoder 以為只錯一位，
                             {e[decoderIdx] ? <>翻轉了位置 {out.decoded.position}（這一位確實錯了，但其餘錯誤還在）</> : <strong>把原本沒錯的位置 {out.decoded.position} 也翻掉</strong>}
                             ，結果錯誤變成 {errorsAfter} 個。
                           </p>
                         )}
                         <ul className="list-disc space-y-1 pl-5">
                           <li className={out.miscorrection && out.errorWeight === 2 ? 'font-semibold' : undefined}>
-                            錯兩位（位置 <M>j</M> 和 <M>{"j'"}</M>）：燈號是 <M>{"h_j + h_{j'}"}</M>。兩欄不同，和不是 0；H 又用上了全部 {PATTERNS} 種非零亮法，所以這個和一定是 H 的某一欄。它也不會是 <M>{'h_j'}</M> 或 <M>{"h_{j'}"}</M>（那樣另一欄就是 0），所以是<strong>第三欄</strong>：解碼器把原本沒錯的那一位也翻掉 → 誤更正。
+                            錯兩位（位置 <M>j</M> 和 <M>{"j'"}</M>）：燈號是 <M>{"h_j + h_{j'}"}</M>。兩欄不同，和不是 0；H 又用上了全部 {PATTERNS} 種非零亮法，所以這個和一定是 H 的某一欄。它也不會是 <M>{'h_j'}</M> 或 <M>{"h_{j'}"}</M>（那樣另一欄就是 0），所以是<strong>第三欄</strong>：decoder 把原本沒錯的那一位也翻掉 → miscorrection。
                           </li>
                           <li className={out.undetected ? 'font-semibold' : undefined}>
-                            錯三位：如果錯誤本身就是一個 codeword（例如 <span className="mono">{TRIPLE_WORD.join('')}</span>{TRIPLE_IS_CODEWORD ? '' : '✗'}），燈全暗 → 未偵測錯誤；其他的三位錯誤也會被誤更正。
+                            錯三位：如果錯誤本身就是一個 codeword（例如 <span className="mono">{TRIPLE_WORD.join('')}</span>{TRIPLE_IS_CODEWORD ? '' : '✗'}），燈全暗 → undetected error；其他的三位錯誤也會造成 miscorrection。
                           </li>
                         </ul>
                         <p>
@@ -671,8 +671,8 @@ export default function M3Syndrome() {
                 <Derivation
                   resetKey={e.join('') + message.join('')}
                   steps={[
-                    { title: '收到的字', body: <Tex block>{`r = c + e = ${c.join('')} + ${e.join('')} = ${out.received.join('')}`}</Tex> },
-                    { title: '計算 Syndrome', body: <Tex block>{`s = Hr^T = ${matrixToTex(H74)}${matrixToTex(out.received.map((b) => [b]))} = ${colTex(s)}`}</Tex> },
+                    { title: 'Received word', body: <Tex block>{`r = c + e = ${c.join('')} + ${e.join('')} = ${out.received.join('')}`}</Tex> },
+                    { title: '計算 syndrome', body: <Tex block>{`s = Hr^T = ${matrixToTex(H74)}${matrixToTex(out.received.map((b) => [b]))} = ${colTex(s)}`}</Tex> },
                     {
                       title: '等於 He^T（被翻轉位置的欄相加）',
                       body:
@@ -696,17 +696,17 @@ export default function M3Syndrome() {
               </>
             }
           />
-          <Card title="0 ~ 3 個錯誤時，這個解碼器表現如何？">
+          <Card title="0 ~ 3 個錯誤時，這個 decoder 表現如何？">
             <p className="text-sm text-slate-700">
-              對 codeword <span className="mono">{c.join('')}</span> 窮舉全部 {ALL_ERRORS} 種錯誤向量（即時計算）：1 個錯誤 <strong>{stats[1].ok}/{stats[1].total}</strong> 全部修好；2 個錯誤 <strong>{stats[2].mis}/{stats[2].total}</strong> 被誤更正；3 個錯誤中有 <strong>{stats[3].undetected}</strong> 種燈全暗（未偵測錯誤），其餘 {stats[3].mis} 種被誤更正。
+              對 codeword <span className="mono">{c.join('')}</span> 窮舉全部 {ALL_ERRORS} 種 error vector（即時計算）：1 個錯誤 <strong>{stats[1].ok}/{stats[1].total}</strong> 全部修好；2 個錯誤 <strong>{stats[2].mis}/{stats[2].total}</strong> 造成 miscorrection（誤更正）；3 個錯誤中有 <strong>{stats[3].undetected}</strong> 種燈全暗（undetected error），其餘 {stats[3].mis} 種造成 miscorrection。
             </p>
             <div className="mt-3">
               <RelatedLinks
                 title="兩個以上的錯誤：原因在第 4 章，補救方法在第 5 章，詳細分析在第二課"
                 links={[
-                  { to: 'distance', text: `最小距離 ${D_MIN}：保證只修 ${T} 個錯的原因` },
+                  { to: 'distance', text: `Minimum distance ${D_MIN}：保證只修 ${T} 個錯的原因` },
                   { to: 'secded', text: 'SECDED：多一個位元，雙錯就能被偵測' },
-                  { to: 'l2-9', text: '兩個錯誤一定誤更正（含窮舉表）' },
+                  { to: 'l2-9', text: '兩個錯誤一定造成 miscorrection（含窮舉表）' },
                   { to: 'l2-10', text: '三個錯誤：有些錯誤完全看不見' },
                 ]}
               />
@@ -714,9 +714,9 @@ export default function M3Syndrome() {
           </Card>
           <Misconceptions
             items={[
-              { wrong: 'Syndrome ≠ 0 時，解碼結果一定正確。', right: '只有在「恰好翻了一位」時才正確。兩個錯誤的燈號也是某一欄，解碼器會翻錯位元。' },
-              { wrong: 'Syndrome = 0（燈全暗）代表沒有錯誤。', right: `燈全暗只代表 r 是某個 codeword。若錯誤本身是非零 codeword（例如重量 ${weight(TRIPLE_WORD)} 的 ${TRIPLE_WORD.join('')}），燈照樣全暗，錯誤無法被發現。` },
-              { wrong: '要知道原本的 c 才能算 Syndrome。', right: 's = Hrᵀ 只用到 r；而且 s = Heᵀ 與 c 無關：燈只對雜訊起反應。' },
+              { wrong: 'syndrome ≠ 0 時，解碼結果一定正確。', right: '只有在「恰好翻了一位」時才正確。兩個錯誤的燈號也是某一欄，decoder 會翻錯位元。' },
+              { wrong: 'syndrome = 0（燈全暗）代表沒有錯誤。', right: `燈全暗只代表 r 是某個 codeword。若錯誤本身是非零 codeword（例如 ${TRIPLE_WORD.join('')}，weight（重量）為 ${weight(TRIPLE_WORD)}），燈照樣全暗，錯誤無法被發現。` },
+              { wrong: '要知道原本的 c 才能算 syndrome。', right: 's = Hrᵀ 只用到 r；而且 s = Heᵀ 與 c 無關：燈只對雜訊起反應。' },
             ]}
           />
         </Stage>
@@ -727,7 +727,7 @@ export default function M3Syndrome() {
               接收端不知道送了什麼，只看 {R} 盞燈。燈只對雜訊起反應（<M>{'s = He^{T}'}</M>）；只翻一位時，亮的燈就是 H 的第 j 欄，讀成二進位就是 j，解碼電路把那一位翻回來。
             </p>
             <p>
-              代價：解碼器<strong>永遠</strong>假設最多翻了一位：燈亮就翻一位，燈暗就不動。錯兩位時，燈號指向第三個位置，解碼器會「自信地」把原本沒錯的位置也翻掉（誤更正）；錯誤本身是 codeword 時，燈全暗。極限剛好是 {T} 個錯的原因，要用「距離」來看（
+              代價：decoder <strong>永遠</strong>假設最多翻了一位：燈亮就翻一位，燈暗就不動。錯兩位時，燈號指向第三個位置，decoder 會「自信地」把原本沒錯的位置也翻掉（miscorrection）；錯誤本身是 codeword 時，燈全暗。極限剛好是 {T} 個錯的原因，要用 Hamming distance（漢明距離）來看（
               <a href="#/distance" className="font-semibold text-overall-700 hover:underline">
                 第 4 章
               </a>
@@ -739,7 +739,7 @@ export default function M3Syndrome() {
             </p>
           </Callout>
           <Card>
-            <RelatedLinks links={[{ to: 'a-10', text: 'Syndrome 的 GF(8) 觀點：3 盞燈 = r(α) 一個值' }, { to: 'a-9', text: 'H 的欄 = GF(8) 的非零元素' }]} title="延伸：代數基礎與循環碼" />
+            <RelatedLinks links={[{ to: 'a-10', text: 'Syndrome 的 GF(8) 觀點：3 盞燈 = r(α) 一個值' }, { to: 'a-9', text: 'H 的欄 = GF(8) 的非零元素' }]} title="延伸：代數基礎與 cyclic codes" />
           </Card>
         </Stage>
       </div>

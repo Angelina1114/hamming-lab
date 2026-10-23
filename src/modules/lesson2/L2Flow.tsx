@@ -21,24 +21,24 @@ export default function L2Flow() {
       id={ID}
       lead={
         <p>
-          第一課從「為什麼」理解了 Hamming Code。第二課要把它變成一條真正能執行的流水線：從訊息 <M>u</M> 出發，經過 LFSR 編碼、通道、Syndrome、錯誤定位、XOR 更正，最後還原 <M>{'\\hat u'}</M>。這一章先看全貌，之後每一章放大其中一個方塊。
+          第一課從「為什麼」理解了 Hamming code。第二課要把它變成一條真正能執行的流水線：從訊息 <M>u</M> 出發，經過 linear feedback shift register（LFSR，線性回授移位暫存器）編碼、通道、syndrome（徵狀）、錯誤定位、exclusive OR（XOR，互斥或）更正，最後還原 <M>{'\\hat u'}</M>。這一章先看全貌，之後每一章放大其中一個方塊。
         </p>
       }
       goals={[
-        '說出編碼器、通道、解碼器各由哪些模組組成',
+        '說出 encoder（編碼器）、通道、decoder（解碼器）各由哪些模組組成',
         '追蹤同一個例子 u = 1001 在每個模組中的資料',
-        '知道 Syndrome、Chien Search、XOR 更正各自負責什麼',
-        '理解 SECDED、整體同位位元（Overall Parity）、緩衝區（Buffer）、錯誤旗標的位置',
+        '知道 syndrome、Chien search、XOR 更正各自負責什麼',
+        '理解 SECDED、overall parity bit（整體同位位元）、buffer（緩衝區）、錯誤旗標的位置',
       ]}
       intuition={{
         title: '一封信的旅程',
         body: (
           <div className="prose-lab">
             <p>
-              把資料想成寄信：寄件人在信末附上「同位位元」（編碼）；郵差可能弄髒幾個字（通道）；收件人先算一次同位位元，發現「症狀值」（Syndrome），從症狀值推理是哪個字被弄髒（錯誤定位），最後把那個字改回來（XOR 更正）。
+              把資料想成寄信：寄件人在信末附上 parity bit（同位位元），這是編碼；郵差可能弄髒幾個字（通道）；收件人先重算一次 parity bit，得到 syndrome，從 syndrome 推理是哪個字被弄髒（錯誤定位），最後把那個字改回來（XOR 更正）。
             </p>
             <p>
-              關鍵在於：收件人<strong>看不到原信</strong>，只能從收到的內容本身推理。這要求寄件人加上的同位位元有非常特別的數學結構——生成多項式 <M>{'g(x) = x^3 + x + 1'}</M>。
+              關鍵在於：收件人<strong>看不到原信</strong>，只能從收到的內容本身推理。這要求寄件人加上的 parity bit 有非常特別的數學結構——generator polynomial（生成多項式）<M>{'g(x) = x^3 + x + 1'}</M>。
             </p>
           </div>
         ),
@@ -63,11 +63,11 @@ export default function L2Flow() {
           <AlgoSteps
             steps={[
               <>編碼：把 u 補三個 0 得到 <M>{'x^3u(x)'}</M>，用 LFSR（或長除法）求除以 g(x) 的餘數 p，輸出 <M>{'c = u \\,\\|\\, p'}</M>。（2-2、2-3）</>,
-              <>通道加入錯誤：<M>{'r = c \\oplus e'}</M>。接收端把 r 存入緩衝區。</>,
-              <>計算 Syndrome <M>{'S(x) = r(x) \\bmod g(x)'}</M>；S = 0 表示「看起來沒有錯」。（2-4）</>,
-              <>錯誤定位：查表（2-5），或用 Key Equation 與 Chien Search（2-6、2-7）找出錯誤次方 i。</>,
+              <>通道加入錯誤：<M>{'r = c \\oplus e'}</M>。接收端把 r 存入 buffer。</>,
+              <>計算 syndrome <M>{'S(x) = r(x) \\bmod g(x)'}</M>；S = 0 表示「看起來沒有錯」。（2-4）</>,
+              <>錯誤定位：查表（2-5），或用 key equation（關鍵方程式）與 Chien search（2-6、2-7）找出錯誤次方 i。</>,
               <>更正邏輯產生 <M>{'\\hat e'}</M>，<M>{'\\hat c = r \\oplus \\hat e'}</M>，驗證 <M>{'\\hat c(\\alpha) = 0'}</M>，取前 4 位為 <M>{'\\hat u'}</M>。（2-8）</>,
-              <>SECDED 模式額外檢查整體同位，遇到雙錯就設旗標、不更正。（2-11）</>,
+              <>SECDED 模式額外檢查 overall parity，遇到雙錯就設旗標、不更正。（2-11）</>,
             ]}
           />
         ),
@@ -83,7 +83,7 @@ export default function L2Flow() {
                   value={method}
                   onChange={setMethod}
                   options={[
-                    { value: 'chien', label: 'Chien Search' },
+                    { value: 'chien', label: 'Chien search' },
                     { value: 'lookup', label: '查表 Lookup' },
                   ]}
                 />
@@ -136,7 +136,7 @@ export default function L2Flow() {
                 { label: <>編碼後 c(x) 被 g(x) 整除</>, pass: syndromeL2(enc.codeword).every((b) => b === 0), detail: `S(c) = ${syndromeL2(enc.codeword).join('')}` },
                 { label: <>無錯誤時解碼結果 = 原始訊息</>, pass: simulateL2(u, []).success },
                 { label: <>任一單一錯誤都能修好（7 種全部測試）</>, pass: [1, 2, 3, 4, 5, 6, 7].every((p) => simulateL2(u, [p], method).success) },
-                { label: <>目前的錯誤情境：{o.errorCount} 個錯誤，結果 {o.success ? '正確還原' : o.undetected ? '未偵測' : '誤更正'}</>, pass: o.errorCount <= 1 ? o.success : true, detail: o.errorCount >= 2 ? '（超過更正能力，第 2-9、2-10 章詳細說明）' : '' },
+                { label: <>目前的錯誤情境：{o.errorCount} 個錯誤，結果 {o.success ? '正確還原' : o.undetected ? 'undetected error' : 'miscorrection'}</>, pass: o.errorCount <= 1 ? o.success : true, detail: o.errorCount >= 2 ? '——超過 error-correcting capability（更正能力），第 2-9、2-10 章詳細說明' : '' },
               ]}
             />
             <Callout kind="warning" title="流水線的保證範圍">
@@ -148,7 +148,7 @@ export default function L2Flow() {
       related={[{ to: 'a-0', text: '代數背景：為什麼需要 g(x) 與 GF(8)（概念地圖）' }]}
       next={
         <p>
-          流程圖第二個方塊「LFSR」是編碼的核心：只用三個暫存器和兩個 XOR 閘，就能算出 <M>{'x^3u(x) \\bmod g(x)'}</M>。下一章一個時脈一個時脈地拆開它。
+          流程圖第二個方塊「LFSR」是編碼的核心：只用三個 register 和兩個 XOR 閘，就能算出 <M>{'x^3u(x) \\bmod g(x)'}</M>。下一章一個時脈一個時脈地拆開它。
         </p>
       }
     />

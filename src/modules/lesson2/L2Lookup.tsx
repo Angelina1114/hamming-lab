@@ -24,13 +24,13 @@ export default function L2Lookup() {
       id={ID}
       lead={
         <p>
-          Syndrome <span className="mono">111</span> 要對應到「第 2 個 bit」。這一章逐一製造 7 種單一錯誤，記下各自的 Syndrome，建立一張查表——並看清楚為什麼這張表<strong>不能</strong>用「把 S 當二進位數」取代。
+          上一章得到的 syndrome <span className="mono">111</span> 要對應到「第 2 個 bit」。這一章逐一製造 7 種單一錯誤，記下各自的 syndrome，建立一張查表——並看清楚為什麼這張表<strong>不能</strong>用「把 S 當二進位數」取代。
         </p>
       }
       goals={[
-        '對每個錯誤位置計算 Syndrome，建立查表',
-        '說明為什麼 7 個 Syndrome 互不相同且都不為 0',
-        <>強調：Syndrome 是錯誤特徵值，不是位置的二進位</>,
+        '對每個錯誤位置計算 syndrome，建立查表',
+        '說明為什麼 7 個 syndrome 互不相同且都不為 0',
+        <>強調：syndrome 是錯誤特徵值，不是位置的二進位</>,
         '理解查表依賴編碼方式與位元順序',
       ]}
       intuition={{
@@ -50,11 +50,11 @@ export default function L2Lookup() {
           <Card>
             <Tex block>{'S_i(x) = x^i \\bmod g(x),\\qquad i = 0,1,\\dots,6'}</Tex>
             <p className="text-sm text-slate-700">
-              若 <M>{'S_i = S_j'}</M>（<M>{'i > j'}</M>），則 <M>{'g(x) \\mid x^i - x^j = x^j(x^{i-j} - 1)'}</M>。<M>{'g(x)'}</M> 與 <M>{'x'}</M> 互質，所以 <M>{'g(x) \\mid x^{i-j} - 1'}</M>，其中 <M>{'0 < i - j < 7'}</M>。但 <M>{'g(x)'}</M> 是本原多項式（Primitive Polynomial，見 A4），使 <M>{'g \\mid x^k - 1'}</M> 的最小 k 是 7，矛盾。所以 7 個 Syndrome 兩兩相異，且都不為 0（<M>{'g \\nmid x^i'}</M>）。
+              若 <M>{'S_i = S_j'}</M>（<M>{'i > j'}</M>），則 <M>{'g(x) \\mid x^i - x^j = x^j(x^{i-j} - 1)'}</M>。<M>{'g(x)'}</M> 與 <M>{'x'}</M> 互質，所以 <M>{'g(x) \\mid x^{i-j} - 1'}</M>，其中 <M>{'0 < i - j < 7'}</M>。但 <M>{'g(x)'}</M> 是 primitive polynomial（本原多項式，見 A4），使 <M>{'g \\mid x^k - 1'}</M> 的最小 k 是 7，矛盾。所以 7 個 syndrome 兩兩相異，且都不為 0（<M>{'g \\nmid x^i'}</M>）。
             </p>
-            <p className="text-sm text-slate-700">3 位元的非零值剛好只有 7 個，所以這是一一對應——Hamming Code 是「完美」的（<a className="text-indigo-700 underline" href="#/distance">第一課第 4 章</a>）。</p>
+            <p className="text-sm text-slate-700">3 位元的非零值剛好只有 7 個，所以這是一一對應——Hamming code 是 perfect code（完美碼，見<a className="text-indigo-700 underline" href="#/distance">第一課第 4 章</a>）。</p>
             <p className="mt-2 text-sm text-slate-700">
-              換個角度看：把這 7 個 Syndrome 依位置 1 ~ 7 排成直行，得到的正是循環碼的同位檢查矩陣（parity-check matrix）<M>{'H_{\\text{cyc}}'}</M>（第 k 欄 = <M>{'\\alpha^{7-k}'}</M>，k = 1, …, 7）。所以「查表」就是<a className="text-indigo-700 underline" href="#/syndrome">第一課「比對 H 的哪一欄」</a>，只是位元排列不同——詳見 <a className="text-indigo-700 underline" href="#/a-9">A9 用 GF(8) 推導 H</a>。
+              換個角度看：把這 7 個 syndrome 依位置 1 ~ 7 排成直行，得到的正是 cyclic code（循環碼）的 parity-check matrix（同位檢查矩陣）<M>{'H_{\\text{cyc}}'}</M>（第 k 欄 = <M>{'\\alpha^{7-k}'}</M>，k = 1, …, 7）。所以「查表」就是<a className="text-indigo-700 underline" href="#/syndrome">第一課「比對 H 的哪一欄」</a>，只是位元排列不同——詳見 <a className="text-indigo-700 underline" href="#/a-9">A9 用 GF(8) 推導 H</a>。
             </p>
           </Card>
         ),
@@ -123,7 +123,7 @@ export default function L2Lookup() {
                     {pos > 0 ? (
                       <>現在 S = {S.join('')} 會被當成位置 {pos} 的單一錯誤，結果會是錯的（2-9、2-10）。</>
                     ) : (
-                      <>現在 S = 000，解碼器會判定「沒有錯誤」，這些錯誤完全沒被發現（2-10）。</>
+                      <>現在 S = 000，decoder 會判定「沒有錯誤」，這些錯誤完全沒被發現（2-10）。</>
                     )}
                   </p>
                 </Callout>
@@ -146,8 +146,8 @@ export default function L2Lookup() {
           <>
             <Checks
               items={[
-                { label: <>7 個 Syndrome 兩兩相異（共 {distinct} 種）</>, pass: distinct === 7 },
-                { label: <>沒有任何位置的 Syndrome 是 000</>, pass: table.every((t) => t.syndrome.join('') !== '000') },
+                { label: <>7 個 syndrome 兩兩相異（共 {distinct} 種）</>, pass: distinct === 7 },
+                { label: <>沒有任何位置的 syndrome 是 000</>, pass: table.every((t) => t.syndrome.join('') !== '000') },
                 { label: <>表格：{table.map((t) => `${t.position}→${t.syndrome.join('')}`).join('、')}</>, pass: table.map((t) => t.syndrome.join('')).join(',') === '101,111,110,011,100,010,001' },
                 { label: <>每一列：S 作為 GF(8) 元素等於 αⁱ（i = 錯誤次方）</>, pass: table.every((t) => t.field === alphaPow(t.exponent)) },
                 { label: <>改變位元順序，表格確實不同</>, pass: lsbDiffers },
@@ -155,17 +155,17 @@ export default function L2Lookup() {
             />
             <Misconceptions
               items={[
-                { wrong: 'S = 111 = 7，所以錯在第 7 個 bit。', right: 'S = 111 對應位置 2（x⁵）。Syndrome 是錯誤特徵值，只有依據編碼方式與位元順序建立的對照表才能解讀。' },
-                { wrong: '第一課的 Syndrome 直接等於位置，所以這裡也一樣。', right: '第一課的 H 是刻意把「第 j 欄 = j 的二進位」排好的。循環碼的 H 欄位是 αⁱ，順序不同。' },
+                { wrong: 'S = 111 = 7，所以錯在第 7 個 bit。', right: 'S = 111 對應位置 2（x⁵）。syndrome 是錯誤特徵值，只有依據編碼方式與位元順序建立的對照表才能解讀。' },
+                { wrong: '第一課的 syndrome 直接等於位置，所以這裡也一樣。', right: '第一課的 H 是刻意把「第 j 欄 = j 的二進位」排好的。cyclic code 的 H 欄位是 αⁱ，順序不同。' },
               ]}
             />
           </>
         ),
       }}
-      related={[{ to: 'a-9', text: '查表的七列 = H_cyc 的七個欄' }, { to: 'a-4', text: '為什麼七個 Syndrome 都不同：α 是本原元素' }]}
+      related={[{ to: 'a-9', text: '查表的七列 = H_cyc 的七個欄' }, { to: 'a-4', text: '為什麼七個 syndrome 都不同：α 是 primitive element（本原元素）' }]}
       next={
         <p>
-          查表對 7 位元很好用，但碼長變成 127、甚至要更正多個錯誤時，表格會大到不實際。下一章換一個角度：把 Syndrome 看成有限體 <M>{'\\mathrm{GF}(8)'}</M> 中的元素，用代數「解出」錯誤位置。
+          查表對 7 位元很好用，但 code length（碼長）變成 127、甚至要更正多個錯誤時，表格會大到不實際。下一章換一個角度：把 syndrome 看成 finite field（有限體）<M>{'\\mathrm{GF}(8)'}</M> 中的元素，用代數「解出」錯誤位置。
         </p>
       }
     />
